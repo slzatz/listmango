@@ -6,8 +6,8 @@ import (
 	"os"
 	"time"
 
-	"github.com/srinathh/gokilo/rawmode"
-	"github.com/srinathh/gokilo/terminal"
+	"github.com/slzatz/listmango/rawmode"
+	"github.com/slzatz/listmango/terminal"
 )
 
 func ctrlKey(b byte) rune {

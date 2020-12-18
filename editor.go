@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 
-	"github.com/srinathh/gokilo/runes"
+	"github.com/slzatz/listmango/runes"
 )
 
 // ERow represents a line of text in a file
