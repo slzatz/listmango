@@ -37,11 +37,20 @@ func (row ERow) CxToRx(cx int) int {
 
 // Editor represents the data in the being edited in memory
 type Editor struct {
-	//Cx, Cy   int    // Cx and Cy represent current cursor position
+	Cx, Cy   int    // Cx and Cy represent current cursor position
+  Fc, Fr int
+  PrevFc, PrevFr int
 	Cursor   Point
 	Rows     []ERow // Rows represent the textual data
 	Dirty    bool   // has the file been edited
 	FileName string // the path to the file being edited. Could be empty string
+  LineOffset int
+  ScreenLines int
+  LeftMargin int
+  LeftMarginOffset int
+  TopMargin int
+  Mode int
+  Redraw bool
 }
 
 // NewEditor returns a new blank editor
@@ -50,8 +59,10 @@ func NewEditor() *Editor {
 		FileName: "",
 		Dirty:    false,
 		Cursor:   Point{0, 0},
-		//Cx:       0,
-		//Cy:       0,
+		Cx:       0,
+		Cy:       0,
+    Fc:       0,
+    Fr:       0,
 		Rows: []ERow{},
 	}
 }

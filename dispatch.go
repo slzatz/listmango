@@ -24,6 +24,8 @@ type Session struct {
 	FindPoints        []Point
 	CurFindPoint      int
 	BeforFindPoint    Point
+
+  EditorMode       bool
 }
 
 func (s *Session) setStatusMessage(msg string) {
