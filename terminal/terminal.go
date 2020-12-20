@@ -34,9 +34,12 @@ const (
 )
 
 // matchSplKeys will try to match an input rune sequence
-// to special keys and returns the number of speckal key
+// to special keys and returns the number of special key
 // combinations that are matched to the input sequence
-func matchSplKeys(input []rune) (bool, int) {
+
+// this could be a map looking like []rune or just []bytes
+//func matchSplKeys(input []rune) (bool, int) {
+func matchSplKeys(input []byte) (bool, int) {
 
 outerLoop:
 	for k, v := range specialKeys {
@@ -54,13 +57,15 @@ outerLoop:
 	return false, 0
 }
 
+// could do below with the 0th 27 (escape) character
+/*
 var specialKeys = map[int][]rune{
-	KeyArrowUp:    []rune{27, 91, 65},
-	KeyArrowDown:  []rune{27, 91, 66},
+	KeyArrowUp:    []rune{27, 91, 65}, //\x1b[A
+	KeyArrowDown:  []rune{27, 91, 66}, //\x1b[B
 	KeyArrowLeft:  []rune{27, 91, 68},
 	KeyArrowRight: []rune{27, 91, 67},
-	KeyPageUp:     []rune{27, 91, 53, 126},
-	KeyPageDown:   []rune{27, 91, 54, 126},
+	KeyPageUp:     []rune{27, 91, 53, 126}, //126 = ~; 91 = [; 53 = 5 /x1b[5~
+	KeyPageDown:   []rune{27, 91, 54, 126}, // \x1b[6~
 	KeyHome:       []rune{27, 91, 72},
 	KeyEnd:        []rune{27, 91, 70},
 	KeyDelete:     []rune{27, 91, 51, 126},
@@ -75,7 +80,29 @@ var specialKeys = map[int][]rune{
 	KeyF9:         []rune{27, 91, 50, 48, 126},
 	KeyIns:        []rune{27, 91, 50, 126},
 }
+*/
 
+var specialKeys = map[int][]byte{
+	KeyArrowUp:    []byte{91, 65}, //\x1b[A
+	KeyArrowDown:  []byte{91, 66}, //\x1b[B
+	KeyArrowLeft:  []byte{91, 68},
+	KeyArrowRight: []byte{91, 67},
+	KeyPageUp:     []byte{91, 53, 126}, //126 = ~; 91 = [; 53 = 5 /x1b[5~
+	KeyPageDown:   []byte{91, 54, 126}, // \x1b[6~
+	KeyHome:       []byte{91, 72},
+	KeyEnd:        []byte{91, 70},
+	KeyDelete:     []byte{91, 51, 126},
+	KeyF1:         []byte{79, 80},
+	KeyF2:         []byte{79, 81},
+	KeyF3:         []byte{79, 82},
+	KeyF4:         []byte{79, 83},
+	KeyF5:         []byte{91, 49, 53, 126},
+	KeyF6:         []byte{91, 49, 55, 126},
+	KeyF7:         []byte{91, 49, 56, 126},
+	KeyF8:         []byte{91, 49, 57, 126},
+	KeyF9:         []byte{91, 50, 48, 126},
+	KeyIns:        []byte{91, 50, 126},
+}
 // ErrNoInput indicates that there is no input when reading from keyboard
 // in raw mode. This happens when timeout is set to a low number
 var ErrNoInput = fmt.Errorf("no input")
@@ -94,6 +121,8 @@ var bufr = bufio.NewReader(os.Stdin)
 // timeout mode and no key is pressed, then ErrNoInput will be returned
 func ReadKey() (Key, error) {
 
+  //slz: not clear to me when bufr.ReadRune(0 returns error
+  // since it appears to return something even when invalid
 	r, n, err := bufr.ReadRune()
 	if err != nil {
 		return Key{}, err
@@ -105,6 +134,7 @@ func ReadKey() (Key, error) {
 		return Key{}, ErrNoInput
 	}
 
+  //ascii escape is decimal 27
 	if r != 27 {
 		return Key{r, KeyNoSpl}, nil
 	}
@@ -114,9 +144,29 @@ func ReadKey() (Key, error) {
 		return Key{27, KeyNoSpl}, nil
 	}
 
+  // this could just be stack := rune{}
+  /*
 	stack := []rune{27}
 	for j := 0; j < 6; j++ {
-		r, _, err := bufr.ReadRune()
+		r, _, err := bufr.ReadRune() // could these just be bufr.Readbyte
+		if err != nil {
+			return Key{}, err
+		}
+		stack = append(stack, r)
+
+		if match, key := matchSplKeys(stack); match {
+			return Key{0, key}, nil
+		}
+	}
+	// we couldn't make out the special key, let's just return escape
+	// this is probably wrong but unless we have a custom bufio.Reader,
+	// we can't do better
+	return Key{27, KeyNoSpl}, nil
+  */
+
+	stack := []byte{}
+	for j := 0; j < 5; j++ {
+		r, err := bufr.ReadByte() // could these just be bufr.Readbyte
 		if err != nil {
 			return Key{}, err
 		}
