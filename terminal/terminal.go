@@ -33,75 +33,26 @@ const (
 	KeyIns
 )
 
-// matchSplKeys will try to match an input rune sequence
-// to special keys and returns the number of special key
-// combinations that are matched to the input sequence
-
-// this could be a map looking like []rune or just []bytes
-//func matchSplKeys(input []rune) (bool, int) {
-func matchSplKeys(input []byte) (bool, int) {
-
-outerLoop:
-	for k, v := range specialKeys {
-		if len(v) != len(input) {
-			continue outerLoop
-		}
-
-		for j, r := range input {
-			if r != v[j] {
-				continue outerLoop
-			}
-		}
-		return true, k
-	}
-	return false, 0
-}
-
-// could do below with the 0th 27 (escape) character
-/*
-var specialKeys = map[int][]rune{
-	KeyArrowUp:    []rune{27, 91, 65}, //\x1b[A
-	KeyArrowDown:  []rune{27, 91, 66}, //\x1b[B
-	KeyArrowLeft:  []rune{27, 91, 68},
-	KeyArrowRight: []rune{27, 91, 67},
-	KeyPageUp:     []rune{27, 91, 53, 126}, //126 = ~; 91 = [; 53 = 5 /x1b[5~
-	KeyPageDown:   []rune{27, 91, 54, 126}, // \x1b[6~
-	KeyHome:       []rune{27, 91, 72},
-	KeyEnd:        []rune{27, 91, 70},
-	KeyDelete:     []rune{27, 91, 51, 126},
-	KeyF1:         []rune{27, 79, 80},
-	KeyF2:         []rune{27, 79, 81},
-	KeyF3:         []rune{27, 79, 82},
-	KeyF4:         []rune{27, 79, 83},
-	KeyF5:         []rune{27, 91, 49, 53, 126},
-	KeyF6:         []rune{27, 91, 49, 55, 126},
-	KeyF7:         []rune{27, 91, 49, 56, 126},
-	KeyF8:         []rune{27, 91, 49, 57, 126},
-	KeyF9:         []rune{27, 91, 50, 48, 126},
-	KeyIns:        []rune{27, 91, 50, 126},
-}
-*/
-
-var specialKeys = map[int][]byte{
-	KeyArrowUp:    []byte{91, 65}, //\x1b[A
-	KeyArrowDown:  []byte{91, 66}, //\x1b[B
-	KeyArrowLeft:  []byte{91, 68},
-	KeyArrowRight: []byte{91, 67},
-	KeyPageUp:     []byte{91, 53, 126}, //126 = ~; 91 = [; 53 = 5 /x1b[5~
-	KeyPageDown:   []byte{91, 54, 126}, // \x1b[6~
-	KeyHome:       []byte{91, 72},
-	KeyEnd:        []byte{91, 70},
-	KeyDelete:     []byte{91, 51, 126},
-	KeyF1:         []byte{79, 80},
-	KeyF2:         []byte{79, 81},
-	KeyF3:         []byte{79, 82},
-	KeyF4:         []byte{79, 83},
-	KeyF5:         []byte{91, 49, 53, 126},
-	KeyF6:         []byte{91, 49, 55, 126},
-	KeyF7:         []byte{91, 49, 56, 126},
-	KeyF8:         []byte{91, 49, 57, 126},
-	KeyF9:         []byte{91, 50, 48, 126},
-	KeyIns:        []byte{91, 50, 126},
+var specialKeys = map[[4]byte]int{
+  [4]byte{91, 65, 0, 0}    : KeyArrowUp,  //\x1b[A
+  [4]byte{91, 66, 0, 0}    : KeyArrowDown, //\x1b[B
+  [4]byte{91, 68, 0, 0}	   : KeyArrowLeft,
+  [4]byte{91, 67, 0, 0}    : KeyArrowRight,
+  [4]byte{91, 53, 126, 0}  : KeyPageUp, //126 = ~; 91 = [; 53 = 5 /x1b[5~
+  [4]byte{91, 54, 126, 0}  : KeyPageDown, // \x1b[6~
+  [4]byte{91, 72, 0, 0}    : KeyHome,
+  [4]byte{91, 70, 0, 0}    : KeyEnd,
+  [4]byte{91, 51, 126}     : KeyDelete,
+  [4]byte{79, 80, 0, 0}    : KeyF1,
+  [4]byte{79, 81, 0, 0}    : KeyF2,
+  [4]byte{79, 82, 0, 0}    : KeyF3,
+  [4]byte{79, 83, 0, 0}    : KeyF4,
+  [4]byte{91, 49, 53, 126} : KeyF5,
+  [4]byte{91, 49, 55, 126} : KeyF6,
+  [4]byte{91, 49, 56, 126} : KeyF7,
+  [4]byte{91, 49, 57, 126} : KeyF8,
+  [4]byte{91, 50, 48, 126} : KeyF9,
+  [4]byte{91, 50, 126, 0}  : KeyIns,
 }
 // ErrNoInput indicates that there is no input when reading from keyboard
 // in raw mode. This happens when timeout is set to a low number
@@ -144,35 +95,17 @@ func ReadKey() (Key, error) {
 		return Key{27, KeyNoSpl}, nil
 	}
 
-  // this could just be stack := rune{}
-  /*
-	stack := []rune{27}
-	for j := 0; j < 6; j++ {
-		r, _, err := bufr.ReadRune() // could these just be bufr.Readbyte
+	stack := [4]byte{}
+	for j := 0; j < 4; j++ {
+		b, err := bufr.ReadByte() // could these just be bufr.Readbyte
 		if err != nil {
 			return Key{}, err
 		}
-		stack = append(stack, r)
+		//stack = append(stack, r)
+		stack[j] = b
 
-		if match, key := matchSplKeys(stack); match {
-			return Key{0, key}, nil
-		}
-	}
-	// we couldn't make out the special key, let's just return escape
-	// this is probably wrong but unless we have a custom bufio.Reader,
-	// we can't do better
-	return Key{27, KeyNoSpl}, nil
-  */
-
-	stack := []byte{}
-	for j := 0; j < 5; j++ {
-		r, err := bufr.ReadByte() // could these just be bufr.Readbyte
-		if err != nil {
-			return Key{}, err
-		}
-		stack = append(stack, r)
-
-		if match, key := matchSplKeys(stack); match {
+		//if match, key := matchSplKeys(stack); match {
+		if key, found := specialKeys[stack]; found {
 			return Key{0, key}, nil
 		}
 	}
