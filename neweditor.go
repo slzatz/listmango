@@ -6,24 +6,69 @@ import (
 	"github.com/slzatz/listmango/runes"
 )
 
-type eMode int
-
 const (
-	insert eMode = iota
+	insert int = iota
 	normal
 	comandLine
 )
 
+const (
+	changeRow int = iota
+	replaceNote
+	addRows
+	deleteRows
+)
+
 type editor struct {
-	mode eMode
-	rows []Erow
+	mode             int
+	rows             [][]rune
+	cx, cy           int // Cx and Cy represent current cursor position
+	fc, fr           int
+	fcPrev, frPrev   int
+	lineOffset       int //row the user is currently scrolled to
+	prevLineOffset   int
+	colOff           int //column user is currently scrolled to
+	screenLines      int //number of lines for this Editor
+	screenCols       int //number of columns for this Editor
+	leftMargin       int //can vary (so could TOP_MARGIN - will do that later
+	leftMarginOffset int // 0 if no line numbers
+	topMargin        int
+	code             string
+	dirty            bool
+	commandLine      string //for commands on the command line; string doesn't include ':'
+	command          string // right now includes normal mode commands and command line commands
+	lastCommand      string
+	repeat           int
+	repeatPrev       int
+	insertedText     []rune //what is typed between going into insert and leaving insert
+	indent           int
+	smartIndent      int
+	firstVisibleRow  int
+	lastVisibleRow   int
+	spellcheck       bool
+	highlightSyntax  bool
+	redraw           bool
+}
+
+type undoDiff struct {
+	fc, fr       int
+	repeat       int
+	command      string // right now includes normal mode commands and command line commands
+	rows         [][]rune
+	numRows      int //the row where insert occurs counts 1 and then any rows added with returns
+	insertedText []rune
+	undoMethod   int
+	//std::string deleted_text; //deleted chars - being recorded by not used right now or perhaps ever!
+	//std::vector<std::pair<char, int>> diff; //c = changed; d = deleted; a = added
+	//std::vector<std::pair<int, std::string>> changed_rows;
+	//int undo_method; //CHANGE_ROW< REPLACE_NOTE< ADD_ROWS, DELETE_ROWS
+	//int mode;
 }
 
 // ERow represents a line of text in a file
-type ERow []rune
 
 // Text expands tabs in an eRow to spaces
-func (row ERow) Text() ERow {
+func (row []rune) Text() []rune {
 	dest := []rune{}
 	for _, r := range row {
 		switch r {
@@ -37,7 +82,7 @@ func (row ERow) Text() ERow {
 }
 
 // CxToRx transforms cursor positions to account for tab stops
-func (row ERow) CxToRx(cx int) int {
+func (row []rune) CxToRx(cx int) int {
 	rx := 0
 	for j := 0; j < cx; j++ {
 		if row[j] == '\t' {
@@ -48,35 +93,16 @@ func (row ERow) CxToRx(cx int) int {
 	return rx
 }
 
-// Editor represents the data in the being edited in memory
-type Editor struct {
-	Cx, Cy           int // Cx and Cy represent current cursor position
-	Fc, Fr           int
-	PrevFc, PrevFr   int
-	Cursor           Point
-	Rows             []ERow // Rows represent the textual data
-	Dirty            bool   // has the file been edited
-	FileName         string // the path to the file being edited. Could be empty string
-	LineOffset       int
-	ScreenLines      int
-	LeftMargin       int
-	LeftMarginOffset int
-	TopMargin        int
-	Mode             int
-	Redraw           bool
-}
-
 // NewEditor returns a new blank editor
-func NewEditor() *Editor {
-	return &Editor{
-		FileName: "",
-		Dirty:    false,
-		Cursor:   Point{0, 0},
-		Cx:       0,
-		Cy:       0,
-		Fc:       0,
-		Fr:       0,
-		Rows:     []ERow{},
+func newEditor() *editor {
+	return &editor{
+		dirty: false,
+		//Cursor: Point{0, 0},
+		cx:   0,
+		cy:   0,
+		fc:   0,
+		fr:   0,
+		rows: [][]rune{},
 	}
 }
 
