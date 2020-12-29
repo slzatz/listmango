@@ -4,20 +4,9 @@ import (
 	"fmt"
 )
 
-type oMode int
-
-const (
-	insert oMode = iota
-	normal
-	commandLine
-)
-
-type organizer struct {
-	mode oMode
-	rows entry
-}
-
-func (*organizer) drawPreview() {
+type org struct {
+	mode int
+	rows []entry
 }
 
 type entry struct {
@@ -32,3 +21,7 @@ type entry struct {
 	rowoff   int
 	coloff   int
 }
+
+func (*org) drawPreview() {
+}
+

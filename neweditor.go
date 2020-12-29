@@ -6,19 +6,6 @@ import (
 	"github.com/slzatz/listmango/runes"
 )
 
-const (
-	insert int = iota
-	normal
-	comandLine
-)
-
-const (
-	changeRow int = iota
-	replaceNote
-	addRows
-	deleteRows
-)
-
 type editor struct {
 	mode             int
 	rows             [][]rune
@@ -50,6 +37,13 @@ type editor struct {
 	redraw           bool
 }
 
+// Diff for undo
+const (
+	changeRow int = iota
+	replaceNote
+	addRows
+	deleteRows
+)
 type undoDiff struct {
 	fc, fr       int
 	repeat       int

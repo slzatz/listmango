@@ -14,6 +14,12 @@ func ctrlKey(b byte) rune {
 	return rune(b & 0x1f)
 }
 
+// used by both editor and organizer
+const (
+	insert int = iota
+	normal
+	comandLine
+)
 /*
 type editorState int
 
@@ -46,6 +52,7 @@ func SafeExit(err error) {
 type Session struct {
 	editorMode  bool
 	editors     []editor
+  editorIndex int
 	screenLines int
 	screenCols  int
 	divider     int
@@ -80,7 +87,6 @@ func main_() {
 	s.screenCols = cols
 
 	s.setStatusMessage(startMsg)
-	s.State = stateEditing
 
 	for {
 		//s.View.RefreshScreen(s.Editor, s.StatusMessage, s.Prompt)
@@ -93,9 +99,9 @@ func main_() {
 
 		//s.Dispatch(k)
 		if s.editorMode {
-			editorProcessKey(&e)
+			editorProcessKey(k)
 		} else {
-			organizerProcessKey(&o)
+			organizerProcessKey(k)
 		}
 
 		// if it's been 5 secs since the last status message, reset
@@ -106,15 +112,6 @@ func main_() {
 	}
 }
 
-func editorProcessKey(e *editor) {
-	switch e.mode {
-
-	case insert:
-	case normal:
-	case commandLine:
-
-	}
-}
 
 func organizerProcessKey(o *organizer) {
 	switch o.mode {
