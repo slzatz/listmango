@@ -11,28 +11,9 @@ import (
 )
 
 func ctrlKey(b byte) rune {
-	return rune(b & 0x1f)
+  return rune(b & 0x1f)
 }
 
-// used by both editor and organizer
-const (
-	insert int = iota
-	normal
-	comandLine
-)
-/*
-type editorState int
-
-const (
-	stateEditing editorState = iota
-	stateSavePrompt
-	stateQuitPrompt
-	stateFindPrompt
-	stateFindNav
-)
-
-const kiloVersion = "0.0.2"
-*/
 // SafeExit restores terminal using the original terminal config stored
 // in the global session variable
 func SafeExit(err error) {
@@ -49,24 +30,13 @@ func SafeExit(err error) {
 	os.Exit(0)
 }
 
-type Session struct {
-	editorMode  bool
-	editors     []editor
-  editorIndex int
-	screenLines int
-	screenCols  int
-	divider     int
-	margins     int
-	needSync    bool
-}
-
 var s = Session{}
 
 func main_() {
 
 	// parse config flags & parameters
-	//flag.Parse()
-	//filename := flag.Arg(0)
+	flag.Parse()
+	filename := flag.Arg(0)
 
 	// enable raw mode
 	origCfg, err := rawmode.Enable()
@@ -79,14 +49,12 @@ func main_() {
 	s.editorMode = false
 
 	// get the screen dimensions and create a view
-	rows, cols, err := rawmode.GetWindowSize()
+	s.screenLines, s.screenCols, err := rawmode.GetWindowSize()
 	if err != nil {
 		SafeExit(fmt.Errorf("couldn't get window size: %v", err))
 	}
-	s.screenLines = rows
-	s.screenCols = cols
 
-	s.setStatusMessage(startMsg)
+	s.setStatusMessage("hello")
 
 	for {
 		//s.View.RefreshScreen(s.Editor, s.StatusMessage, s.Prompt)
@@ -97,7 +65,6 @@ func main_() {
 			SafeExit(fmt.Errorf("Error reading from terminal: %s", err))
 		}
 
-		//s.Dispatch(k)
 		if s.editorMode {
 			editorProcessKey(k)
 		} else {
@@ -108,12 +75,19 @@ func main_() {
 		if time.Now().Sub(s.StatusMessageTime) > time.Second*5 && s.State == stateEditing {
 			s.setStatusMessage("")
 		}
-
 	}
 }
 
+func organizerProcessKey(o *Organizer) {
+	switch o.mode {
 
-func organizerProcessKey(o *organizer) {
+	case insert:
+	case normal:
+	case commandLine:
+
+	}
+
+func editorProcessKey(o *Editor) {
 	switch o.mode {
 
 	case insert:
