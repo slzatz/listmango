@@ -1,5 +1,6 @@
 package main
 
+/*
 struct orow {  //Entry
   std::string title;
   std::string fts_title;
@@ -14,52 +15,70 @@ struct orow {  //Entry
   bool dirty;
   bool mark;
 };
+*/
+
+type Entry struct {
+	id        int
+	title     string
+	fts_title string
+	star      bool
+	deleted   bool
+	completed string
+	modified  string
+
+	// below not in db
+	dirty  bool
+	marked bool
+}
 
 type outlineKey int
+
 const (
-  BACKSPACE = iota + 127
-  ARROW_LEFT = iota + 999 //would have to be < 127 to be chars
-  ARROW_RIGHT
-  ARROW_UP
-  ARROW_DOWN
-  DEL_KEY
-  HOME_KEY
-  END_KEY
-  PAGE_UP
-  PAGE_DOWN
-  SHIFT_TAB
+	BACKSPACE  = iota + 127
+	ARROW_LEFT = iota + 999 //would have to be < 127 to be chars
+	ARROW_RIGHT
+	ARROW_UP
+	ARROW_DOWN
+	DEL_KEY
+	HOME_KEY
+	END_KEY
+	PAGE_UP
+	PAGE_DOWN
+	SHIFT_TAB
 )
 
 type Mode int
-const {
-  NORMAL = iota
-  INSERT
-  COMMAND_LINE
-  VISUAL_LINE // only editor mode
-  VISUAL,
-  REPLACE
-  FILE_DISPLAY // only outline mode
-  NO_ROWS
-  VISUAL_BLOCK // only editor mode
-  SEARCH // only editor mode
-  FIND // only outline mode
-  ADD_CHANGE_FILTER // only outline mode 
-}
+
+const (
+	NORMAL = iota
+	INSERT
+	COMMAND_LINE
+	VISUAL_LINE // only editor mode
+	VISUAL,
+	REPLACE
+	FILE_DISPLAY // only outline mode
+	NO_ROWS
+	VISUAL_BLOCK      // only editor mode
+	SEARCH            // only editor mode
+	FIND              // only outline mode
+	ADD_CHANGE_FILTER // only outline mode
+)
 
 var mode_text [12]string = [12]string{
-                        "NORMAL",
-                        "INSERT",
-                        "COMMAND LINE",
-                        "VISUAL LINE",
-                        "VISUAL",
-                        "REPLACE",
-                        "FILE DISPLAY",
-                        "NO ROWS",
-                        "VISUAL BLOCK",
-                        "SEARCH",
-                        "FIND",
-                        "ADD/CHANGE FILTER"
-                       }
+	"NORMAL",
+	"INSERT",
+	"COMMAND LINE",
+	"VISUAL LINE",
+	"VISUAL",
+	"REPLACE",
+	"FILE DISPLAY",
+	"NO ROWS",
+	"VISUAL BLOCK",
+	"SEARCH",
+	"FIND",
+	"ADD/CHANGE FILTER",
+}
+
 /*
 enum DB {
   SQLITE,
@@ -68,47 +87,35 @@ enum DB {
 */
 
 type View int
-const {
-  TASK = iota
-  CONTEXT
-  FOLDER
-  KEYWORD
-}
+
+const (
+	TASK = iota
+	CONTEXT
+	FOLDER
+	KEYWORD
+)
 
 type TaskView int
-const {
-  BY_CONTEXT = iota
-  BY_FOLDER
-  BY_KEYWORD
-  BY_JOIN
-  BY_RECENT
-  BY_FIND
-}
 
-type Container struct{
-  id int
-  tid int
-  title string
-  star bool
-  created string
-  deleted bool
-  modified string
-  count int
-}
+const (
+	BY_CONTEXT = iota
+	BY_FOLDER
+	BY_KEYWORD
+	BY_JOIN
+	BY_RECENT
+	BY_FIND
+)
 
-struct Entry {
-  int id;
-  int tid;
-  std::string title;
-  std::string created;
-  int folder_tid;
-  int context_tid;
-  bool star;
-  std::string added;
-  std::string completed;
-  bool deleted;
-  std::string modified;
-};
+type Container struct {
+	id       int
+	tid      int
+	title    string
+	star     bool
+	created  string
+	deleted  bool
+	modified string
+	count    int
+}
 
 /*
 struct Lsp {
@@ -161,7 +168,7 @@ store the tid in orow row
 8: image, largebinary
 9: modified in use
 */
-  /* Folder
+/* Folder
 0: id => int
 1: tid => int
 2: title = string 32
@@ -182,5 +189,4 @@ store the tid in orow row
 3: star = Boolean
 4: modified
 5: deleted
-  */
-#endif
+*/
