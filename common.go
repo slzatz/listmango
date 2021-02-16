@@ -31,7 +31,7 @@ type Entry struct {
 	marked bool
 }
 
-type outlineKey int
+//type outlineKey int
 
 const (
 	BACKSPACE  = iota + 127
@@ -50,11 +50,11 @@ const (
 type Mode int
 
 const (
-	NORMAL = iota
+	NORMAL Mode = iota
 	INSERT
 	COMMAND_LINE
 	VISUAL_LINE // only editor mode
-	VISUAL,
+	VISUAL
 	REPLACE
 	FILE_DISPLAY // only outline mode
 	NO_ROWS
@@ -79,6 +79,24 @@ var mode_text [12]string = [12]string{
 	"ADD/CHANGE FILTER",
 }
 
+func (m Mode) String() string {
+  return [...]string{
+                   	"NORMAL",
+                   	"INSERT",
+                   	"COMMAND LINE",
+                   	"VISUAL LINE",
+                   	"VISUAL",
+                   	"REPLACE",
+                   	"FILE DISPLAY",
+                   	"NO ROWS",
+                   	"VISUAL BLOCK",
+                   	"SEARCH",
+                   	"FIND",
+                   	"ADD/CHANGE FILTER",
+                  }[m]
+}
+//var m Mode = NORMAL
+//fmt.Print(m)
 /*
 enum DB {
   SQLITE,
@@ -86,7 +104,7 @@ enum DB {
 };
 */
 
-type View int
+//type View int
 
 const (
 	TASK = iota
@@ -95,7 +113,7 @@ const (
 	KEYWORD
 )
 
-type TaskView int
+//type TaskView int
 
 const (
 	BY_CONTEXT = iota

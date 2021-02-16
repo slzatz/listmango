@@ -1,13 +1,5 @@
 package main
 
-import (
-	"fmt"
-
-	"github.com/slzatz/listmango/runes"
-)
-
-type eMode int
-
 const SMARTINDENT = 4; //should be in config
 
 type Editor struct {
@@ -70,8 +62,8 @@ func NewEditor() *Editor {
       prev_line_offset: 0,  //the prev number of lines of text at the top scrolled off the screen
       //E.coloff: 0,  //always zero because currently only word wrap supported
       dirty: 0, //has filed changed since last save
-      message[0]: '\0', //very bottom of screen, ex. -- INSERT --
-      highlight = [2]{-1,-1},
+      message: "", //very bottom of screen, ex. -- INSERT --
+      highlight: [2]int{-1,-1},
       mode: 0, //0=normal, 1=insert, 2=command line, 3=visual line, 4=visual, 5='r' 
       command: "",
       command_line: "",
@@ -99,7 +91,7 @@ func NewEditor() *Editor {
 }
 
 // cmd1_map = make(map[string]func(*Editor, int),4)
-cmd_map1 := map[string]func(*Editor, int){
+var cmd_map1 = map[string]func(*Editor, int){
                    "i":(*Editor).E_i,
                    "I":(*Editor).E_a,
                    "a":(*Editor).E_a,
@@ -107,50 +99,36 @@ cmd_map1 := map[string]func(*Editor, int){
                  }
 // to call it's cmd1_map["i"](e, repeat)
 
-cmd_map2 := map[string]func(*Editor, int){
+var cmd_map2 = map[string]func(*Editor, int){
                    "o":(*Editor).E_o_escape,
                    "O":(*Editor).E_O_escape,
                  }
 
-cmd_map3 := map[string]func(*Editor, int){
+var cmd_map3 = map[string]func(*Editor, int){
                    "x":(*Editor).E_x,
                    "dw":(*Editor).E_dw,
                    "daw":(*Editor).E_daw,
                    "dd":(*Editor).E_dd,
-                   "d$":(*Editor).E_d$,
+                   "d$":(*Editor).E_deol,
                    "de":(*Editor).E_de,
                    "dG":(*Editor).E_dG,
                  }
 
-cmd_map4 := map[string]func(*Editor, int){
+var cmd_map4 = map[string]func(*Editor, int){
                    "cw":(*Editor).E_cw,
                    "caw":(*Editor).E_caw,
                    "s":(*Editor).E_s,
                    "A":(*Editor).E_A,
                  }
 
-    void setLinesMargins(void);
-    bool find_match_for_left_brace(char, bool back=false);
-    std::pair<int,int> move_to_right_brace(char);
-    bool find_match_for_right_brace(char, bool back=false);
-    std::pair<int,int> move_to_left_brace(char);
-    void draw_highlighted_braces(void);
-    //void position_editors(void); in session struct
-    
+type pair1 struct{
+  char byte
+  num int
+}
 
-
-
-
-
-
-
-
-
-
-
-
-	mode eMode
-	rows []Erow
+type pair2 struct{
+  num int
+  str string
 }
 
 type Diff struct {
@@ -162,46 +140,16 @@ type Diff struct {
   num_rows int//the row where insert occurs counts 1 and then any rows added with returns
   inserted_text string
   deleted_text string //deleted chars - being recorded by not used right now or perhaps ever!
-  diff []struct{byte, int}
-  changed_rows []struct{int, string}
+  diff pair
+  changed_rows pair2
   undo_method int//CHANGE_ROW< REPLACE_NOTE< ADD_ROWS, DELETE_ROWS
   mode int
 };
 
 // ERow represents a line of text in a file
-type ERow []rune
+//type ERow []rune
 
-// cmd1_map = make(map[string]func(*Editor, int),4)
-cmd1_map1 := map[string]func(*Editor, int){
-                   "i":(*Editor).E_i,
-                   "I":(*Editor).E_a,
-                   "a":(*Editor).E_a,
-                   "A":(*Editor).E_A,
-                 }
-// to call it's cmd1_map["i"](e, repeat)
-
-cmd1_map2 := map[string]func(*Editor, int){
-                   "o":(*Editor).E_o_escape,
-                   "O":(*Editor).E_O_escape,
-                 }
-
-cmd1_map3 := map[string]func(*Editor, int){
-                   "x":(*Editor).E_x,
-                   "dw":(*Editor).E_dw,
-                   "daw":(*Editor).E_daw,
-                   "dd":(*Editor).E_dd,
-                   "d$":(*Editor).E_d$,
-                   "de":(*Editor).E_de,
-                   "dG":(*Editor).E_dG,
-                 }
-
-cmd1_map4 := map[string]func(*Editor, int){
-                   "cw":(*Editor).E_cw,
-                   "caw":(*Editor).E_caw,
-                   "s":(*Editor).E_s,
-                   "A":(*Editor).E_A,
-                 }
-
+ /*
 // Text expands tabs in an eRow to spaces
 func (row ERow) Text() ERow {
 	dest := []rune{}
@@ -215,7 +163,6 @@ func (row ERow) Text() ERow {
 	}
 	return dest
 }
-
 // CxToRx transforms cursor positions to account for tab stops
 func (row ERow) CxToRx(cx int) int {
 	rx := 0
@@ -227,56 +174,5 @@ func (row ERow) CxToRx(cx int) int {
 	}
 	return rx
 }
-
+*/
 // Editor represents the data in the being edited in memory
-type Editor struct {
-	Cx, Cy           int // Cx and Cy represent current cursor position
-	Fc, Fr           int
-	PrevFc, PrevFr   int
-	Cursor           Point
-	Rows             []ERow // Rows represent the textual data
-	Dirty            bool   // has the file been edited
-	FileName         string // the path to the file being edited. Could be empty string
-	LineOffset       int
-	ScreenLines      int
-	LeftMargin       int
-	LeftMarginOffset int
-	TopMargin        int
-	Mode             int
-	Redraw           bool
-}
-
-// NewEditor returns a new blank editor
-func NewEditor() *Editor {
-	return &Editor{
-		FileName: "",
-		Dirty:    false,
-		Cursor:   Point{0, 0},
-		Cx:       0,
-		Cy:       0,
-		Fc:       0,
-		Fr:       0,
-		Rows:     []ERow{},
-	}
-}
-
-// NewEditorFromFile creates an editor from a file system file
-func NewEditorFromFile(filename string) (*Editor, error) {
-
-	rows := []ERow{}
-
-	if filename != "" {
-		var err error
-		if rows, err = Open(filename); err != nil {
-			return nil, fmt.Errorf("Error opening file %s: %v", filename, err)
-		}
-	}
-
-	return &Editor{
-		FileName: filename,
-		Dirty:    false,
-		Cursor:   Point{0, 0},
-		Rows:     rows,
-	}, nil
-}
-

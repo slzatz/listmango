@@ -13,8 +13,9 @@ import (
 func ctrlKey(b byte) rune {
   return rune(b & 0x1f)
 }
-z0 := struct{}{}
-navigation := map[int]struct{} {
+
+var z0 = struct{}{}
+var navigation = map[int]struct{} {
                    ARROW_UP:z0,
                    ARROW_DOWN:z0,
                    ARROW_LEFT:z0,
@@ -25,22 +26,12 @@ navigation := map[int]struct{} {
                   'l':z0,
                   }
 
- //type Editor struct{ ...}
-// cmd1_map = make(map[string]func(*Editor, int),4)
-cmd1_map := map[string]func(*Editor, int){
-                   "i":(*Editor).E_i,
-                   "I":(*Editor).E_a,
-                   "a":(*Editor).E_a,
-                   "A":(*Editor).E_A,
-                 }
-// to call it's cmd1_map["i"](e, repeat)
-
 // SafeExit restores terminal using the original terminal config stored
 // in the global session variable
 func SafeExit(err error) {
 	fmt.Fprint(os.Stdout, "\x1b[2J\x1b[H")
 
-	if err1 := rawmode.Restore(s.OrigTermCfg); err1 != nil {
+	if err1 := rawmode.Restore(sess.OrigTermCfg); err1 != nil {
 		fmt.Fprintf(os.Stderr, "Error: disabling raw mode: %s\r\n", err)
 	}
 
@@ -51,9 +42,9 @@ func SafeExit(err error) {
 	os.Exit(0)
 }
 
-var s = Session{}
+var sess Session
 
-func main_() {
+func main() {
 
 	// parse config flags & parameters
 	flag.Parse()
@@ -65,20 +56,20 @@ func main_() {
 		fmt.Fprintf(os.Stderr, "Error enabling raw mode: %v", err)
 		os.Exit(1)
 	}
-	s.OrigTermCfg = origCfg
+	sess.OrigTermCfg = origCfg
 
-	s.editorMode = false
+	sess.editorMode = false
 
 	// get the screen dimensions and create a view
-	s.screenLines, s.screenCols, err := rawmode.GetWindowSize()
+	sess.screenLines, sess.screenCols, err = rawmode.GetWindowSize()
 	if err != nil {
 		SafeExit(fmt.Errorf("couldn't get window size: %v", err))
 	}
 
-	s.setStatusMessage("hello")
+	sess.setStatusMessage("hello")
 
 	for {
-		//s.View.RefreshScreen(s.Editor, s.StatusMessage, s.Prompt)
+		//sess.View.RefreshScreen(sess.Editor, sess.StatusMessage, sess.Prompt)
 
 		// read key
 		k, err := terminal.ReadKey()
@@ -86,15 +77,15 @@ func main_() {
 			SafeExit(fmt.Errorf("Error reading from terminal: %s", err))
 		}
 
-		if s.editorMode {
+		if sess.editorMode {
 			editorProcessKey(k)
 		} else {
 			organizerProcessKey(k)
 		}
 
 		// if it's been 5 secs since the last status message, reset
-		if time.Now().Sub(s.StatusMessageTime) > time.Second*5 && s.State == stateEditing {
-			s.setStatusMessage("")
+		if time.Now().Sub(sess.StatusMessageTime) > time.Second*5 && sess.State == stateEditing {
+			sess.setStatusMessage("")
 		}
 	}
 }
@@ -138,7 +129,6 @@ func organizerProcessKey(c int) {
           org.insertChar(c)
           return
         }
-      }
 
   	case NORMAL:
       if c == '\x1b' {
@@ -154,7 +144,7 @@ func organizerProcessKey(c int) {
       /*leading digit is a multiplier*/
       //if (isdigit(c))  //equiv to if (c > 47 && c < 58)
 
-      if ((c > 47 && c < 58) && len(org.command) == 0)) {
+      if ((c > 47 && c < 58) && len(org.command) == 0) {
 
         if (org.repeat == 0 && c == 48) {
 
@@ -173,7 +163,7 @@ func organizerProcessKey(c int) {
 
       org.command += string(c)
 
-      if cmd, found := n_lookup[org.command] found {
+      if cmd, found := n_lookup[org.command]; found {
         cmd()
         org.command = ""
         org.repeat = 0
@@ -185,7 +175,7 @@ func organizerProcessKey(c int) {
 
       // needs to be here because needs to pick up repeat
       //Arrows + h,j,k,l
-      if _, found := navigation[c] {
+      if _, found := navigation[c]; found {
         for j := 0; j < org.repeat; j++ {
           org.moveCursor(c)
         }
@@ -230,7 +220,8 @@ func organizerProcessKey(c int) {
       sess.showOrgMessage(":%s", org.command_line.c_str())
       return //end of case COMMAND_LINE
 
-	}
+  } // end switch o.mode
+} // end func organizerProcessKey(c int)
 
 func editorProcessKey(c int) bool {
 
@@ -266,13 +257,13 @@ func editorProcessKey(c int) bool {
     case INSERT:
       switch c {
 
-        case '\r':
+      case '\r':
           sess.p.editorInsertReturn()
           sess.p.last_typed += c
           return true
 
         // not sure this is in use
-        case ctrlKey('s')
+      case ctrlKey('s'):
           sess.p.editorSaveNoteToFile("lm_temp")
           return false
 
@@ -293,7 +284,10 @@ func editorProcessKey(c int) bool {
           //A common case would be to enter insert mode  and then just start backspacing
           //because then dotting would actually delete characters
           //I could record a \b and then handle similar to handling \r
-          if (!sess.p.last_typed.empty()) sess.p.last_typed.pop_back()
+          length := len(sess.p.last_typed)
+          if length > 0 {
+            sess.p.last_typed[:length-1]
+          }
           return true
     
         case DEL_KEY:
@@ -313,8 +307,12 @@ func editorProcessKey(c int) bool {
     
         // this should be a command line command
         case ctrlKey('z'):
-          sess.p.smartindent = (sess.p.smartindent) ? 0 : SMARTINDENT;
-          sess.p.editorSetMessage("smartindent = %d", sess.p.smartindent) 
+          if sess.p.smartindex != 0 {
+            sess.p.smartindent = 0
+          } else {
+            sess.p.smartindex = SMARTINDENT
+          }
+          sess.p.editorSetMessage("smartindent = %d", sess.p.smartindent)
           return false
     
         case '\x1b':
@@ -325,34 +323,40 @@ func editorProcessKey(c int) bool {
            */
 
           //i,I,a,A - deals with repeat
-          if(cmd_map1.contains(sess.p.last_command)) { 
+          if _, found := cmd_map1[sess.p.last_command]; found {
             sess.p.push_current() //
-            for (int n=0; n<sess.p.last_repeat-1; n++) {
-              for (char const &c : sess.p.last_typed) {sess.p.editorInsertChar(c)}
+            for n := 0; n < sess.p.last_repeat-1; n++ {
+              for pos, char := range sess.p.last_typed {
+                sess.p.editorInsertChar(char)
+              }
             }
           }
 
           //cmd_map2 -> E_o_escape and E_O_escape - here deals with deals with repeat > 1
-          if (cmd_map2.contains(sess.p.last_command)) {
-            (sess.p.*cmd_map2.at(sess.p.last_command))(sess.p.last_repeat - 1)
+          if cmd, found := cmd_map2[sess.p.last_command]; found {
+            cmd(sess.p, sess.p.last_repeat - 1)
             sess.p.push_current()
           }
 
           //cw, caw, s
-          if (cmd_map4.contains(sess.p.last_command)) {
+          if _, found := cmd_map4[sess.p.last_command]; found {
             sess.p.push_current()
           }
           //'I' in VISUAL BLOCK mode
-          if (sess.p.last_command == "VBI") {
-            for (int n=0; n<sess.p.last_repeat-1; n++) {
-              for (char const &c : sess.p.last_typed) {sess.p.editorInsertChar(c)}
+          if sess.p.last_command == "VBI" {
+            for n := 0; n < sess.p.last_repeat-1; n++ {
+              for pos, char := range sess.p.last_typed {
+                sess.p.editorInsertChar(char)
+              }
             }
-            int temp = sess.p.fr
+            temp := sess.p.fr
 
-            for (sess.p.fr=sess.p.fr+1; sess.p.fr<sess.p.vb0[1]+1; sess.p.fr++) {
-              for (int n=0; n<sess.p.last_repeat; n++) { //NOTICE not p.last_repeat - 1
-                sess.p.fc = sess.p.vb0[0] 
-                for (char const &c : sess.p.last_typed) {sess.p.editorInsertChar(c)}
+            for sess.p.fr=sess.p.fr+1; sess.p.fr<sess.p.vb0[1]+1; sess.p.fr++ {
+              for n := 0; n<sess.p.last_repeat; n++ { //NOTICE not p.last_repeat - 1
+                sess.p.fc = sess.p.vb0[0]
+                for pos, char := range sess.p.last_typed {
+                  sess.p.editorInsertChar(char)
+                }
               }
             }
             sess.p.fr = temp
@@ -360,19 +364,25 @@ func editorProcessKey(c int) bool {
           }
 
           //'A' in VISUAL BLOCK mode
-          if (sess.p.last_command == "VBA") {
-            for (int n=0; n<sess.p.last_repeat-1; n++) {
-              for (char const &c : sess.p.last_typed) {sess.p.editorInsertChar(c);}
+          if sess.p.last_command == "VBA" {
+            for n := 0; n < sess.p.last_repeat-1; n++ {
+              for pos, char := range sess.p.last_typed {
+                sess.p.editorInsertChar(char)
+              }
             }
             //{ 12302020
-            int temp = sess.p.fr
+            temp := sess.p.fr
 
-            for (sess.p.fr=sess.p.fr+1; sess.p.fr<sess.p.vb0[1]+1; sess.p.fr++) {
-              for (int n=0; n<sess.p.last_repeat; n++) { //NOTICE not p.last_repeat - 1
-                int size = sess.p.rows.at(sess.p.fr).size()
-                if (sess.p.vb0[2] > size) sess.p.rows.at(sess.p.fr).insert(size, sess.p.vb0[2]-size, ' ')
+            for sess.p.fr=sess.p.fr+1; sess.p.fr<sess.p.vb0[1]+1; sess.p.fr++ {
+              for n := 0; n<sess.p.last_repeat; n++ { //NOTICE not p.last_repeat - 1
+                length := len(sess.p.rows[sess.p.fr])
+                if sess.p.vb0[2] > length {
+                  sess.p.rows[sess.p.fr] + strings.Repeat(" ", sess.p.vb0[2] - length)
+                }
                 sess.p.fc = sess.p.vb0[2]
-                for (char const &c : sess.p.last_typed) {sess.p.editorInsertChar(c)}
+              for pos, char := range sess.p.last_typed {
+                sess.p.editorInsertChar(char)
+              }
               }
             }
             sess.p.fr = temp
@@ -384,30 +394,32 @@ func editorProcessKey(c int) bool {
           sess.p.mode = NORMAL
           sess.p.repeat = 0
 
-          //? redundant - see 10 lines below
-          sess.p.last_typed = std::string() 
 
-          if (sess.p.fc > 0) sess.p.fc--
+          if sess.p.fc > 0 {
+            sess.p.fc--
+          }
 
           // below - if the indent amount == size of line then it's all blanks
           // can hit escape with p.row == NULL or p.row[p.fr].size == 0
-          if (!sess.p.rows.empty() && sess.p.rows[sess.p.fr].size()) {
-            int n = sess.p.editorIndentAmount(sess.p.fr)
-            if (n == sess.p.rows[sess.p.fr].size()) {
+          if len(sess.p.rows) != 0 && len(sess.p.rows[sess.p.fr]) != 0 {
+            n := sess.p.editorIndentAmount(sess.p.fr)
+            if n == len(sess.p.rows[sess.p.fr]) {
               sess.p.fc = 0
-              for (int i = 0; i < n; i++) {
+              for i := 0; i < n; i++ {
                 sess.p.editorDelChar()
               }
             }
           }
           sess.p.editorSetMessage("") // commented out to debug push_current
           //editorSetMessage(p.last_typed.c_str())
-          sess.p.last_typed.clear()//////////// 09182020
+          sess.p.last_typed = "" /////////// 09182020
           return true //end case x1b:
     
         // deal with tab in insert mode - was causing segfault  
         case '\t':
-          for (int i=0; i<4; i++) sess.p.editorInsertChar(' ')
+          for  i := 0; i < 4; i++{
+            sess.p.editorInsertChar(' ')
+          }
           return true  
 
         default:

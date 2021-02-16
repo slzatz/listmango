@@ -7,7 +7,7 @@ import (
   "strings"
 	"encoding/gob"
 	"golang.org/x/sys/unix"
-}
+)
 
 type Session struct {
   screenCols int
@@ -35,7 +35,7 @@ func contains(s []int, x int) bool {
     return false
 }
 
-func (s Session) eraseScreenRedrawLines()
+func (s Session) eraseScreenRedrawLines() {
   fmt.Fprint(os.Stdout, "\x1b[2J") //Erase the screen
   fmt.Fprint(os.Stdout, "\x1b(0") //Enter line drawing mode
   for j := 1; j < s.screenLines + 1; j++ {
@@ -47,7 +47,7 @@ func (s Session) eraseScreenRedrawLines()
   }
 
   fmt.Fprint(os.Stdout, "\x1b[1;1H")
-  for k := 1; k < s.screencols; k++) {
+  for k := 1; k < s.screencols; k++ {
     // cursor advances - same as char write 
     fmt.Fprint(os.Stdout, "\x1b[37;1mq")
   }
@@ -77,7 +77,7 @@ func (s Session) eraseRightScreen() {
 
   //erase the screen
   lf_ret := fmt.Sprintf("\r\n\x1b[%dC", divider)
-  for int i := 0; i < screenLines - topMargin; i++ {
+  for i := 0; i < screenLines - topMargin; i++ {
     ab.WriteString("\x1b[K")
     ab.WriteString(lf_ret)
   }
@@ -87,7 +87,7 @@ func (s Session) eraseRightScreen() {
   // ? if the individual editors draw top lines do we need to just
   // erase but not draw
   ab.WriteString("\x1b(0") // Enter line drawing mode
-  for int j := 1; j < totaleditorcols + 1; j++ { //added +1 0906/2020
+  for j := 1; j < totaleditorcols + 1; j++ { //added +1 0906/2020
     ab.WriteString(fmt.Sprintf("\x1b[%d;%dH", TOP_MARGIN, divider + j))
     // below x = 0x78 vertical line (q = 0x71 is horizontal) 37 = white;
     // 1m = bold (note only need one 'm'
@@ -150,10 +150,15 @@ func (s Session) drawOrgRows() {
       ab.WriteString("\x1b[1;36m");
     }
 
-    if org.rows[frr].completed && org.rows[frr].deleted {ab.WriteString("\x1b[32m")} //green foreground
-    else if org.rows[frr].completed {ab.WriteString("\x1b[33m")} //yellow foreground
+    if org.rows[frr].completed && org.rows[frr].deleted {
+      ab.WriteString("\x1b[32m") //green foreground
+    } else if org.rows[frr].completed {
+      ab.WriteString("\x1b[33m") //yellow foreground
     //else if (row.deleted) ab.append("\x1b[31m", 5); //red foreground
-    else if org.rows[frr].deleted {ab.WriteString(COLOR_1)} //red (specific color depends on theme)
+    } else if org.rows[frr].deleted {
+      ab.WriteString(COLOR_1)
+    } //red (specific color depends on theme)
+
     if frr == org.fr ab.WriteString("\x1b[48;5;236m"); // 236 is a grey
     if org.rows[frr].dirty {ab.WriteString("\x1b[41m")} //red background
     //if (row.mark) ab.append("\x1b[46m", 5); //cyan background

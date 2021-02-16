@@ -328,7 +328,7 @@ func updateNote() {
 		}
 	*/
 
-	numRows, err := res.RowsAffected()
+	numRows, err = res.RowsAffected()
 	if err != nil {
 		log.Fatal(err)
 	}

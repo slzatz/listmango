@@ -17,9 +17,9 @@ type entry struct {
 	coloff   int
 }
 
-type org struct {
+type Organizer struct {
 	mode int
-  lastMode int
+  last_mode int
 
   cx, cy int //cursor x and y position
   fc, fr int// file x and y position
@@ -36,14 +36,14 @@ type org struct {
   normCmd string
   repeat int
 
-  showDeleted bool
-  showCompleted bool
+  show_deleted bool
+  show_completed bool
 
   view int
   taskview int
-  currentTaskID int
-  stringBuffer string
-  ftsTitles map[int]string
+  current_task_id int
+  string_buffer string
+  fts_titles map[int]string
 
   contextMap map[string]int
   folderMap map[string]int
@@ -52,7 +52,7 @@ type org struct {
   ftsIDs []int
   markedEntries []int
 
-  titleSearchString string
+  title_search_string string
 }
 
 func (*org)  outlineScroll() {
