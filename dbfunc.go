@@ -42,6 +42,48 @@ func timeDelta(t string) string {
 	}
 }
 
+func keywordExists(name string) int {
+  row := db.QueryRow("SELECT keyword.id FROM keyword WHERE keyword.name=?;", name)
+  var id int
+  err := row.Scan(&id)
+  if err != nil {
+    return -1
+  }
+  return id
+}
+
+func generateContextMap() {
+	rows, err = db.Query("SELECT tid, title FROM context;")
+	if err != nil {
+		log.Fatal(err)
+	}
+  defer rows.Close()
+
+  for rows.Next() {
+    var tid int
+    var title string
+
+    err = rows.Scan(&tid, &title)
+    org.context_map[title] = tid
+  }
+}
+
+func generateFolderMap() {
+	rows, err = db.Query("SELECT tid, title FROM folder;")
+	if err != nil {
+		log.Fatal(err)
+	}
+  defer rows.Close()
+
+  for rows.Next() {
+    var tid int
+    var title string
+
+    err = rows.Scan(&tid, &title)
+    org.folder_map[title] = tid
+  }
+}
+
 func toggleStar() {
 	//orow& row = org.rows.at(org.fr);
 	id := getId()
@@ -313,22 +355,7 @@ func updateNote() {
 
 	/***************fts virtual table update*********************/
 
-	//stmt2, err := fts_db.Prepare("UPDATE fts SET note=? WHERE lm_id=?;")
-	res2, err := fts_db.Exec("UPDATE fts SET note=? WHERE lm_id=?;", text, sess.p.id)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	//defer stmt2.Close()
-
-	/*
-		res, err := stmt2.Exec(text, sess.p.id)
-		if err != nil {
-			log.Fatal(err)
-		}
-	*/
-
-	numRows, err = res.RowsAffected()
+	_, err = fts_db.Exec("UPDATE fts SET note=? WHERE lm_id=?;", text, sess.p.id)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -422,4 +449,99 @@ func getItems(max int) {
 		org.mode = org.last_mode
 		sess.drawPreviewWindow(org.rows[org.fr].id) //if id == -1 does not try to retrieve note
 	}
+}
+
+func updateRows() {
+  var updated_rows []int
+
+  for _, row := range org.rows {
+    if !row.dirty {
+      continue
+    }
+
+    if row.id == -1 {
+      id = insertRow(row)
+      append(updated_rows, id)
+      row.dirty = false
+      continue
+    }
+
+    res, err := db.Exec("UPDATE task SET title=?, modified=datetime('now') WHERE id=?", row.title, row.id)
+  	if err != nil {
+  		log.Fatal(err)
+  	}
+  
+  	_, err := res.RowsAffected()
+  	if err != nil {
+  		log.Fatal(err)
+      return
+  	}
+
+    row.dirty = false
+    append(updated_rows, row.id)
+  }
+
+  if (len(updated_rows) == 0) {
+    sess.showOrgMessage("There were no rows to update")
+    return
+  }
+  sess.showOrgMessage("These ids were updated: %v",  updated_rows);
+}
+
+func insertRow(row Entry) int {
+
+  var folder_tid int
+  var context_tid int
+
+  if org.context == "" {
+    context_tid = 1
+  } else
+    context_tid = org.context_map[org.context]
+  }
+
+  if org.folder == "" {
+    folder_tid = 1
+  } else
+    folder_tid = org.folder_map[org.folder]
+  }
+  res, err = db.Exec("INSERT INTO task (priority, title, folder_tid, context_tid, " +
+              "star, added, note, deleted, created, modified) " +
+              "VALUES (3, ?, ?, ?, True, date(), '', False, " +
+              fmt.Sprintf("datetime('now', '-%s hours'), ", TZ_OFFSET) +
+              "datetime('now'));",
+              row.title, folder_tid, context_tid)
+
+  /*
+    not used:
+    tid,
+    tag,
+    duetime,
+    completed,
+    duedate,
+    repeat,
+    remind
+  */
+  if err != nil {
+    return -1
+  }
+
+  row.id =  res.LastInsertId()
+  row.dirty = false
+
+
+  /***************fts virtual table update*********************/
+
+  //should probably create a separate function that is a klugy
+  //way of making up for fact that pg created tasks don't appear in fts db
+  //"INSERT OR IGNORE INTO fts (title, lm_id) VALUES ('" << title << row.id << ");";
+  /***************fts virtual table update*********************/
+	_, err = fts_db.Exec("INSERT INTO fts (title, lm_id) VALUES (?, ?);", row.title, row.id)
+	if err != nil {
+		log.Fatal(err)
+    return -1
+	}
+
+  sess.showOrgMessage("Successfully inserted new row with id {} and indexed it (new vesrsion)", row.id);
+
+  return row.id
 }

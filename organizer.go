@@ -45,15 +45,14 @@ type Organizer struct {
   string_buffer string
   fts_titles map[int]string
 
-  contextMap map[string]int
-  folderMap map[string]int
-  sortMap map[string]int
+  context_map map[string]int
+  folder_map map[string]int
+  sort_map map[string]int
 
   ftsIDs []int
-  markedEntries []int
+  marked_entries []int
 
   title_search_string string
 }
 
-func (*org)  outlineScroll() {
-}
+var org Organizer

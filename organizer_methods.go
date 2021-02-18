@@ -99,7 +99,7 @@ func (o *Organizer) delChar() {
     return
   }
   *t = t[:o.fc] + t[o.fc+1:]
-  o.rows[o.fr]..dirty = true
+  o.rows[o.fr].dirty = true
 }
 
 func (o *Organizer) deleteToEndOfLine() {
@@ -153,6 +153,37 @@ func (o *Organizer) moveEndWord() {
     //end = end + fc - 1
     o.fc = end + o.fc + 1
   }
+}
+
+// needs to handle more corner cases (eg two spaces in a row)
+func (o *Organizer) moveNextWord() {
+  t := &o.rows[o.fr].title
+  end := strings.Index((*t)[o.fc:], " ")
+  if end == -1 {
+    if o.fr < len(rows) - 1 {
+      o.fr++
+      o.fc = 0
+      return
+    }
+  } else {
+    //end = end + fc - 1
+    if o.fc < len(*t) - 1 {
+      o.fc = end + o.fc + 1
+    }
+  }
+}
+
+// not same as 'e' but moves to end of word or stays put if already on end of word
+func (o *Organizer) moveEndWord2() {
+  var j int
+  t := &o.rows[o.fr].title
+
+  for j = o.fc + 1; j < len(*t) ; j++ {
+    if *t)[j] < 48 {
+      break
+    }
+  }
+  o.fc = j - 1;
 }
 
 func (o *Organizer) getWordUnderCursor(){

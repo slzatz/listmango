@@ -21,7 +21,7 @@ type Session struct {
   run bool
   editors []*Editors
   p *Editor
-  editorMode bool
+  editor_mode bool
   ftsSearchTerms string
   cfg config
 }
@@ -363,7 +363,8 @@ func (s Session) refreshOrgScreen {
   // put cursor at upper left after erasing
   ab.WriteString(fmt.Sprintf("\x1b[%d;%dH", TOP_MARGIN + 1 , LEFT_MARGIN + 1))
 
-  fmt.Fprint(os.Stdout, ab.String())
+  //fmt.Fprint(os.Stdout, ab.String())
+  fmt.Print(ab.String())
 
   if org.mode == FIND {
     drawOrgSearchRows()
@@ -374,25 +375,136 @@ func (s Session) refreshOrgScreen {
   }
 }
 
-func (s Session) returnCursor()
+func (s Session) showOrgMessage(format string, a ...interface{}) {
+  fmt.Printf("\x1b[%d;%dH\x1b[1K\x1b[%d;1H", s.textlines + 2 + TOP_MARGIN, s.divider, s.textlines + 2 + TOP_MARGIN)
+  s := fmt.Sprintf(format, a...)
+  if len(s) > divider {
+    s = s[:divider]
+  }
+  fmt.Print(s)
+}
 
+func (s Session) drawOrgStatusBar() {
+
+  /*
+  so the below should 1) position the cursor on the status
+  bar row and midscreen and 2) erase previous statusbar
+  r -> l and then put the cursor back where it should be
+  at LEFT_MARGIN
+  */
+
+  var ab strings.Builder
+  ab.WriteString(fmt.Sprintf("\x1b[%d;%dH\x1b[1K\x1b[%d;1H", s.textlines + TOP_MARGIN + 1, s.divider, s.textlines + TOP_MARGIN + 1))
+  ab.WriteString("\x1b[7m"); //switches to inverted colors
+  char status[300], status0[300], rstatus[80];
+
+  var s string
+
+  switch org.view {
+    case TASK:
+      switch org.taskview {
+        case BY_FIND:
+          s =  "search - " + fts_search_terms
+        case BY_FOLDER:
+          s = org.folder + "[f]"
+        case BY_CONTEXT:
+          s = org.context + "[c]"
+        case BY_RECENT:
+          s = "recent"
+        case BY_JOIN:
+          s = org.context + "[c] + " + org.folder + "[f]"
+        case BY_KEYWORD:
+          s = org.keyword + "[k]"
+      }
+    case CONTEXT:
+      s = "Contexts"
+    case FOLDER:
+      s = "Folders"
+    case KEYWORD:
+      s = "Keywords"
+  }
+
+  if len(org.rows) > 0 {
+
+    r = &org.rows[org.fr]
+    // note the format is for 15 chars - 12 from substring below and "[+]" when needed
+    var title string
+    if len((*r).title) > 12 {
+      title = (*r).title[:12]
+    } else {
+      title = (*r).title
+    }
+    //if (p->dirty) truncated_title.append( "[+]"); /****this needs to be in editor class*******/
+
+    // needs to be here because org.rows could be empty
+    var keywords string
+    if org.view == Task {
+      keywords = getTaskKeywords((*r).id)
+    }
+
+    // because video is reversted [42 sets text to green and 49 undoes it
+    // also [0;35;7m -> because of 7m it reverses background and foreground
+    // I think the [0;7m is revert to normal and reverse video
+    status := fmt.Sprintf( "\x1b[1m%s\x1b[0;7m %.15s...\x1b[0;35;7m %s \x1b[0;7m %d %d/%zu \x1b[1;42m%s\x1b[49m",
+                              s, title, keywords, (*r).id, org.fr+1, len(org.rows), mode_text[org.mode])
+
+    // klugy way of finding length of string without the escape characters
+    length := len(fmt.Sprintf("%s %.15s... %s  %d %d/%zu %s",
+                              s, title, keywords, (*r).id, org.fr+1, len(org.rows), mode_text[org.mode]))
+  } else {
+
+    status := fmt.Sprintf( "\x1b[1m%s\x1b[0;7m %.15s...\x1b[0;35;7m %s \x1b[0;7m %d %d/%zu \x1b[1;42m%s\x1b[49m",
+                              s, "   No Results   ", -1, 0, 0, mode_text[org.mode])
+    length := len(fmt.Sprintf( "%s %.15s... %d %d/%zu %s",
+                              s, "   No Results   ", -1, 0, 0, mode_text[org.mode]))
+  }
+
+  if (length < s.divider) {
+    ab.WriteString(status)
+  } else {
+    ab.WriteString(status[:s.divider]
+  }
+  ab.WriteString("\x1b[0m") //switches back to normal formatting
+  fmt.Print(ab)
+}
+
+func (s Session) returnCursor(){
+  var ab strings.Builder
+  if s.editor_mode {
+  // the lines below position the cursor where it should go
+    if p->mode != COMMAND_LINE)
+      ab.WriteString(fmt.Sprintf("\x1b[%d;%dH", p->cy + p->top_margin, p->cx + p->left_margin + p->left_margin_offset + 1))
+    } else { //E.mode == COMMAND_LINE
+      ab.WriteString(fmt.Sprintf("\x1b[%d;%ldH", textlines + TOP_MARGIN + 2, p->command_line.size() + divider + 2))
+      ab.WriteString("\x1b[?25h"); // show cursor
+    }
+  } else {
+    if org.mode == ADD_CHANGE_FILTER {
+      ab.WriteString(fmt.Sprintf("\x1b[%d;%dH", org.cy + TOP_MARGIN + 1, divider + 1))
+    } else if org.mode == FIND {
+      ab.WriteString(fmt.Sprintf("\x1b[%d;%dH\x1b[1;34m>", org.cy + TOP_MARGIN + 1, LEFT_MARGIN)) //blue
+    } else if org.mode != COMMAND_LINE {
+      ab.WriteString(fmt.Sprintf("\x1b[%d;%dH\x1b[1;31m>", org.cy + TOP_MARGIN + 1, LEFT_MARGIN))
+      // below restores the cursor position based on org.cx and org.cy + margin
+      ab.WriteString(fmt.Sprintf("\x1b[%d;%dH", org.cy + TOP_MARGIN + 1, org.cx + LEFT_MARGIN + 1))
+    } else { //org.mode == COMMAND_LINE
+      ab.WriteString(fmt.Sprintf("\x1b[%d;%ldH", textlines + 2 + TOP_MARGIN, org.command_line.size() + LEFT_MARGIN + 1))
+    }
+  }
+  ab.WriteString("\x1b[0m"); //return background to normal
+  ab.WriteString("\x1b[?25h"); //shows the cursor
+  fmt.Print(ab)
+}
 
 func (s Session) moveDivider()
 
-func (s Session) drawOrgStatusBar()
-
-func (s Session) drawOrgRows()
-
 func (s Session) drawOrgFilters
-
 
 func (s Session) displayContainerInfo
 
 func (s Session) showOrgMessage()
 
 func (s Session) updateCodeFile()
-
-func (s Session) enableRawMode()
 
 func (s Session) loadMeta()
 
