@@ -10,9 +10,11 @@ import (
 	"github.com/slzatz/listmango/terminal"
 )
 
+/*
 func ctrlKey(b byte) rune {
   return rune(b & 0x1f)
 }
+*/
 
 var z0 = struct{}{}
 var navigation = map[int]struct{} {
@@ -94,25 +96,25 @@ func organizerProcessKey(c int) {
 
 	switch o.mode {
 
-    case NO_ROWS:
-      switch c {
-      case ':':
-        colon_N()
-        return
-      case '\x1b':
-        org.command = ""
-        org.repeat = 0
-        return
-      case 'i', 'I', 'a', 'A', 's':
-        org.insertRow(0, "", true, false, false, BASE_DATE)
-        org.mode = INSERT
-        org.command = ""
-        org.repeat = 0
-        return
-      }
+  case NO_ROWS:
+    switch c {
+    case ':':
+      colon_N()
       return
+    case '\x1b':
+      org.command = ""
+      org.repeat = 0
+      return
+    case 'i', 'I', 'a', 'A', 's':
+      org.insertRow(0, "", true, false, false, BASE_DATE)
+      org.mode = INSERT
+      org.command = ""
+      org.repeat = 0
+      return
+    }
+    return
 
-   	case INSERT:
+  case INSERT:
       switch c {
       case ARROW_UP, ARROW_DOWN, ARROW_LEFT, ARROW_RIGHT:
         org.moveCursor(c)
@@ -130,7 +132,7 @@ func organizerProcessKey(c int) {
           return
         }
 
-  	case NORMAL:
+  case NORMAL:
       if c == '\x1b' {
         if (org.view == TASK) {
           sess.drawPreviewWindow(org.rows.at(org.fr).id)
@@ -186,7 +188,7 @@ func organizerProcessKey(c int) {
 
       return // end of case NORMAL 
 
-  	case COMMAND_LINE:
+  case COMMAND_LINE:
       if c == '\x1b' {
           org.mode = NORMAL
           sess.showOrgMessage("")
@@ -213,6 +215,7 @@ func organizerProcessKey(c int) {
         length = len(org.command_line)
         if length > 0 {
           org.command_line = org.command_line[:length-1]
+        }
       } else {
         org.command_line += string(c)
       }

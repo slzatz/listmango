@@ -17,6 +17,18 @@ var line_commands = map[string]struct{} {
                                        "~":z0,
 }
 
+func find_first_not_of(row *string, delimiters string, pos int) int {
+  pos++
+  for i,char := range (*row)[pos:] {
+    if strings.Index(delimiters, string(char)) != -1 {
+      continue
+    } else {
+      return pos + i
+    }
+  }
+  return -1
+}
+
 // a string is a sequence of uint8 == byte 
 func (e *Editor) move_to_right_brace(left_brace byte) (int,int) {
   r := e.fr
@@ -108,7 +120,7 @@ func (e *Editor) E_move_to_matching_brace(repeat int) {
 }
 //'automatically' happens in NORMAL and INSERT mode
 //return true -> redraw; false -> don't redraw
-func find_match_for_left_brace(left_brace byte, back bool) bool {
+func (e *Editor) find_match_for_left_brace(left_brace byte, back bool) bool {
   r := e.fr
   c := e.fc + 1
   count := 1
@@ -162,7 +174,7 @@ func find_match_for_left_brace(left_brace byte, back bool) bool {
 }
 
 //'automatically' happens in NORMAL and INSERT mode
-func find_match_for_right_brace(right_brace byte, back bool) bool {
+func (e *Editor) find_match_for_right_brace(right_brace byte, back bool) bool {
   r = e.fr
   c = e.fc - 1 - back
   count := 1
@@ -212,7 +224,7 @@ func find_match_for_right_brace(right_brace byte, back bool) bool {
   return true
 }
 
-func draw_highlighted_braces() {
+func (e *Editor) draw_highlighted_braces() {
 
   // below is code to automatically find matching brace - should be in separate member function
   braces := "{}()"
@@ -220,7 +232,7 @@ func draw_highlighted_braces() {
   var back bool
   //if below handles case when in insert mode and brace is last char
   //in a row and cursor is beyond that last char (which is a brace)
-  if fc == len(e.rows[e.fr]) {
+  if e.fc == len(e.rows[e.fr]) {
     c = e.rows[e.fr][e.fc-1]
     back = true;
   } else {
@@ -240,7 +252,7 @@ func draw_highlighted_braces() {
       default://should not need this
         return
     }
-  } else if (e.fc > 0 && e.mode == INSERT) {
+  } else if ( e.fc > 0 && e.mode == INSERT ) {
       c := e.rows[fr][fc-1]
       pos := strings.Index(braces, c)
       if pos != -1 {
@@ -259,11 +271,11 @@ func draw_highlighted_braces() {
   } else {e.redraw = false}
 }
 
-func setLinesMargins() { //also sets top margin
+func (e *Editor) setLinesMargins() { //also sets top margin
 
-  if(linked_editor) {
-    if (is_subeditor) {
-      if (is_below) {
+  if(e.linked_editor) {
+    if (e.is_subeditor) {
+      if (e.is_below) {
         e.screenlines = LINKED_NOTE_HEIGHT;
         e.top_margin = sess.textlines - LINKED_NOTE_HEIGHT + 2;
       } else {
@@ -271,7 +283,7 @@ func setLinesMargins() { //also sets top margin
         e.top_margin =  TOP_MARGIN + 1;
       }
     } else {
-      if (linked_editor.is_below) {
+      if (e.linked_editor.is_below) {
         e.screenlines = sess.textlines - LINKED_NOTE_HEIGHT - 1;
         e.top_margin =  TOP_MARGIN + 1;
       } else {
@@ -285,3 +297,147 @@ func setLinesMargins() { //also sets top margin
   }
 }
 
+// normal mode 'e'
+func moveEndWord() {
+
+if len(rows) == o {
+  return
+}
+
+if ( len(e.rows[e.fr]) == 0 || e.fc == len(e.rows[e.fr]) - 1 ) {
+  if e.fr + 1 > len(e.rows) - 1 {
+    return
+  }
+  e.fr++
+  e.fc = 0
+} else {
+  e.fc++
+}
+
+  r := e.fr
+  c := e.fc
+  var pos int
+  delimiters := " *%!^<>,.;?:()[]{}&#~'\""
+  delimiters_without_space := "*%!^<>,.;?:()[]{}&#~'\""
+
+  for {
+
+    if r > len(e.rows) - 1 {
+      return
+    }
+
+    row = &rows[r]
+
+    if len(*row) == 0 {
+      r++
+      c = 0
+      continue
+    }
+
+    if strings.Index(delimiters, string((*row)[c])) == -1 {
+      if ( c == len(*row) - 1 || strings.Index(delimiters, string((*row)[c+1])) ) != -1 {
+        e.fc = c
+        e.fr = r
+        return
+      }
+
+      pos = strings.IndexAny(string((*row)[c]), delimiters)
+      if pos == -1 {
+        e.fc = len(*row) - 1
+        return
+      } else {
+        e.fr = r;
+        e.fc = pos - 1
+        return
+      }
+
+    // we started on punct or space
+    } else {
+      if (*row)[c] == ' ' {
+        if c == len(*row) - 1 {
+          r++
+          c = 0
+          continue
+        } else {
+          c++
+          continue
+        }
+      } else {
+        pos = find_first_not_of(row, delimiters_without_space, c);
+        if pos != -1 {
+          e.fc = pos - 1
+          return
+        } else {
+          fc = len(*row) - 1
+          return
+        }
+      }
+    }
+  }
+}
+
+func (e *Editor) moveCursor(key int) {
+
+  switch key {
+    case ARROW_LEFT, 'h':
+      if e.fc > 0 {
+        e.fc--
+      }
+
+    case ARROW_RIGHT, 'l':
+      e.fc++
+
+    case ARROW_UP, 'k':
+      if e.fr > 0 {
+        e.fr--
+      }
+
+    case ARROW_DOWN, 'j':
+      if e.fr < len(e.rows) - 1 {
+        fr++;
+      }
+  }
+}
+
+func (e *Editor) moveCursorEOL() {
+  if len(e.rows[e.fr]) > 0 {
+    e.fc = len(e.rows[e.fr]) - 1
+  }
+}
+
+func (e *Editor) moveCursorBOL() {
+  e.fc = 0
+}
+
+func (e *Editor) insertNewLine(direction int) {
+  /* note this func does position fc and fr*/
+  if len(e.rows) == 0 { // creation of NO_ROWS may make this unnecessary
+    e.insertRow(0, "")
+    return
+  }
+
+  if ( e.fr == 0 && direction == 0 ){ // this is for 'O'
+    e.insertRow(0, "")
+    e.fc = 0
+    return
+  }
+
+  //int indent = (smartindent) ? editorIndentAmount(fr) : 0;
+  indent := 2
+
+  var spaces string
+  for j := 0; j < indent; j++ {
+      spaces += ' '
+  }
+  e.fc = indent
+
+  e.fr += direction;
+  e.insertRow(fr, spaces)
+}
+
+func (e *Editor) insertRow(r int, s string) {
+  append(e.rows, "")
+  copy(e.rows[:r+1], e.rows[r:])
+  e.rows[r] = s
+  dirty++;
+}

@@ -1,22 +1,5 @@
 package main
 
-import (
-	"fmt"
-)
-
-type entry struct {
-	id       int
-	star     bool
-	title    []rune
-	ftsTitle []rune
-	deleted  bool
-	modified string //????
-	dirty    bool
-	mark     bool
-	rowoff   int
-	coloff   int
-}
-
 type Organizer struct {
 	mode int
   last_mode int
@@ -26,7 +9,7 @@ type Organizer struct {
   rowoff int //the number of rows scrolled (aka number of top rows now off-screen
   coloff int; //the number of columns scrolled (aka number of left rows now off-screen
 
-  rows []entry
+  rows []Entry
   context string
   folder string
   keywords string

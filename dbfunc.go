@@ -3,6 +3,7 @@ package main
 import (
 	"database/sql"
 	"fmt"
+  "log"
 	_ "github.com/mattn/go-sqlite3"
 	"time"
 )
@@ -53,7 +54,7 @@ func keywordExists(name string) int {
 }
 
 func generateContextMap() {
-	rows, err = db.Query("SELECT tid, title FROM context;")
+  rows, err := db.Query("SELECT tid, title FROM context;")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -69,7 +70,7 @@ func generateContextMap() {
 }
 
 func generateFolderMap() {
-	rows, err = db.Query("SELECT tid, title FROM folder;")
+  rows, err := db.Query("SELECT tid, title FROM folder;")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -150,7 +151,6 @@ func toggleStar() {
 }
 
 func toggleDeleted() {
-	orow & row = org.rows.at(org.fr)
 	id := getId()
 	var table string
 
@@ -467,15 +467,15 @@ func updateRows() {
     }
 
     res, err := db.Exec("UPDATE task SET title=?, modified=datetime('now') WHERE id=?", row.title, row.id)
-  	if err != nil {
-  		log.Fatal(err)
-  	}
-  
-  	_, err := res.RowsAffected()
-  	if err != nil {
-  		log.Fatal(err)
-      return
-  	}
+    if err != nil {
+      log.Fatal(err)
+    }
+
+    _, err = res.RowsAffected()
+    if err != nil {
+      log.Fatal(err)
+        return
+    }
 
     row.dirty = false
     append(updated_rows, row.id)
@@ -495,13 +495,13 @@ func insertRow(row Entry) int {
 
   if org.context == "" {
     context_tid = 1
-  } else
+  } else {
     context_tid = org.context_map[org.context]
   }
 
   if org.folder == "" {
     folder_tid = 1
-  } else
+  } else {
     folder_tid = org.folder_map[org.folder]
   }
   res, err = db.Exec("INSERT INTO task (priority, title, folder_tid, context_tid, " +

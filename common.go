@@ -17,6 +17,10 @@ struct orow {  //Entry
 };
 */
 
+func ctrlKey(b byte) rune {
+  return rune(b & 0x1f)
+}
+
 type Entry struct {
 	id        int
 	title     string

@@ -90,10 +90,11 @@ func NewEditor() *Editor {
     }
 }
 
+/* I believe these are only when escaping from INSERT mode
 // cmd1_map = make(map[string]func(*Editor, int),4)
 var cmd_map1 = map[string]func(*Editor, int){
                    "i":(*Editor).E_i,
-                   "I":(*Editor).E_a,
+                   "I":(*Editor).E_I,
                    "a":(*Editor).E_a,
                    "A":(*Editor).E_A,
                  }
@@ -118,8 +119,8 @@ var cmd_map4 = map[string]func(*Editor, int){
                    "cw":(*Editor).E_cw,
                    "caw":(*Editor).E_caw,
                    "s":(*Editor).E_s,
-                   "A":(*Editor).E_A,
                  }
+*/
 
 type pair1 struct{
   char byte
@@ -140,7 +141,7 @@ type Diff struct {
   num_rows int//the row where insert occurs counts 1 and then any rows added with returns
   inserted_text string
   deleted_text string //deleted chars - being recorded by not used right now or perhaps ever!
-  diff pair
+  diff pair1
   changed_rows pair2
   undo_method int//CHANGE_ROW< REPLACE_NOTE< ADD_ROWS, DELETE_ROWS
   mode int

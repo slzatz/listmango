@@ -1,7 +1,7 @@
 package main
 
 var n_lookup = map[string]func(){
-  string(CTRL_KEY('l')): goto_editor_N,
+  string(ctrlKey('l')): goto_editor_N,
   string([]byte{0x17,0x17}): goto_editor_N,
   "\r": return_N, //return_O
   "i": insert_N,
@@ -18,13 +18,13 @@ var n_lookup = map[string]func(){
   "daw": caw_N,
   "dw": cw_N,
   "de": de_N,
-  "d$": d$_N,
+  "d$": d_dollar_N,
 
   "gg": gg_N,
 
   "gt": gt_N,
 
-  string(CTRL_KEY('i')): info_N, //{{0x9}}
+  string(ctrlKey('i')): info_N, //{{0x9}}
   "b": b_N,
   "e": e_N,
   "0": zero_N,
@@ -71,6 +71,7 @@ func x_N() {
 func daw_N() {
   for i := 0; i < org.repeat; i++ {
     org.outlineDelWord()
+  }
 }
 
 func caw_N() {
@@ -114,7 +115,7 @@ func de_N() {
   *t = (*t)[:org.fc] +(*t)[end:]
 }
 
-func d$_N() {
+func di_dollar_N() {
   org.deleteToEndOfLine()
 }
 //case 'r':
@@ -126,6 +127,7 @@ func r_N() {
 func tilde_N() {
   for i := 0; i < org.repeat; i++ {
     org.changeCase()
+  }
 }
 
 //case 'a':
@@ -165,10 +167,9 @@ func dollar_N() {
 
 //case 'I':
 func I_N() {
-   org.fc = 0
-   org.mode = INSERT
-   sess.showOrgMessage("\x1b[1m-- INSERT --\x1b[0m")
-  }
+  org.fc = 0
+  org.mode = INSERT
+  sess.showOrgMessage("\x1b[1m-- INSERT --\x1b[0m")
 }
 
 func gg_N() {
@@ -190,7 +191,7 @@ func G_N() {
   org.fc = 0
   org.fr = len(org.rows) - 1
   if org.view == TASK {
-    sess.drawPreviewWindow(org.rows[org.fr].id))
+    sess.drawPreviewWindow(org.rows[org.fr].id)
   } else {
     c := getContainerInfo(org.rows[org.fr].id)
     if c.id != 0 {

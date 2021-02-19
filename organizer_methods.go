@@ -16,6 +16,7 @@ func (o *Organizer) delWord() {
     }  else {
       beg++ //i think this is covered:  "#"
     }
+  }
 
     end := strings.IndexAny((*t)[o.fc:], delimiters)
     if end == -1 {
@@ -39,14 +40,17 @@ func (o *Organizer) moveCursor(key byte) {
 
   switch key {
   case ARROW_LEFT, 'h':
-      if o.fc > 0) {
+      if o.fc > 0 {
         o.fc--
       }
 
   case ARROW_RIGHT, 'l':
       o.fc++
+
   case ARROW_UP, 'k':
-      if o.fr > 0 o.fr--
+      if o.fr > 0 {
+        o.fr--
+      }
       o.fc, o.coloff = 0, 0
 
       if (o.view == TASK) {
@@ -85,7 +89,7 @@ func (o *Organizer) moveCursor(key byte) {
 
 func (o *Organizer) backspace() {
   t := &o.rows[o.fr].title
-  if len(o.rows) == 0 || *t == ""|| o.fc == 0) {
+  if len(o.rows) == 0 || *t == ""|| o.fc == 0 {
     return
   }
   *t = (*t)[:o.fc] + (*t)[o.fc +1:] // should do with runes
@@ -105,10 +109,10 @@ func (o *Organizer) delChar() {
 func (o *Organizer) deleteToEndOfLine() {
   t := &o.rows[o.fr].title
   *t = (*t)[:o.fc] // or row.chars.erase(row.chars.begin() + O.fc, row.chars.end())
-  o.rows[o.fr]..dirty = true
+  o.rows[o.fr].dirty = true
 }
 
-func (o *Organizer) pasteString(void) {
+func (o *Organizer) pasteString() {
   t := &o.rows[o.fr].title
 
   if len(rows) == 0 || o.string_buffer == "" {
@@ -117,7 +121,7 @@ func (o *Organizer) pasteString(void) {
 
   *t = (*t)[:fc+1] + string_buffer + (*t)[fc+1] // how about end of line - works fine
   fc += len(o.string_buffer)
-  o.rows[o.fr]..dirty = true
+  o.rows[o.fr].dirty = true
 }
 
 func (o *Organizer) yankString() {
@@ -179,7 +183,7 @@ func (o *Organizer) moveEndWord2() {
   t := &o.rows[o.fr].title
 
   for j = o.fc + 1; j < len(*t) ; j++ {
-    if *t)[j] < 48 {
+    if (*t)[j] < 48 {
       break
     }
   }
@@ -203,7 +207,7 @@ func (o *Organizer) getWordUnderCursor(){
   if end == -1 {
     end = len(*t) - 1
   } else {
-    end = end + o.fc - 1}
+    end = end + o.fc - 1
   }
   fmt.Println(s[beg:end+1])
   o.title_search_string = (*t)[beg:end+1]
@@ -242,7 +246,7 @@ func (o *Organizer) changeCase() {
     char = unicode.ToLower(char)
   }
   *t = (*t)[:o.fc] + string(char) + (*t)[o.fc+1:]
-  o.rows[o.fr]..dirty = true
+  o.rows[o.fr].dirty = true
  }
 
 func (o *Organizer) insertRow(at int, s string, star bool, deleted bool, completed bool, modified string) {
@@ -270,7 +274,7 @@ func (o *Organizer) scroll() {
   titlecols := sess.divider - TIME_COL_WIDTH - LEFT_MARGIN;
 
   if len(o.rows) == 0 {
-      fr = fc = coloff = cx = cy = 0
+      fr, fc, coloff, cx, cy = 0,0,0,0,0
       return
   }
 
@@ -282,7 +286,7 @@ func (o *Organizer) scroll() {
     o.rowoff =  o.fr;
   }
 
-  if o.fc > titlecols + o.coloff - 1) {
+  if o.fc > titlecols + o.coloff - 1 {
     o.coloff =  o.fc - titlecols + 1
   }
 
@@ -295,7 +299,7 @@ func (o *Organizer) scroll() {
 }
 
 func (o *Organizer) insertChar(c byte) {
-  if len(o.rows) == 0) {
+  if len(o.rows) == 0 {
     return
   }
 
@@ -306,9 +310,10 @@ func (o *Organizer) insertChar(c byte) {
     *t = (*t)[:o.fc+1] + string(c) + (*t)[o.fc+1:]
   }
   o.fc++
-  o.rows[o.fr]..dirty = true
+  o.rows[o.fr].dirty = true
 }
 
+/*
 std::string Organizer::outlineRowsToString(void) {
   std::string s = "";
   for (auto i: rows) {
@@ -318,3 +323,4 @@ std::string Organizer::outlineRowsToString(void) {
   s.pop_back(); //pop last return that we added
   return s;
 }
+*/

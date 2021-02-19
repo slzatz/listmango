@@ -10,9 +10,9 @@ func F_open(pos int) { //C_open - by context
 
   cl := org.command_line
   var success bool
-  success = false;
-  for k, _ := range org.context_map) {
-    if strings.HasPrefix(k, cl[pos+1:] {
+  success = false
+  for k, _ := range org.context_map {
+    if strings.HasPrefix(k, cl[pos+1:]) {
       org.context = k
       success = true
       break
@@ -45,8 +45,8 @@ func F_openfolder(pos int) { //C_open - by context
   cl := &org.command_line
   var success bool
   success = false;
-  for k, _ := range org.folder) {
-    if strings.HasPrefix(k, (*cl)[pos+1:] {
+  for k, _ := range org.folder {
+    if strings.HasPrefix(k, (*cl)[pos+1:]) {
       org.folder = k
       success = true
       break
@@ -54,7 +54,7 @@ func F_openfolder(pos int) { //C_open - by context
   }
 
   if (!success) {
-    sess.showOrgMessage(fmt.Sprintf("%s is not a valid  folder!", (*cl)[:pos]))
+    sess.showOrgMessage("%s is not a valid  folder!", (*cl)[:pos])
     org.mode = NORMAL
     return
   }
@@ -79,12 +79,12 @@ func F_openkeyword(pos int) {
   keyword := org.command_line[pos+1:]
   if keywordExists(keyword) == -1 {
     org.mode = org.last_mode
-    sess.showOrgMessage(fmt.Sprintf("keyword '%s' does not exist!", keyword))
+    sess.showOrgMessage("keyword '%s' does not exist!", keyword)
     return
   }
 
   org.keyword = keyword
-  sess.showOrgMessage(fmt.Sprintf("\'%s\' will be opened", org.keyword))
+  sess.showOrgMessage("'%s' will be opened", org.keyword)
   org.marked_entries = nil
   org.context = ""
   org.folder = ""
