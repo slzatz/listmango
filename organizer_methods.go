@@ -1,5 +1,11 @@
 package main
 
+import (
+        "strings"
+        //"fmt"
+        "unicode"
+      )
+
 var folder_map map[string]int = map[string]int{}
 var context_map map[string]int = map[string]int{}
 
@@ -7,7 +13,7 @@ var context_map map[string]int = map[string]int{}
 func (o *Organizer) delWord() {
   // still needs to deal with possibility of utf8 multi-byte characters (see finding word under cursor)
   t := &o.rows[o.fr].title
-  delimeters := " ,.;?:()[]{}&#"
+  delimiters := " ,.;?:()[]{}&#"
   var beg int
   if o.fc != 0 {
     beg = strings.LastIndexAny((*t)[:o.fc], delimiters)
@@ -23,7 +29,7 @@ func (o *Organizer) delWord() {
       end = len(*t) - 1
     } else {
       //end = end + fc - 1
-      end = end + fc + 1
+      end = end + o.fc + 1
     }
 
     *t = (*t)[:beg]  + (*t)[end:]
@@ -32,7 +38,7 @@ func (o *Organizer) delWord() {
 
 //Note: outlineMoveCursor worries about moving cursor beyond the size of the row
 //OutlineScroll worries about moving cursor beyond the screen
-func (o *Organizer) moveCursor(key byte) {
+func (o *Organizer) moveCursor(key int) {
 
   if len(o.rows) == 0 {
     return
@@ -55,32 +61,37 @@ func (o *Organizer) moveCursor(key byte) {
 
       if (o.view == TASK) {
         sess.drawPreviewWindow(o.rows[o.fr].id) //if id == -1 does not try to retrieve note
-      } else {
-        c := getContainerInfo(o.rows[o.fr].id)
-        if c.id != 0 {
-          sess.displayContainerInfo(c)
-        }
       }
+   //   } else {
+   //     c := getContainerInfo(o.rows[o.fr].id)
+   //     if c.id != 0 {
+   //       sess.displayContainerInfo(c)
+   //     }
+   //   }
 
   case ARROW_DOWN, 'j':
       if o.fr < len(o.rows) - 1 {
         o.fr++
       }
       o.fc, o.coloff = 0, 0
-      if view == TASK {
+      if o.view == TASK {
         sess.drawPreviewWindow(o.rows[o.fr].id) //if id == -1 does not try to retrieve note
-      } else {
-        c := getContainerInfo(o.rows[o.fr].id)
-        if c.id != 0 {
-          sess.displayContainerInfo(c)
-        }
       }
-      break
+    //  } else {
+    //    c := getContainerInfo(o.rows[o.fr].id)
+    //    if c.id != 0 {
+    //      sess.displayContainerInfo(c)
+    //    }
+    //  }
   }
 
   t := &o.rows[o.fr].title
   if o.fc >= len(*t) {
-    o.fc = len(*t) - (o.mode != INSERT)
+    if o.mode != INSERT {
+    o.fc = len(*t) - 1
+    } else {
+      o.fc = len(*t)
+    }
   }
   if *t  == "" {
     o.fc = 0
@@ -98,11 +109,11 @@ func (o *Organizer) backspace() {
 }
 
 func (o *Organizer) delChar() {
-  t = &o.rows[fr].title
+  t := &o.rows[o.fr].title
   if len(o.rows) == 0 || len(*t) == 0 {
     return
   }
-  *t = t[:o.fc] + t[o.fc+1:]
+  *t = (*t)[:o.fc] + (*t)[o.fc+1:]
   o.rows[o.fr].dirty = true
 }
 
@@ -115,12 +126,12 @@ func (o *Organizer) deleteToEndOfLine() {
 func (o *Organizer) pasteString() {
   t := &o.rows[o.fr].title
 
-  if len(rows) == 0 || o.string_buffer == "" {
+  if len(o.rows) == 0 || o.string_buffer == "" {
     return
   }
 
-  *t = (*t)[:fc+1] + string_buffer + (*t)[fc+1] // how about end of line - works fine
-  fc += len(o.string_buffer)
+  *t = (*t)[:o.fc+1] + o.string_buffer + (*t)[o.fc+1:] // how about end of line - works fine
+  o.fc += len(o.string_buffer)
   o.rows[o.fr].dirty = true
 }
 
@@ -130,7 +141,7 @@ func (o *Organizer) yankString() {
 }
 
 func (o *Organizer) moveCursorEOL() {
-  o.fc = len(o.rows[fr].title) - 1;  //if O.cx > O.titlecols will be adjusted in EditorScroll
+  o.fc = len(o.rows[o.fr].title) - 1;  //if O.cx > O.titlecols will be adjusted in EditorScroll
 }
 
 func (o *Organizer) moveBeginningWord() {
@@ -138,7 +149,7 @@ func (o *Organizer) moveBeginningWord() {
     return
   }
   t := &o.rows[o.fr].title
-  delimeters := " ,.;?:()[]{}&#"
+  delimiters := " ,.;?:()[]{}&#"
   beg := strings.LastIndexAny((*t)[:o.fc], delimiters)
   if beg == -1 {
      o.fc = 0
@@ -149,7 +160,7 @@ func (o *Organizer) moveBeginningWord() {
 
 func (o *Organizer) moveEndWord() {
   t := &o.rows[o.fr].title
-  delimeters := " ,.;?:()[]{}&#"
+  delimiters := " ,.;?:()[]{}&#"
   end := strings.IndexAny((*t)[o.fc:], delimiters)
   if end == -1 {
     o.fc = len(*t) - 1
@@ -164,7 +175,7 @@ func (o *Organizer) moveNextWord() {
   t := &o.rows[o.fr].title
   end := strings.Index((*t)[o.fc:], " ")
   if end == -1 {
-    if o.fr < len(rows) - 1 {
+    if o.fr < len(o.rows) - 1 {
       o.fr++
       o.fc = 0
       return
@@ -192,13 +203,13 @@ func (o *Organizer) moveEndWord2() {
 
 func (o *Organizer) getWordUnderCursor(){
   t := &o.rows[o.fr].title
-  delimeters := " ,.;?:()[]{}&#"
-  if strings.IndexAny(t[o.fc], delimiters) != -1 {
+  delimiters := " ,.;?:()[]{}&#"
+  if strings.IndexAny(string((*t)[o.fc]), delimiters) != -1 {
     return
   }
 
   var beg int
-  if fc != 0 {
+  if o.fc != 0 {
       beg = strings.LastIndexAny((*t)[:o.fc], delimiters)
       if beg == -1 {beg = 0
       } else {beg++}
@@ -209,7 +220,6 @@ func (o *Organizer) getWordUnderCursor(){
   } else {
     end = end + o.fc - 1
   }
-  fmt.Println(s[beg:end+1])
   o.title_search_string = (*t)[beg:end+1]
 }
 
@@ -225,7 +235,7 @@ func (o *Organizer) findNextWord() {
     if n == len(o.rows) {
       n = 0
     }
-    pos := strings.Index(o.rows[n].title, title_search_string)
+    pos := strings.Index(o.rows[n].title, o.title_search_string)
     if pos == -1 {
       continue
     } else {
@@ -238,7 +248,7 @@ func (o *Organizer) findNextWord() {
 }
 
 func (o *Organizer) changeCase() {
-  t := &rows[o.fr].title
+  t := &o.rows[o.fr].title
   char := rune((*t)[o.fc])
   if unicode.IsLower(char) {
     char = unicode.ToUpper(char)
@@ -252,8 +262,8 @@ func (o *Organizer) changeCase() {
 func (o *Organizer) insertRow(at int, s string, star bool, deleted bool, completed bool, modified string) {
   /* note since only inserting blank line at top, don't really need at, s and also don't need size_t*/
 
-  var row Entry
-  append(o.rows, row) //make sure there is room to expand o.rows
+  var row Row
+  o.rows = append(o.rows, row) //make sure there is room to expand o.rows
   copy(o.rows[at+1:], o.rows[at:]) // move everything one over that will be to the right of new entry
 
   row.title = s
@@ -264,7 +274,7 @@ func (o *Organizer) insertRow(at int, s string, star bool, deleted bool, complet
   row.dirty = true
   row.modified = modified
 
-  row.mark = false
+  row.marked = false
 
   o.rows[at] = row
 }
@@ -274,12 +284,12 @@ func (o *Organizer) scroll() {
   titlecols := sess.divider - TIME_COL_WIDTH - LEFT_MARGIN;
 
   if len(o.rows) == 0 {
-      fr, fc, coloff, cx, cy = 0,0,0,0,0
+      o.fr, o.fc, o.coloff, o.cx, o.cy = 0,0,0,0,0
       return
   }
 
-  if o.fr > sess.textlines + o.rowoff - 1 {
-    o.rowoff =  o.fr - sess.textlines + 1
+  if o.fr > sess.textLines + o.rowoff - 1 {
+    o.rowoff =  o.fr - sess.textLines + 1
   }
 
   if o.fr < o.rowoff {
@@ -298,12 +308,12 @@ func (o *Organizer) scroll() {
   o.cy = o.fr - o.rowoff
 }
 
-func (o *Organizer) insertChar(c byte) {
+func (o *Organizer) insertChar(c int) {
   if len(o.rows) == 0 {
     return
   }
 
-  t = &o.rows[o.fr].title
+  t := &o.rows[o.fr].title
   if *t == "" {
     *t = string(c)
   } else {

@@ -40,37 +40,38 @@ func (e *Editor) E_A(repeat int) {
 
 func (e *Editor) E_o(repeat int) {
   e.last_typed = ""
-  e.insertNewline(1)
+  e.insertNewLine(1)
 }
 
 func (e *Editor) E_O(repeat int) {
   e.last_typed = ""
-  e.insertNewline(0)
+  e.insertNewLine(0)
 }
 
 func (e *Editor) E_x(repeat int) {
-  r = &e.rows[e.fr]
+  r := &e.rows[e.fr]
   if len(*r) == 0 {
     return
   }
-  *r = (*r)[:fc] + (*r)[fc+1:]
-  for i:=1; i < repeat; i++ {
-    if fc == len(*r) - 1 {
-      fc--
+  *r = (*r)[:e.fc] + (*r)[e.fc+1:]
+  for i := 1; i < repeat; i++ {
+    if e.fc == len(*r) - 1 {
+      e.fc--
       break;
     }
-    *r = (*r)[:fc] + (*r)[fc+1:]
+    *r = (*r)[:e.fc] + (*r)[e.fc+1:]
   }
-  dirty++
+  e.dirty++
 }
 
 func (e *Editor) E_dw(repeat int) {
-  for j := 0; j < repeat; j++ {
+  for i := 0; i < repeat; i++ {
     start := e.fc
-    e.moveEndWord2()
+    //e.moveEndWord2() uses this in cpp - need to revisit
+    e.moveEndWord()
     end := e.fc
     e.fc = start
-    r = &e.rows[e.fr]
+    r := &e.rows[e.fr]
     *r = (*r)[:e.fc] +(*r)[end+1:]
   }
 }

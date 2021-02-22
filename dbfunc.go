@@ -6,6 +6,7 @@ import (
   "log"
 	_ "github.com/mattn/go-sqlite3"
 	"time"
+  "strings"
 )
 
 var db, _ = sql.Open("sqlite3", "/home/slzatz/mylistmanager3/lmdb_s/mylistmanager_s.db")
@@ -169,7 +170,7 @@ func toggleDeleted() {
 	}
 
 	s := fmt.Sprintf("UPDATE %s SET deleted=?, modified=datetime('now') WHERE id=?;", table)
-	res, err = db.Exec(s, !org.rows[org.fr].deleted, id)
+  res, err := db.Exec(s, !org.rows[org.fr].deleted, id)
 
 	/*
 		stmt, err := db.Prepare(fmt.Sprintf("UPDATE %s SET deleted=?, modified=datetime('now') WHERE id=?;",
@@ -247,9 +248,9 @@ func toggleCompleted() {
 
 func updateTaskContext(new_context string, id int) {
 	//id := getId()
-	context_tid := org.context_map.at(new_context) ////////
+	context_tid := org.context_map[new_context] 
 
-	res, err := db.exec("UPDATE task SET context_tid=?, modified=datetime('now') "+
+	res, err := db.Exec("UPDATE task SET context_tid=?, modified=datetime('now') "+
 		"WHERE id=?;", context_tid, id)
 
 	//stmt, err := db.Prepare("UPDATE task SET context_tid=?, modified=datetime('now') WHERE id=?;")
@@ -285,11 +286,11 @@ func updateTaskContext(new_context string, id int) {
 
 func updateTaskFolder(new_folder string, id int) {
 	//id := getId()
-	folder_tid := org.context_map.at(new_context) ////////
+	folder_tid := org.context_map[new_folder]
 
 	//stmt, err := db.Prepare("UPDATE task SET folder_tid=?, modified=datetime('now') WHERE id=?;")
 
-	res, err := db.exec("UPDATE task SET folder_tid=?, modified=datetime('now') "+
+	res, err := db.Exec("UPDATE task SET folder_tid=?, modified=datetime('now') "+
 		"WHERE id=?;", folder_tid, id)
 
 	if err != nil {
@@ -323,7 +324,7 @@ func updateTaskFolder(new_folder string, id int) {
 
 func updateNote() {
 
-	text := sess.p.editorRowsToString()
+	text := sess.p.rowsToString()
 
 	// need to escape single quotes with two single quotes
 
@@ -373,19 +374,19 @@ func getItems(max int) {
 	s := "SELECT task.id, task.title, task.star, task.deleted, task.completed, task.modified FROM task "
 
 	if org.taskview == BY_CONTEXT {
-		s = "JOIN context ON context.tid=task.context_tid WHERE context.title=?"
+		s += "JOIN context ON context.tid=task.context_tid WHERE context.title=?"
 		arg = org.context
 	} else if org.taskview == BY_FOLDER {
-		s = "JOIN folder ON folder.tid = task.folder_tid WHERE folder.title=?"
+		s += "JOIN folder ON folder.tid = task.folder_tid WHERE folder.title=?"
 		arg = org.folder
 	} else if org.taskview == BY_KEYWORD {
-		s = "JOIN task_keyword ON task.id=task_keyword.task_id " +
+		s += "JOIN task_keyword ON task.id=task_keyword.task_id " +
 			"JOIN keyword ON keyword.id=task_keyword.keyword_id " +
 			"WHERE task.id = task_keyword.task_id AND " +
 			"task_keyword.keyword_id = keyword.id AND keyword.name=?"
 		arg = org.keyword
 	} else if org.taskview == BY_RECENT {
-		s = "WHERE 1=1"
+		s += "WHERE 1=1"
 		arg = ""
 	} else {
 		sess.showOrgMessage("You asked for an unsupported db query")
@@ -397,11 +398,12 @@ func getItems(max int) {
 	}
 	s += fmt.Sprintf(" ORDER BY task.star DESC, task.%s DESC LIMIT %d;", org.sort, max)
 	//int sortcolnum = org.sort_map[org.sort] //cpp
-
+  var rows *sql.Rows
+  var err error
 	if arg == "" { //Recent
-		rows, err = db.Query(s)
+    rows, err = db.Query(s)
 	} else {
-		rows, err = db.Query(s, filter)
+		rows, err = db.Query(s, arg)
 	}
 	if err != nil {
 		log.Fatal(err)
@@ -410,7 +412,7 @@ func getItems(max int) {
 	defer rows.Close()
 
 	for rows.Next() {
-		var row Entry
+		var row Row
 		//var completed string
 		var completed sql.NullString
 		var modified string
@@ -460,8 +462,8 @@ func updateRows() {
     }
 
     if row.id == -1 {
-      id = insertRow(row)
-      append(updated_rows, id)
+      id := insertRow(row)
+      updated_rows = append(updated_rows, id)
       row.dirty = false
       continue
     }
@@ -478,17 +480,17 @@ func updateRows() {
     }
 
     row.dirty = false
-    append(updated_rows, row.id)
+    updated_rows = append(updated_rows, row.id)
   }
 
   if (len(updated_rows) == 0) {
     sess.showOrgMessage("There were no rows to update")
     return
   }
-  sess.showOrgMessage("These ids were updated: %v",  updated_rows);
+  sess.showOrgMessage("These ids were updated: %v",  updated_rows)
 }
 
-func insertRow(row Entry) int {
+func insertRow(row Row) int {
 
   var folder_tid int
   var context_tid int
@@ -504,7 +506,7 @@ func insertRow(row Entry) int {
   } else {
     folder_tid = org.folder_map[org.folder]
   }
-  res, err = db.Exec("INSERT INTO task (priority, title, folder_tid, context_tid, " +
+  res, err := db.Exec("INSERT INTO task (priority, title, folder_tid, context_tid, " +
               "star, added, note, deleted, created, modified) " +
               "VALUES (3, ?, ?, ?, True, date(), '', False, " +
               fmt.Sprintf("datetime('now', '-%s hours'), ", TZ_OFFSET) +
@@ -525,7 +527,12 @@ func insertRow(row Entry) int {
     return -1
   }
 
-  row.id =  res.LastInsertId()
+  row_id, err :=  res.LastInsertId()
+  if err != nil {
+    log.Fatal(err)
+    return -1
+  }
+  row.id = int(row_id)
   row.dirty = false
 
 
@@ -545,3 +552,149 @@ func insertRow(row Entry) int {
 
   return row.id
 }
+
+func readNoteIntoString(id int) string {
+  if id == -1 {
+    return "" // id given to new and unsaved entries
+  }
+
+  row := db.QueryRow("SELECT note FROM task WHERE id=?;", id)
+  var note string
+  err := row.Scan(&note)
+  if err != nil {
+    return ""
+  }
+  return note
+}
+
+func getEntryInfo(id int) Entry {
+  var e Entry
+  if id ==-1 {
+    return e
+  }
+  row := db.QueryRow("SELECT id, tid, title, created, folder_tid, context_tid, star, added, completed, deleted, modified FROM task WHERE id=?;", id)
+
+  err := row.Scan(
+                 &e.id,
+                 &e.tid,
+                 &e.title,
+                 &e.created,
+                 &e.folder_tid,
+                 &e.context_tid,
+                 &e.star,
+                 &e.added,
+                 &e.deleted,
+                 &e.completed,
+                 &e.deleted,
+                 &e.modified,
+	)
+
+	if err != nil {
+		log.Fatal(err)
+    return e
+	}
+  return e
+}
+
+func getFolderTid(id int) int {
+  row := db.QueryRow("SELECT folder_tid FROM task WHERE id=?;", id)
+  var tid int
+  err := row.Scan(&tid)
+  if err != nil {
+    return -1
+  }
+  return tid
+}
+
+// used in Editor.cpp
+func getTitle(id int) string {
+  row := db.QueryRow("SELECT title FROM task WHERE id=?;", id)
+  var title string
+  err := row.Scan(&title)
+  if err != nil {
+    return ""
+  }
+  return title
+}
+
+func getTaskKeywords(id int) (string) {
+
+  rows, err := db.Query("SELECT keyword.name FROM task_keyword LEFT OUTER JOIN keyword ON "+
+                        "keyword.id=task_keyword.keyword_id WHERE task_keyword.task_id=?;",
+                        id)
+	if err != nil {
+		log.Fatal(err)
+	}
+  defer rows.Close()
+
+  kk := []string{}
+  for rows.Next() {
+    var name string
+
+    err = rows.Scan(&name)
+    kk = append(kk, name)
+  }
+  if len(kk) == 0 {
+    return ""
+  }
+  return strings.Join(kk, ",")
+}
+
+func generateWWString(text string, width int, length int, ret string) string {
+
+  if text == "" {
+    return ""
+  }
+  ss := strings.Split(text, "\n")
+  var ab strings.Builder
+
+  y := 0
+  filerow := 0
+
+  for _, s := range ss {
+    if filerow == len(ss) {
+      return ab.String()
+    }
+
+    if s == "" {
+      if y == length - 1 {
+        return ab.String()
+      }
+      ab.WriteString(ret)
+      filerow++
+      y++
+      continue
+    }
+
+    pos := 0
+    prev_pos := 0
+
+    for {
+      if prev_pos + width > len(s) - 1 {
+        ab.WriteString(s[prev_pos:])
+        if y == length - 1 {
+          return ab.String()
+        }
+        ab.WriteString(ret)
+        y++
+        filerow++
+        break
+      }
+      pos = strings.LastIndex(s[:prev_pos+width], " ")
+      if ( pos == -1 || pos == prev_pos - 1 ) {
+        pos = prev_pos + width - 1
+      }
+
+      ab.WriteString(s[prev_pos:pos+1])
+
+      if y == length - 1 {
+        return ab.String()
+      }
+      ab.WriteString(ret)
+      y++
+      prev_pos = pos + 1
+    }
+  }
+  return ab.String()
+}
+

@@ -9,15 +9,15 @@ import (
 // Special keys
 const (
 	KeyNoSpl = iota
-	KeyArrowUp
-	KeyArrowDown
-	KeyArrowLeft
-	KeyArrowRight
-	KeyPageUp
-	KeyPageDown
-	KeyHome
-	KeyEnd
-	KeyDelete
+	KeyArrowLeft = iota + 999//ARROW_LEFT //KeyArrowLeft
+	KeyArrowRight //ARROW_RIGHT //KeyArrowRight
+	KeyArrowUp //ARROW_UP //KeyArrowUp
+	KeyArrowDown //ARROW_DOWN //KeyArrowDown
+	KeyDelete //DEL_KEY //KeyDelete
+	KeyHome //HOME_KEY //KeyHome
+	KeyEnd //END_KEY //KeyEnd
+	KeyPageUp //PAGE_UP //KeyPageUp
+	KeyPageDown //PAGE_DOWN //KeyPageDown
 	KeyF1
 	KeyF2
 	KeyF3

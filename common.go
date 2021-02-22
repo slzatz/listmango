@@ -16,23 +16,47 @@ struct orow {  //Entry
   bool mark;
 };
 */
+const (
+       TZ_OFFSET = 4
+       BASE_DATE = "1970-01-01 00:00"
+       LINKED_NOTE_HEIGHT = 20
+       TOP_MARGIN = 1
+       MAX = 500
+       TIME_COL_WIDTH = 18
+       LEFT_MARGIN = 1
+       COLOR_1 = "\x1b[0;31m"
+)
 
-func ctrlKey(b byte) rune {
-  return rune(b & 0x1f)
+func ctrlKey(b byte) int { //rune
+  return int(b & 0x1f)
 }
 
-type Entry struct {
+type Row struct {
 	id        int
 	title     string
 	fts_title string
 	star      bool
 	deleted   bool
-	completed string
+	completed bool
 	modified  string
 
 	// below not in db
 	dirty  bool
 	marked bool
+}
+
+type Entry struct { //right now only for getEntryInfo
+	id          int
+	tid         int
+	title       string
+	created     string
+	folder_tid  int
+	context_tid int
+	star        bool
+	added       string
+	completed   string
+	deleted     bool
+	modified    string
 }
 
 //type outlineKey int

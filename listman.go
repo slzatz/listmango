@@ -4,7 +4,8 @@ import (
 	"flag"
 	"fmt"
 	"os"
-	"time"
+//	"time"
+  "strings"
 
 	"github.com/slzatz/listmango/rawmode"
 	"github.com/slzatz/listmango/terminal"
@@ -15,7 +16,6 @@ func ctrlKey(b byte) rune {
   return rune(b & 0x1f)
 }
 */
-
 var z0 = struct{}{}
 var navigation = map[int]struct{} {
                    ARROW_UP:z0,
@@ -30,10 +30,11 @@ var navigation = map[int]struct{} {
 
 // SafeExit restores terminal using the original terminal config stored
 // in the global session variable
+/*
 func SafeExit(err error) {
 	fmt.Fprint(os.Stdout, "\x1b[2J\x1b[H")
 
-	if err1 := rawmode.Restore(sess.OrigTermCfg); err1 != nil {
+	if err1 := rawmode.Restore(sess.origTermCfg); err1 != nil {
 		fmt.Fprintf(os.Stderr, "Error: disabling raw mode: %s\r\n", err)
 	}
 
@@ -43,14 +44,15 @@ func SafeExit(err error) {
 	}
 	os.Exit(0)
 }
+*/
 
 var sess Session
+var org Organizer
 
 func main() {
 
 	// parse config flags & parameters
 	flag.Parse()
-	filename := flag.Arg(0)
 
 	// enable raw mode
 	origCfg, err := rawmode.Enable()
@@ -58,43 +60,101 @@ func main() {
 		fmt.Fprintf(os.Stderr, "Error enabling raw mode: %v", err)
 		os.Exit(1)
 	}
-	sess.OrigTermCfg = origCfg
+	sess.origTermCfg = origCfg
 
 	sess.editorMode = false
 
 	// get the screen dimensions and create a view
 	sess.screenLines, sess.screenCols, err = rawmode.GetWindowSize()
 	if err != nil {
-		SafeExit(fmt.Errorf("couldn't get window size: %v", err))
+		//SafeExit(fmt.Errorf("couldn't get window size: %v", err))
+    os.Exit(1)
 	}
 
-	sess.setStatusMessage("hello")
+	sess.showOrgMessage("hello")
+	//filename := flag.Arg(0)
 
-	for {
+  org.cx = 0 //cursor x position
+  org.cy = 0 //cursor y position
+  org.fc = 0 //file x position
+  org.fr = 0 //file y position
+  org.rowoff = 0  //number of rows scrolled off the screen
+  org.coloff = 0  //col the user is currently scrolled to  
+  org.sort = "modified" //Entry sort column
+  org.show_deleted = false //not treating these separately right now
+  org.show_completed = true
+  org.message = "" //very bottom of screen; ex. -- INSERT --
+  org.highlight[0], org.highlight[1] = -1, -1
+  org.mode = NORMAL //0=normal; 1=insert; 2=command line; 3=visual line; 4=visual; 5='r' 
+  org.last_mode = NORMAL
+  org.command = ""
+  org.command_line = ""
+  org.repeat = 0 //number of times to repeat commands like x,s,yy also used for visual line mode x,y
+
+  org.view = TASK; // not necessary here since set when searching database
+  org.taskview = BY_FOLDER
+  org.folder = "todo"
+  org.context = "No Context"
+  org.keyword = ""
+
+  org.context_map = make(map[string]int)
+  org.folder_map = make(map[string]int)
+
+  // ? where this should be.  Also in signal.
+  sess.textLines = sess.screenLines - 2 - TOP_MARGIN // -2 for status bar and message bar
+  //sess.divider = sess.screencols - sess.cfg.ed_pct * sess.screencols/100
+  sess.divider = sess.screenCols - (60 * sess.screenCols/100)
+  sess.totaleditorcols = sess.screenCols - sess.divider - 1 // was 2 
+
+  generateContextMap()
+  generateFolderMap()
+  sess.eraseScreenRedrawLines()
+  getItems(MAX)
+
+  sess.refreshOrgScreen();
+  sess.drawOrgStatusBar();
+  sess.showOrgMessage("rows: %d  columns: %d", sess.screenLines, sess.screenCols);
+  sess.returnCursor();
+  sess.run = true
+
+	for sess.run {
 		//sess.View.RefreshScreen(sess.Editor, sess.StatusMessage, sess.Prompt)
 
 		// read key
-		k, err := terminal.ReadKey()
+		key, err := terminal.ReadKey()
 		if err != nil {
-			SafeExit(fmt.Errorf("Error reading from terminal: %s", err))
+			//SafeExit(fmt.Errorf("Error reading from terminal: %s", err))
+      os.Exit(1)
 		}
+
+    var k int
+    if key.Regular != 0 {
+      k = int(key.Regular)
+    } else {
+      k = key.Special
+    }
 
 		if sess.editorMode {
 			editorProcessKey(k)
 		} else {
 			organizerProcessKey(k)
+      org.scroll()
+      sess.refreshOrgScreen()
+      sess.drawOrgStatusBar();
 		}
 
+    sess.returnCursor()
 		// if it's been 5 secs since the last status message, reset
-		if time.Now().Sub(sess.StatusMessageTime) > time.Second*5 && sess.State == stateEditing {
-			sess.setStatusMessage("")
-		}
+		//if time.Now().Sub(sess.StatusMessageTime) > time.Second*5 && sess.State == stateEditing {
+		//	sess.setStatusMessage("")
+		//}
 	}
+  sess.quitApp()
 }
 
 func organizerProcessKey(c int) {
 
-	switch o.mode {
+	switch org.mode {
 
   case NO_ROWS:
     switch c {
@@ -135,10 +195,10 @@ func organizerProcessKey(c int) {
   case NORMAL:
       if c == '\x1b' {
         if (org.view == TASK) {
-          sess.drawPreviewWindow(org.rows.at(org.fr).id)
+          sess.drawPreviewWindow(org.rows[org.fr].id)
         }
         sess.showOrgMessage("")
-        org.command[0] = ""
+        org.command = ""
         org.repeat = 0
         return
       }
@@ -196,23 +256,26 @@ func organizerProcessKey(c int) {
       }
 
       if c == '\r' {
-        pos := strings.Index(org.command_line, ' ')
-        cmd := org.command_line[0:pos]
-        if cmd, found := cmd_lookup[cmd]; found  {
-          if pos == -1 {
-            pos = 0
-          }
+        pos := strings.Index(org.command_line, " ")
+        var s string
+        if pos != - 1 {
+          s = org.command_line[:pos]
+        } else {
+          pos = 0
+          s = org.command_line
+        }
+        if cmd, found := cmd_lookup[s]; found {
           cmd(pos)
           return
         }
 
-        sess.showOrgMessage("\x1b[41mNot an outline command: %s\x1b[0m", cmd.c_str())
+        sess.showOrgMessage("\x1b[41mNot an outline command: %s\x1b[0m", s)
         org.mode = NORMAL
         return
       }
 
       if c == DEL_KEY || c == BACKSPACE {
-        length = len(org.command_line)
+        length := len(org.command_line)
         if length > 0 {
           org.command_line = org.command_line[:length-1]
         }
@@ -220,7 +283,7 @@ func organizerProcessKey(c int) {
         org.command_line += string(c)
       }
 
-      sess.showOrgMessage(":%s", org.command_line.c_str())
+      sess.showOrgMessage(":%s", org.command_line)
       return //end of case COMMAND_LINE
 
   } // end switch o.mode
@@ -240,7 +303,7 @@ func editorProcessKey(c int) bool {
         sess.p.mode = COMMAND_LINE
         sess.p.command_line = ""
         sess.p.command = ""
-        sess.p.editorSetMessage(":")
+        sess.p.showMessage(":")
        return false
       case 'i', 'I', 'a', 'A', 's', 'o', 'O':
         //p.editorInsertRow(0, std::string())
@@ -251,7 +314,7 @@ func editorProcessKey(c int) bool {
         sess.p.last_repeat = 1
         sess.p.snapshot = nil
         sess.p.snapshot = append(sess.p.snapshot, "")
-        sess.p.editorSetMessage("\x1b[1m-- INSERT --\x1b[0m")
+        sess.p.showMessage("\x1b[1m-- INSERT --\x1b[0m")
         //p.command[0] = '\0'
         //p.repeat = 0
         // ? p.redraw = true
@@ -261,26 +324,21 @@ func editorProcessKey(c int) bool {
       switch c {
 
       case '\r':
-          sess.p.editorInsertReturn()
-          sess.p.last_typed += c
+          sess.p.insertReturn()
+          sess.p.last_typed += string(c)
           return true
 
-        // not sure this is in use
-      case ctrlKey('s'):
-          sess.p.editorSaveNoteToFile("lm_temp")
-          return false
-
         case HOME_KEY:
-          sess.p.editorMoveCursorBOL()
+          sess.p.moveCursorBOL()
           return false
 
         case END_KEY:
-          sess.p.editorMoveCursorEOL()
-          sess.p.editorMoveCursor(ARROW_RIGHT)
+          sess.p.moveCursorEOL()
+          sess.p.moveCursor(ARROW_RIGHT)
           return false
 
         case BACKSPACE:
-          sess.p.editorBackspace()
+          sess.p.backspace()
 
           //not handling backspace correctly
           //when backspacing deletes more than currently entered text
@@ -289,25 +347,24 @@ func editorProcessKey(c int) bool {
           //I could record a \b and then handle similar to handling \r
           length := len(sess.p.last_typed)
           if length > 0 {
-            sess.p.last_typed[:length-1]
+            sess.p.last_typed = sess.p.last_typed[:length-1]
           }
           return true
     
         case DEL_KEY:
-          sess.p.editorDelChar()
+          sess.p.delChar()
           return true
     
         case ARROW_UP, ARROW_DOWN, ARROW_LEFT, ARROW_RIGHT:
-          sess.p.editorMoveCursor(c)
+          sess.p.moveCursor(c)
           return false
     
-        case ctrlKey('b'):
-        //case ctrlKey('i'): ctrlKey('i') -> 9 same as tab
-        case ctrlKey('e'):
-          sess.p.push_current() //p.editorCreateSnapshot()
-          sess.p.editorDecorateWord(c)
+        case ctrlKey('b'), ctrlKey('e'):
+          //sess.p.push_current() //p.editorCreateSnapshot()
+          //sess.p.editorDecorateWord(c)
           return true
     
+          /*
         // this should be a command line command
         case ctrlKey('z'):
           if sess.p.smartindex != 0 {
@@ -317,14 +374,14 @@ func editorProcessKey(c int) bool {
           }
           sess.p.editorSetMessage("smartindent = %d", sess.p.smartindent)
           return false
-    
+    */
         case '\x1b':
 
           /*
            * below deals with certain NORMAL mode commands that
            * cause entry to INSERT mode includes dealing with repeats
            */
-
+         /*
           //i,I,a,A - deals with repeat
           if _, found := cmd_map1[sess.p.last_command]; found {
             sess.p.push_current() //
@@ -392,7 +449,7 @@ func editorProcessKey(c int) bool {
             sess.p.fc = sess.p.vb0[0]
           //} 12302020
           }
-
+           */
           /*Escape whatever else happens falls through to here*/
           sess.p.mode = NORMAL
           sess.p.repeat = 0
@@ -402,6 +459,7 @@ func editorProcessKey(c int) bool {
             sess.p.fc--
           }
 
+          /*
           // below - if the indent amount == size of line then it's all blanks
           // can hit escape with p.row == NULL or p.row[p.fr].size == 0
           if len(sess.p.rows) != 0 && len(sess.p.rows[sess.p.fr]) != 0 {
@@ -416,18 +474,19 @@ func editorProcessKey(c int) bool {
           sess.p.editorSetMessage("") // commented out to debug push_current
           //editorSetMessage(p.last_typed.c_str())
           sess.p.last_typed = "" /////////// 09182020
+          */
           return true //end case x1b:
     
         // deal with tab in insert mode - was causing segfault  
         case '\t':
           for  i := 0; i < 4; i++{
-            sess.p.editorInsertChar(' ')
+            sess.p.insertChar(' ')
           }
           return true  
 
         default:
-          sess.p.editorInsertChar(c)
-          sess.p.last_typed += c
+          sess.p.insertChar(c)
+          sess.p.last_typed += string(c)
           return true
      
       } //end inner switch for outer case INSERT
@@ -435,4 +494,5 @@ func editorProcessKey(c int) bool {
       return true // end of case INSERT: - should not be executed
 
 	}
+  return true
 }

@@ -7,6 +7,7 @@ import (
   "strings"
 	"encoding/gob"
 	"golang.org/x/sys/unix"
+	"github.com/slzatz/listmango/rawmode"
 )
 
 type Session struct {
@@ -14,16 +15,17 @@ type Session struct {
   screenLines int
   textLines int
   divider int
-  totalEditorCols int
+  totaleditorcols int
   initialFileRow int
   temporaryTID int
   lmBrowser bool
   run bool
-  editors []*Editors
+  editors []*Editor
   p *Editor
-  editor_mode bool
+  editorMode bool
   ftsSearchTerms string
-  cfg config
+  //cfg config
+  origTermCfg []byte //from GoKilo
 }
 
 func contains(s []int, x int) bool {
@@ -39,7 +41,7 @@ func (s Session) eraseScreenRedrawLines() {
   fmt.Fprint(os.Stdout, "\x1b[2J") //Erase the screen
   fmt.Fprint(os.Stdout, "\x1b(0") //Enter line drawing mode
   for j := 1; j < s.screenLines + 1; j++ {
-    fmt.Fprintf(os.Stdout, "\x1b[%d;%dH", topMargin + j, s.divider)
+    fmt.Fprintf(os.Stdout, "\x1b[%d;%dH", TOP_MARGIN + j, s.divider)
 
     // x = 0x78 vertical line; q = 0x71 horizontal line
     // 37 = white; 1m = bold (note only need one 'm')
@@ -47,18 +49,18 @@ func (s Session) eraseScreenRedrawLines() {
   }
 
   fmt.Fprint(os.Stdout, "\x1b[1;1H")
-  for k := 1; k < s.screencols; k++ {
+  for k := 1; k < s.screenCols; k++ {
     // cursor advances - same as char write 
     fmt.Fprint(os.Stdout, "\x1b[37;1mq")
   }
 
-  if divider > 10 {
-    fmt.Fprintf(os.Stdout, "\x1b[%d;%dH", topMargin , s.divider - timeColWidth + 1)
+  if s.divider > 10 {
+    fmt.Fprintf(os.Stdout, "\x1b[%d;%dH", TOP_MARGIN , s.divider - TIME_COL_WIDTH + 1)
     fmt.Fprint(os.Stdout, "\x1b[37;1mw") //'T' corner
   }
 
   // draw next column's 'T' corner - divider
-  fmt.Fprintf(os.Stdout, "\x1b[%d;%dH", topMargin , s.divider)
+  fmt.Fprintf(os.Stdout, "\x1b[%d;%dH", TOP_MARGIN , s.divider)
   fmt.Fprint(os.Stdout, "\x1b[37;1mw") //'T' corner
 
   fmt.Fprint(os.Stdout, "\x1b[0m") // return background to normal (? necessary)
@@ -73,11 +75,11 @@ func (s Session) eraseRightScreen() {
   //below positions cursor such that top line is erased the first time through
   //for loop although ? could really start on second line since need to redraw
   //horizontal line anyway
-  ab.WriteString(fmt.Sprintf("\x1b[%d;%dH", TOP_MARGIN, divider + 1))
+  ab.WriteString(fmt.Sprintf("\x1b[%d;%dH", TOP_MARGIN, s.divider + 1))
 
   //erase the screen
-  lf_ret := fmt.Sprintf("\r\n\x1b[%dC", divider)
-  for i := 0; i < screenLines - topMargin; i++ {
+  lf_ret := fmt.Sprintf("\r\n\x1b[%dC", s.divider)
+  for i := 0; i < s.screenLines - TOP_MARGIN; i++ {
     ab.WriteString("\x1b[K")
     ab.WriteString(lf_ret)
   }
@@ -87,8 +89,8 @@ func (s Session) eraseRightScreen() {
   // ? if the individual editors draw top lines do we need to just
   // erase but not draw
   ab.WriteString("\x1b(0") // Enter line drawing mode
-  for j := 1; j < totaleditorcols + 1; j++ { //added +1 0906/2020
-    ab.WriteString(fmt.Sprintf("\x1b[%d;%dH", TOP_MARGIN, divider + j))
+  for j := 1; j < s.totaleditorcols + 1; j++ { //added +1 0906/2020
+    ab.WriteString(fmt.Sprintf("\x1b[%d;%dH", TOP_MARGIN, s.divider + j))
     // below x = 0x78 vertical line (q = 0x71 is horizontal) 37 = white;
     // 1m = bold (note only need one 'm'
     ab.WriteString("\x1b[37;1mq")
@@ -97,7 +99,7 @@ func (s Session) eraseRightScreen() {
   //exit line drawing mode
   ab.WriteString("\x1b(B")
 
-  ab.WriteString(fmt.Sprintf("\x1b[%d;%dH", TOP_MARGIN + 1, divider + 2))
+  ab.WriteString(fmt.Sprintf("\x1b[%d;%dH", TOP_MARGIN + 1, s.divider + 2))
   ab.WriteString("\x1b[0m") // needed or else in bold mode from line drawing above
 
   fmt.Fprint(os.Stdout, ab.String())
@@ -109,7 +111,7 @@ func (s Session) positionEditors() {
     if !z.is_below {editorSlots++}
   }
 
-  cols := -1 + (s.screencols - s.divider)/editorSlots;
+  cols := -1 + (s.screenCols - s.divider)/editorSlots;
   i := -1; //i = number of columns of editors -1
   for _, e := range s.editors {
     if !e.is_below {i++}
@@ -121,7 +123,9 @@ func (s Session) positionEditors() {
 
 func (s Session) drawOrgRows() {
 
-  if len(org.rows) == 0  {return}
+  if len(org.rows) == 0  {
+    return
+  }
 
   var j, k int //to swap highlight if org.highlight[1] < org.highlight[0]
   var ab strings.Builder
@@ -129,14 +133,17 @@ func (s Session) drawOrgRows() {
 
   lf_ret := fmt.Sprintf("\r\n\x1b[%dC", LEFT_MARGIN)
 
-  for y := 0; y < s.textlines; y++ {
+  for y := 0; y < s.textLines; y++ {
     frr := y + org.rowoff
-    if frr > len(org.rows - 1) {break}
+    if frr > len(org.rows) - 1 {
+      break
+    }
 
     // if a line is long you only draw what fits on the screen
     //below solves problem when deleting chars from a scrolled long line
 
     //can run into this problem when deleting chars from a scrolled log line
+    var length int
     if frr == org.fr {
       length = len(org.rows[frr].title) - org.coloff
     } else {
@@ -166,7 +173,7 @@ func (s Session) drawOrgRows() {
       ab.WriteString("\x1b[41m") //red background
     }
     //if (row.mark) ab.append("\x1b[46m", 5); //cyan background
-    if contains(org.marked_entries, org.rows[frr].id) {
+    if _, ok := org.marked_entries[org.rows[frr].id]; ok { 
       ab.WriteString("\x1b[46m")
     }
 
@@ -176,18 +183,17 @@ func (s Session) drawOrgRows() {
 
        // below in case org.highlight[1] < org.highlight[0]
       if org.highlight[1] > org.highlight[0] {
-        k = 1
+        j, k = 0, 1
       } else {
-        k = 0
+        k, j = 0, 1
       }
-      j =!k
 
-      ab.WriteString(org.rows[frr].title[:org.coloff:org.highlight[j] - org.coloff])
+      ab.WriteString(org.rows[frr].title[org.coloff:org.highlight[j] - org.coloff])
       ab.WriteString("\x1b[48;5;242m")
-      ab.WriteString(org.rows[frr].title[:org.highlight[j]:org.highlight[k] - org.coloff])
+      ab.WriteString(org.rows[frr].title[org.highlight[j]:org.highlight[k] - org.coloff])
 
       ab.WriteString("\x1b[49m") // return background to normal
-      ab.WriteString(row.title[:org.highlight[k]])
+      ab.WriteString(org.rows[frr].title[:org.highlight[k]])
 
     } else {
         // current row is only row that is scrolled if org.coloff != 0
@@ -195,7 +201,7 @@ func (s Session) drawOrgRows() {
       if frr == org.fr {
         beg = org.coloff
       }
-      if len(title[beg:]) > length {
+      if len(org.rows[frr].title[beg:]) > length {
         ab.WriteString(org.rows[frr].title[beg:beg+length])
       } else {
         ab.WriteString(org.rows[frr].title[beg:])
@@ -207,7 +213,7 @@ func (s Session) drawOrgRows() {
 
     //snprintf(buf, sizeof(buf), "\x1b[%d;%dH", y + 2, org.divider - TIME_COL_WIDTH + 2); // + offset
     // believe the +2 is just to give some space from the end of long titles
-    ab.WriteString("\x1b[%d;%dH", y + TOP_MARGIN + 1, s.divider - TIME_COL_WIDTH + 2)
+    ab.WriteString(fmt.Sprintf("\x1b[%d;%dH", y + TOP_MARGIN + 1, s.divider - TIME_COL_WIDTH + 2))
     ab.WriteString(org.rows[frr].modified);
     ab.WriteString("\x1b[0m") // return background to normal ////////////////////////////////
     ab.WriteString(lf_ret)
@@ -224,9 +230,11 @@ func (s Session) drawOrgSearchRows() {
 
   lf_ret := fmt.Sprintf("\r\n\x1b[%dC", LEFT_MARGIN)
 
-  for y := 0; y < textlines; y++ {
+  for y := 0; y < s.textLines; y++ {
     frr := y + org.rowoff;
-    if frr > len(org.rows - 1) {break}
+    if frr > len(org.rows) - 1 {
+      break
+    }
     //orow& row = org.rows[frr];
     var length int
 
@@ -260,10 +268,11 @@ func (s Session) drawOrgSearchRows() {
       length = titlecols
     }
     spaces := titlecols - length
-    for i := 0; i < spaces; i++  {ab.WriteString(" ", 1)}
+    ab.WriteString(strings.Repeat(" ", spaces))
+
     //snprintf(buf, sizeof(buf), "\x1b[%d;%dH", y + 2, screencols/2 - TIME_COL_WIDTH + 2); //wouldn't need offset
     ab.WriteString("\x1b[0m") // return background to normal
-    ab.WriteString(fmt.Sprintf("\x1b[%d;%dH", y + 2, divider - TIME_COL_WIDTH + 2))
+    ab.WriteString(fmt.Sprintf("\x1b[%d;%dH", y + 2, s.divider - TIME_COL_WIDTH + 2))
     ab.WriteString(org.rows[frr].modified)
     ab.WriteString(lf_ret)
   }
@@ -275,10 +284,10 @@ func (s Session) drawEditors() {
   for _, e := range s.editors {
   //for (size_t i=0, max=editors.size(); i!=max; ++i) {
     //Editor *&e = editors.at(i);
-    e.editorRefreshScreen(true)
+    e.refreshScreen(true)
     ab.WriteString("\x1b(0") // Enter line drawing mode
 
-    for j := 1; j < e.screenLines+1; j++ {
+    for j := 1; j < e.screenlines+1; j++ {
       ab.WriteString(fmt.Sprintf("\x1b[%d;%dH", e.top_margin - 1 + j, e.left_margin + e.screencols+1))
       // below x = 0x78 vertical line (q = 0x71 is horizontal) 37 = white; 1m = bold (note
       // only need one 'm'
@@ -289,7 +298,7 @@ func (s Session) drawEditors() {
       //'T' corner = w or right top corner = k
       ab.WriteString(fmt.Sprintf("\x1b[%d;%dH", e.top_margin - 1, e.left_margin + e.screencols+1))
 
-      if e.left_margin + e.screencols > screencols - 4 {
+      if e.left_margin + e.screencols > s.screenCols - 4 {
         ab.WriteString("\x1b[37;1mk") //draw corner
       } else {
         ab.WriteString("\x1b[37;1mw")
@@ -381,7 +390,7 @@ func (s Session) refreshOrgScreen() {
   //Now erases time/sort column (+ 17 in line below)
   //if (org.view != KEYWORD) {
   if org.mode != ADD_CHANGE_FILTER {
-    for j := TOP_MARGIN; j < textlines + 1; j++ {
+    for j := TOP_MARGIN; j < s.textLines + 1; j++ {
       ab.WriteString(fmt.Sprintf("\x1b[%d;%dH\x1b[1K", j + TOP_MARGIN, titlecols + LEFT_MARGIN + 17))
     }
   }
@@ -392,16 +401,16 @@ func (s Session) refreshOrgScreen() {
   fmt.Print(ab.String())
 
   if org.mode == FIND {
-    drawOrgSearchRows()
-  } else if org.mode == ADD_CHANGE_FILTER {
-    drawOrgFilters()
+    s.drawOrgSearchRows()
+  //} else if org.mode == ADD_CHANGE_FILTER {
+  //  s.drawOrgFilters()
   } else {
-    drawOrgRows();
+    s.drawOrgRows();
   }
 }
 
 func (s Session) showOrgMessage(format string, a ...interface{}) {
-  fmt.Printf("\x1b[%d;%dH\x1b[1K\x1b[%d;1H", s.textlines + 2 + TOP_MARGIN, s.divider, s.textlines + 2 + TOP_MARGIN)
+  fmt.Printf("\x1b[%d;%dH\x1b[1K\x1b[%d;1H", s.textLines + 2 + TOP_MARGIN, s.divider, s.textLines + 2 + TOP_MARGIN)
   str := fmt.Sprintf(format, a...)
   if len(str) > s.divider {
     str = str[:s.divider]
@@ -419,7 +428,7 @@ func (s Session) drawOrgStatusBar() {
   */
 
   var ab strings.Builder
-  ab.WriteString(fmt.Sprintf("\x1b[%d;%dH\x1b[1K\x1b[%d;1H", s.textlines + TOP_MARGIN + 1, s.divider, s.textlines + TOP_MARGIN + 1))
+  ab.WriteString(fmt.Sprintf("\x1b[%d;%dH\x1b[1K\x1b[%d;1H", s.textLines + TOP_MARGIN + 1, s.divider, s.textLines + TOP_MARGIN + 1))
   ab.WriteString("\x1b[7m"); //switches to inverted colors
 
   var str string
@@ -428,7 +437,7 @@ func (s Session) drawOrgStatusBar() {
     case TASK:
       switch org.taskview {
         case BY_FIND:
-          str =  "search - " + fts_search_terms
+          str =  "search - " + s.ftsSearchTerms
         case BY_FOLDER:
           str = org.folder + "[f]"
         case BY_CONTEXT:
@@ -448,9 +457,11 @@ func (s Session) drawOrgStatusBar() {
       str = "Keywords"
   }
 
+  var length int
+  var status string
   if len(org.rows) > 0 {
 
-    r = &org.rows[org.fr]
+    r := &org.rows[org.fr]
     // note the format is for 15 chars - 12 from substring below and "[+]" when needed
     var title string
     if len((*r).title) > 12 {
@@ -462,24 +473,24 @@ func (s Session) drawOrgStatusBar() {
 
     // needs to be here because org.rows could be empty
     var keywords string
-    if org.view == Task {
+    if org.view == TASK {
       keywords = getTaskKeywords((*r).id)
     }
 
     // because video is reversted [42 sets text to green and 49 undoes it
     // also [0;35;7m -> because of 7m it reverses background and foreground
     // I think the [0;7m is revert to normal and reverse video
-    status := fmt.Sprintf( "\x1b[1m%s\x1b[0;7m %.15s...\x1b[0;35;7m %s \x1b[0;7m %d %d/%zu \x1b[1;42m%s\x1b[49m",
+    status = fmt.Sprintf( "\x1b[1m%s\x1b[0;7m %s...\x1b[0;35;7m %s \x1b[0;7m %d %d/%d \x1b[1;42m%s\x1b[49m",
                               str, title, keywords, (*r).id, org.fr+1, len(org.rows), mode_text[org.mode])
 
     // klugy way of finding length of string without the escape characters
-    length := len(fmt.Sprintf("%s %.15s... %s  %d %d/%zu %s",
+    length = len(fmt.Sprintf("%s %s... %s  %d %d/%d %s",
                               str, title, keywords, (*r).id, org.fr+1, len(org.rows), mode_text[org.mode]))
   } else {
 
-    status := fmt.Sprintf( "\x1b[1m%s\x1b[0;7m %.15s...\x1b[0;35;7m %s \x1b[0;7m %d %d/%zu \x1b[1;42m%s\x1b[49m",
+    status = fmt.Sprintf( "\x1b[1m%s\x1b[0;7m %.15s...\x1b[0;35;7m %s \x1b[0;7m %d %d/%d \x1b[1;42m%s\x1b[49m",
                               str, "   No Results   ", -1, 0, 0, mode_text[org.mode])
-    length := len(fmt.Sprintf( "%s %.15s... %d %d/%zu %s",
+    length = len(fmt.Sprintf( "%s %.15s... %d %d/%zu %s",
                               str, "   No Results   ", -1, 0, 0, mode_text[org.mode]))
   }
 
@@ -489,22 +500,22 @@ func (s Session) drawOrgStatusBar() {
     ab.WriteString(status[:s.divider])
   }
   ab.WriteString("\x1b[0m") //switches back to normal formatting
-  fmt.Print(ab)
+  fmt.Print(ab.String())
 }
 
 func (s Session) returnCursor(){
   var ab strings.Builder
-  if s.editor_mode {
+  if s.editorMode {
   // the lines below position the cursor where it should go
     if s.p.mode != COMMAND_LINE {
       ab.WriteString(fmt.Sprintf("\x1b[%d;%dH", s.p.cy + s.p.top_margin, s.p.cx + s.p.left_margin + s.p.left_margin_offset + 1))
     } else { //E.mode == COMMAND_LINE
-      ab.WriteString(fmt.Sprintf("\x1b[%d;%ldH", s.textlines + TOP_MARGIN + 2, s.p.command_line.size() + s.divider + 2))
+      ab.WriteString(fmt.Sprintf("\x1b[%d;%ldH", s.textLines + TOP_MARGIN + 2, len(s.p.command_line) + s.divider + 2))
       ab.WriteString("\x1b[?25h"); // show cursor
     }
   } else {
     if org.mode == ADD_CHANGE_FILTER {
-      ab.WriteString(fmt.Sprintf("\x1b[%d;%dH", org.cy + TOP_MARGIN + 1, divider + 1))
+      ab.WriteString(fmt.Sprintf("\x1b[%d;%dH", org.cy + TOP_MARGIN + 1, s.divider + 1))
     } else if org.mode == FIND {
       ab.WriteString(fmt.Sprintf("\x1b[%d;%dH\x1b[1;34m>", org.cy + TOP_MARGIN + 1, LEFT_MARGIN)) //blue
     } else if org.mode != COMMAND_LINE {
@@ -512,14 +523,193 @@ func (s Session) returnCursor(){
       // below restores the cursor position based on org.cx and org.cy + margin
       ab.WriteString(fmt.Sprintf("\x1b[%d;%dH", org.cy + TOP_MARGIN + 1, org.cx + LEFT_MARGIN + 1))
     } else { //org.mode == COMMAND_LINE
-      ab.WriteString(fmt.Sprintf("\x1b[%d;%ldH", s.textlines + 2 + TOP_MARGIN, len(org.command_line) + LEFT_MARGIN + 1))
+      ab.WriteString(fmt.Sprintf("\x1b[%d;%dH", s.textLines + 2 + TOP_MARGIN, len(org.command_line) + LEFT_MARGIN + 1))
     }
   }
   ab.WriteString("\x1b[0m"); //return background to normal
   ab.WriteString("\x1b[?25h"); //shows the cursor
-  fmt.Print(ab)
+  fmt.Print(ab.String())
 }
 
+func (s Session) drawPreviewWindow(id int) { //get_preview
+
+  if (org.taskview != BY_FIND) {
+    s.drawPreviewText()
+  //} else {
+  //  drawSearchPreview()
+  }
+  s.drawPreviewBox()
+
+  /*
+  if (lm_browser) {
+    int folder_tid = getFolderTid(org.rows.at(org.fr).id);
+    if (!(folder_tid == 18 || folder_tid == 14)) updateHTMLFile("assets/" + CURRENT_NOTE_FILE);
+    else updateHTMLCodeFile("assets/" + CURRENT_NOTE_FILE);
+  } 
+  */
+}
+func (s Session) drawPreviewText() { //draw_preview
+
+  var ab strings.Builder
+
+  width := s.totaleditorcols - 10;
+  length := s.textLines - 10;
+  //hide the cursor
+  ab.WriteString("\x1b[?25l");
+  fmt.Fprintf(&ab, "\x1b[%d;%dH", TOP_MARGIN + 6, s.divider + 6)
+
+  ab.WriteString(fmt.Sprintf("\x1b[%d;%dH", TOP_MARGIN + 6, s.divider + 7))
+
+  lf_ret := fmt.Sprintf("\r\n\x1b[%dC", s.divider + 6)
+  //erase set number of chars on each line
+  erase_chars := fmt.Sprintf("\x1b[%dX", s.totaleditorcols - 10)
+
+  for i := 0; i < length-1; i++ {
+    ab.WriteString(erase_chars)
+    ab.WriteString(lf_ret)
+  }
+
+  ab.WriteString(fmt.Sprintf("\x1b[%d;%dH", TOP_MARGIN + 6, s.divider + 7))
+
+  ab.WriteString(fmt.Sprintf("\x1b[2*x\x1b[%d;%d;%d;%d;48;5;235$r\x1b[*x",
+               TOP_MARGIN+6, s.divider+7, TOP_MARGIN+4+length, s.divider+7+width))
+
+  ab.WriteString("\x1b[48;5;235m");
+  note := readNoteIntoString(org.rows[org.fr].id);
+  if note != "" {
+    ab.WriteString(generateWWString(note, width, length, lf_ret));
+  }
+  fmt.Print(ab.String())
+}
+func (s Session) displayEntryInfo(e *Entry) {
+  var ab strings.Builder
+  width := s.totaleditorcols - 10
+  length := s.textLines - 10
+
+  // \x1b[NC moves cursor forward by N columns
+  lf_ret := fmt.Sprintf("\r\n\x1b[%dC", s.divider + 6)
+
+  //hide the cursor
+  ab.WriteString("\x1b[?25l")
+  ab.WriteString(fmt.Sprintf("\x1b[%d;%dH", TOP_MARGIN + 6, s.divider + 7))
+
+  //erase set number of chars on each line
+  erase_chars := fmt.Sprintf("\x1b[%dX", s.totaleditorcols - 10)
+  for i := 0; i < length-1; i++ {
+    ab.WriteString(erase_chars)
+    ab.WriteString(lf_ret)
+  }
+
+  ab.WriteString(fmt.Sprintf("\x1b[%d;%dH", TOP_MARGIN + 6, s.divider + 7))
+
+  ab.WriteString(fmt.Sprintf("\x1b[2*x\x1b[%d;%d;%d;%d;48;5;235$r\x1b[*x", 
+               TOP_MARGIN+6, s.divider+7, TOP_MARGIN+4+length, s.divider+7+width))
+  ab.WriteString("\x1b[48;5;235m"); //draws the box lines with same background as above rectangle
+
+  ab.WriteString(fmt.Sprintf("id: %d%s", e.id, lf_ret))
+  ab.WriteString(fmt.Sprintf("id: %d%s", e.tid, lf_ret))
+  
+  title := fmt.Sprintf("title: %s", e.title)
+  if len(title) > width {
+    title = title[:width - 3] + "..."
+  }
+  //coloring labels will take some work b/o gray background
+  //s.append(fmt::format("{}title:{} {}{}", COLOR_1, "\x1b[m", title, lf_ret));
+  ab.WriteString(fmt.Sprintf("%s%s", title, lf_ret))
+
+  var context string
+  for k,v := range org.context_map {
+    if v == e.context_tid {
+      context = k
+      break
+    }
+  }
+  ab.WriteString(fmt.Sprintf("context: %s%s", context, lf_ret));
+
+  var folder string
+  for k,v := range org.folder_map {
+    if v == e.folder_tid {
+      folder = k
+      break
+    }
+  }
+  ab.WriteString(fmt.Sprintf("folder: %s%s", folder, lf_ret))
+
+  ab.WriteString(fmt.Sprintf("star: %t%s", e.star, lf_ret))
+  ab.WriteString(fmt.Sprintf("deleted: %t%s", e.deleted, lf_ret))
+
+  var completed bool
+  if e.completed != "" {
+    completed = true
+  } else {
+    completed = false
+  }
+  ab.WriteString(fmt.Sprintf("completed: %t%s", completed, lf_ret))
+  ab.WriteString(fmt.Sprintf("modified: %s%s", e.modified, lf_ret))
+  ab.WriteString(fmt.Sprintf("added: %s%s", e.added, lf_ret))
+
+  ab.WriteString(fmt.Sprintf("keywords: %s%s", getTaskKeywords(getId()), lf_ret))
+
+ fmt.Print(ab.String())
+  // display_item_info_pg needs to be updated if it is going to be used
+  //if (tid) display_item_info_pg(tid); //// ***** remember to remove this guard
+}
+
+func (s Session) drawPreviewBox() {
+  width := s.totaleditorcols - 10
+  length := s.textLines - 10
+  var ab strings.Builder
+  move_cursor := fmt.Sprintf("\x1b[%dC", width)
+
+  ab.WriteString("\x1b(0"); // Enter line drawing mode
+  ab.WriteString(fmt.Sprintf("\x1b[%d;%dH", TOP_MARGIN + 5, s.divider + 6))
+  ab.WriteString("\x1b[37;1ml"); //upper left corner
+
+  for i := 1; i < length; i++ { 
+    ab.WriteString(fmt.Sprintf("\x1b[%d;%dH", TOP_MARGIN + 5 + i, s.divider + 6))
+    // x=0x78 vertical line (q=0x71 is horizontal) 37=white; 1m=bold (only need 1 m)
+    ab.WriteString("\x1b[37;1mx")
+    ab.WriteString(move_cursor)
+    ab.WriteString("\x1b[37;1mx")
+  }
+
+  ab.WriteString(fmt.Sprintf("\x1b[%d;%dH", TOP_MARGIN + 4 + length, s.divider + 6))
+  ab.WriteString("\x1b[1B")
+  ab.WriteString("\x1b[37;1mm") //lower left corner
+
+  move_cursor = fmt.Sprintf("\x1b[1D\x1b[%dB", length)
+
+  for i := 1; i < width + 1; i++ { 
+    ab.WriteString(fmt.Sprintf("\x1b[%d;%dH", TOP_MARGIN + 5, s.divider + 6 + i))
+    ab.WriteString("\x1b[37;1mq")
+    ab.WriteString(move_cursor)
+    ab.WriteString("\x1b[37;1mq")
+  }
+
+  ab.WriteString("\x1b[37;1mj") //lower right corner
+  ab.WriteString(fmt.Sprintf("\x1b[%d;%dH", TOP_MARGIN + 5, s.divider + 7 + width))
+  ab.WriteString("\x1b[37;1mk") //upper right corner
+
+  //exit line drawing mode
+  ab.WriteString("\x1b(B")
+  ab.WriteString("\x1b[0m")
+  ab.WriteString("\x1b[?25h")
+  fmt.Print(ab.String())
+}
+
+func (s Session) quitApp() {
+  fmt.Print("\x1b[2J\x1b[H") //clears the screen and sends cursor home
+  //Py_FinalizeEx();
+  //sqlite3_close(S.db); //something should probably be done here
+  //PQfinish(conn);
+  //lsp_shutdown("all");
+
+	if err := rawmode.Restore(sess.origTermCfg); err != nil {
+		fmt.Fprintf(os.Stderr, "Error: disabling raw mode: %s\r\n", err)
+		os.Exit(1)
+	}
+  os.Exit(0)
+}
 /*
 func (s Session) moveDivider()
 func (s Session) drawOrgFilters

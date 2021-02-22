@@ -18,7 +18,7 @@ type Editor struct {
     dirty int //file changes since last save
     highlight [2]int
     vb0 [3]int
-    mode int
+    mode Mode
     command_line string //for commands on the command line; string doesn't include ':'
     command string // right now includes normal mode commands and command line commands
     last_command string

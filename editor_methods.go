@@ -1,5 +1,10 @@
 package main
 
+import (
+       "strings"
+       "fmt"
+)
+
 //var z0 = struct{}{}// in listmango
 var line_commands = map[string]struct{} {
                                        "I":z0,
@@ -29,6 +34,15 @@ func find_first_not_of(row *string, delimiters string, pos int) int {
   return -1
 }
 
+func (e *Editor) showMessage(format string, a ...interface{}) {
+  fmt.Printf("\x1b[%d;%dH\x1b[0K\x1b[%d;%dH", sess.textLines + e.top_margin + 1, sess.divider, sess.textLines + e.top_margin + 1, sess.divider)
+  str := fmt.Sprintf(format, a...)
+  if len(str) > e.screencols {
+    str = str[:e.screencols]
+  }
+  fmt.Print(str)
+}
+
 // a string is a sequence of uint8 == byte 
 func (e *Editor) move_to_right_brace(left_brace byte) (int,int) {
   r := e.fr
@@ -36,7 +50,7 @@ func (e *Editor) move_to_right_brace(left_brace byte) (int,int) {
   count := 1
   max := len(e.rows)
 
-  m := map[byte]byte{{'{','}'}, {'(',')'}, {'[',']'}}
+  m := map[byte]byte{'{':'}', '(':')', '[':']'}
   right_brace := m[left_brace]
 
   for  {
@@ -49,7 +63,7 @@ func (e *Editor) move_to_right_brace(left_brace byte) (int,int) {
     if c == len(row) {
       r++
       if r == max {
-        editorSetMessage("Couldn't find matching brace");
+        e.showMessage("Couldn't find matching brace");
         return e.fr,e.fc
       }
       c = 0
@@ -71,10 +85,10 @@ func (e *Editor) move_to_right_brace(left_brace byte) (int,int) {
 func (e *Editor) move_to_left_brace(right_brace byte) (int,int) {
   r := e.fr
   c := e.fc - 1
-  count = 1
+  count := 1
 
-  m := map[byte]byte{{'}','{'}, {')','('}, {']','['}}
-  left_brace = m[right_brace]
+  m := map[byte]byte{'}':'{', ')':'(', ']':'['}
+  left_brace := m[right_brace]
 
   row := e.rows[r]
 
@@ -83,10 +97,10 @@ func (e *Editor) move_to_left_brace(right_brace byte) (int,int) {
     if (c == -1) { //fc + 1 can be greater than row.size on first pass from INSERT if { at end of line
       r--;
       if (r == -1) {
-        editorSetMessage("Couldn't find matching brace");
+        e.showMessage("Couldn't find matching brace");
         return e.fr,e.fc
       }
-      row = rows[r]
+      row = e.rows[r]
       c = len(row) - 1
       continue;
     }
@@ -107,14 +121,14 @@ func (e *Editor) move_to_left_brace(right_brace byte) (int,int) {
 func (e *Editor) E_move_to_matching_brace(repeat int) {
   c := e.rows[e.fr][e.fc]
   left := "{([";
-  i = strings.Index(left, c)
+  i := strings.Index(left, string(c))
   if i != -1 {
-    e.fr, e.fc = move_to_right_brace(c);
+    e.fr, e.fc = e.move_to_right_brace(c);
   } else {
     right := "})]";
-    i = strings.Index(right, c)
+    i = strings.Index(right, string(c))
     if i != -1 {
-      e.fr,e.fc = move_to_left_brace(c);
+      e.fr,e.fc = e.move_to_left_brace(c);
     }
   }
 }
@@ -124,12 +138,16 @@ func (e *Editor) find_match_for_left_brace(left_brace byte, back bool) bool {
   r := e.fr
   c := e.fc + 1
   count := 1
-  max = len(e.rows)
+  max := len(e.rows)
+  var b int
+  if back {
+    b = 1
+  }
 
-  m := map[byte]byte{{'{','}'}, {'(',')'}, {'[',']'}}
+  m := map[byte]byte{'{':'}', '(':')', '[':']'}
   right_brace := m[left_brace]
 
-  //editorSetMessage("left brace: {}", left_brace);
+  //e.showMessage("left brace: {}", left_brace);
   for  {
 
     row := e.rows[r]
@@ -140,7 +158,7 @@ func (e *Editor) find_match_for_left_brace(left_brace byte, back bool) bool {
     if c >= len(row) {
       r++
       if r == max {
-        editorSetMessage("Couldn't find matching brace")
+        e.showMessage("Couldn't find matching brace")
         return false
       }
       c = 0
@@ -164,24 +182,28 @@ func (e *Editor) find_match_for_left_brace(left_brace byte, back bool) bool {
   }
 
   x := e.getScreenXFromRowColWW(r, c) + e.left_margin + e.left_margin_offset + 1
-  fmt.Printf(os.Stdout, "\x1b[%d;%dH\x1b[48;5;244m%d", y + e.top_margin, x, right_brace)
+  fmt.Printf("\x1b[%d;%dH\x1b[48;5;244m%d", y + e.top_margin, x, right_brace)
 
-  x = editorGetScreenXFromRowColWW(fr, fc-back) + e.left_margin + e.left_margin_offset + 1
-  y = editorGetScreenYFromRowColWW(fr, fc-back) + e.top_margin - e.line_offset; // added line offset 12-25-2019
-  fmt.Printf(os.Stdout, "\x1b[%d;%dH\x1b[48;5;244m%d\x1b[0m", y, x, left_brace)
-  editorSetMessage("r = %d   c = %d", r, c)
+  x = e.getScreenXFromRowColWW(e.fr, e.fc - b) + e.left_margin + e.left_margin_offset + 1
+  y = e.getScreenYFromRowColWW(e.fr, e.fc - b) + e.top_margin - e.line_offset; // added line offset 12-25-2019
+  fmt.Printf("\x1b[%d;%dH\x1b[48;5;244m%d\x1b[0m", y, x, left_brace)
+  e.showMessage("r = %d   c = %d", r, c)
   return true
 }
 
 //'automatically' happens in NORMAL and INSERT mode
 func (e *Editor) find_match_for_right_brace(right_brace byte, back bool) bool {
-  r = e.fr
-  c = e.fc - 1 - back
+  var b int
+  if back {
+    b = 1
+  }
+  r := e.fr
+  c := e.fc - 1 - b
   count := 1
 
   row := e.rows[r]
 
-  m := map[byte]byte{{'}','{'}, {')','('}, {']','['}}
+  m := map[byte]byte{'}':'{', ')':'(', ']':'['}
   left_brace := m[right_brace]
 
   for {
@@ -189,7 +211,7 @@ func (e *Editor) find_match_for_right_brace(right_brace byte, back bool) bool {
     if c == -1 { //fc + 1 can be greater than row.size on first pass from INSERT if { at end of line
       r--
       if r == -1 {
-        editorSetMessage("Couldn't find matching brace");
+        e.showMessage("Couldn't find matching brace");
         return false
       }
       row = e.rows[r]
@@ -215,12 +237,12 @@ func (e *Editor) find_match_for_right_brace(right_brace byte, back bool) bool {
   }
 
   x := e.getScreenXFromRowColWW(r, c) + e.left_margin + e.left_margin_offset + 1
-  fmt.Printf(os.Stdout, "\x1b[%d;%dH\x1b[48;5;244m%d", y + e.top_margin, x, right_brace)
+  fmt.Printf("\x1b[%d;%dH\x1b[48;5;244m%d", y + e.top_margin, x, right_brace)
 
-  x = editorGetScreenXFromRowColWW(fr, fc-back) + e.left_margin + e.left_margin_offset + 1
-  y = editorGetScreenYFromRowColWW(fr, fc-back) + e.top_margin - e.line_offset; // added line offset 12-25-2019
-  fmt.Printf(os.Stdout, "\x1b[%d;%dH\x1b[48;5;244m%d\x1b[0m", y, x, right_brace)
-  editorSetMessage("r = %d   c = %d", r, c)
+  x = e.getScreenXFromRowColWW(e.fr, e.fc - b) + e.left_margin + e.left_margin_offset + 1
+  y = e.getScreenYFromRowColWW(e.fr, e.fc - b) + e.top_margin - e.line_offset; // added line offset 12-25-2019
+  fmt.Printf("\x1b[%d;%dH\x1b[48;5;244m%d\x1b[0m", y, x, right_brace)
+  e.showMessage("r = %d   c = %d", r, c)
   return true
 }
 
@@ -239,29 +261,29 @@ func (e *Editor) draw_highlighted_braces() {
     c = e.rows[e.fr][e.fc]
     back = false;
   }
-  pos := strings.Index(braces, c)
+  pos := strings.Index(braces, string(c))
   if pos != -1 {
     switch c {
       case '{', '(':
-        e.redraw = find_match_for_left_brace(c, back)
+        e.redraw = e.find_match_for_left_brace(c, back)
         return
       case '}', ')':
-        e.redraw = find_match_for_right_brace(c, back)
+        e.redraw = e.find_match_for_right_brace(c, back)
         return
       //case '(':  
       default://should not need this
         return
     }
   } else if ( e.fc > 0 && e.mode == INSERT ) {
-      c := e.rows[fr][fc-1]
-      pos := strings.Index(braces, c)
+      c := e.rows[e.fr][e.fc-1]
+      pos := strings.Index(braces, string(c))
       if pos != -1 {
-        switch e.rows[fr][fc-1] {
+        switch e.rows[e.fr][e.fc-1] {
           case '{', '(':
-            e.redraw = find_match_for_left_brace(c, true)
+            e.redraw = e.find_match_for_left_brace(c, true)
             return
           case '}', ')':
-            e.redraw = find_match_for_right_brace(c, true)
+            e.redraw = e.find_match_for_right_brace(c, true)
             return
           //case '(':  
           default://should not need this
@@ -273,34 +295,34 @@ func (e *Editor) draw_highlighted_braces() {
 
 func (e *Editor) setLinesMargins() { //also sets top margin
 
-  if(e.linked_editor) {
+  if(e.linked_editor != nil) {
     if (e.is_subeditor) {
       if (e.is_below) {
         e.screenlines = LINKED_NOTE_HEIGHT;
-        e.top_margin = sess.textlines - LINKED_NOTE_HEIGHT + 2;
+        e.top_margin = sess.textLines - LINKED_NOTE_HEIGHT + 2;
       } else {
-        e.screenlines = sess.textlines;
+        e.screenlines = sess.textLines;
         e.top_margin =  TOP_MARGIN + 1;
       }
     } else {
       if (e.linked_editor.is_below) {
-        e.screenlines = sess.textlines - LINKED_NOTE_HEIGHT - 1;
+        e.screenlines = sess.textLines - LINKED_NOTE_HEIGHT - 1;
         e.top_margin =  TOP_MARGIN + 1;
       } else {
-        e.screenlines = sess.textlines;
+        e.screenlines = sess.textLines;
         e.top_margin =  TOP_MARGIN + 1;
       }
     }
   } else {
-    e.screenlines = sess.textlines;
+    e.screenlines = sess.textLines;
     e.top_margin =  TOP_MARGIN + 1;
   }
 }
 
 // normal mode 'e'
-func moveEndWord() {
+func (e *Editor) moveEndWord() {
 
-if len(rows) == o {
+if len(e.rows) == 0 {
   return
 }
 
@@ -326,7 +348,7 @@ if ( len(e.rows[e.fr]) == 0 || e.fc == len(e.rows[e.fr]) - 1 ) {
       return
     }
 
-    row = &rows[r]
+    row := &e.rows[r]
 
     if len(*row) == 0 {
       r++
@@ -335,7 +357,7 @@ if ( len(e.rows[e.fr]) == 0 || e.fc == len(e.rows[e.fr]) - 1 ) {
     }
 
     if strings.Index(delimiters, string((*row)[c])) == -1 {
-      if ( c == len(*row) - 1 || strings.Index(delimiters, string((*row)[c+1])) ) != -1 {
+      if ( c == len(*row) - 1 || strings.Index(delimiters, string((*row)[c+1])) != -1 ) {
         e.fc = c
         e.fr = r
         return
@@ -368,7 +390,7 @@ if ( len(e.rows[e.fr]) == 0 || e.fc == len(e.rows[e.fr]) - 1 ) {
           e.fc = pos - 1
           return
         } else {
-          fc = len(*row) - 1
+          e.fc = len(*row) - 1
           return
         }
       }
@@ -394,7 +416,7 @@ func (e *Editor) moveCursor(key int) {
 
     case ARROW_DOWN, 'j':
       if e.fr < len(e.rows) - 1 {
-        fr++;
+        e.fr++;
       }
   }
 }
@@ -427,17 +449,452 @@ func (e *Editor) insertNewLine(direction int) {
 
   var spaces string
   for j := 0; j < indent; j++ {
-      spaces += ' '
+      spaces += " "
   }
   e.fc = indent
 
   e.fr += direction;
-  e.insertRow(fr, spaces)
+  e.insertRow(e.fr, spaces)
 }
 
 func (e *Editor) insertRow(r int, s string) {
-  append(e.rows, "")
+  e.rows = append(e.rows, "")
   copy(e.rows[:r+1], e.rows[r:])
   e.rows[r] = s
-  dirty++;
+  e.dirty++;
 }
+
+func (e *Editor) rowsToString() string {
+
+  numRows := len(e.rows)
+  if numRows == 0 {
+    return ""
+  }
+
+  var sb strings.Builder
+  for i := 0; i < numRows - 1; i++ {
+      sb.WriteString(e.rows[i] + "\n")
+  }
+  sb.WriteString(e.rows[numRows - 1])
+  return sb.String()
+}
+
+func (e *Editor) getScreenXFromRowColWW(r, c int) int {
+  // can't use reference to row because replacing blanks to handle corner case
+  row := e.rows[r]
+
+  /* pos is the position of the last char in the line
+   * and pos+1 is the position of first character of the next row
+   */
+
+  if len(row) <= e.screencols - e.left_margin_offset {
+    return c
+  }
+
+  pos := -1;
+  prev_pos := 0
+  for  {
+
+    if len(row[pos+1:]) <= e.screencols - e.left_margin_offset {
+      prev_pos = pos
+      break
+  }
+
+  prev_pos = pos
+  //cpp find_last_of -the parameter defines the position from beginning to look at (inclusive)
+  //need to add + 1 because slice :n includes chars up to the n - 1 char
+  pos = strings.LastIndex(row[:pos + e.screencols - e.left_margin_offset + 1], " ")
+
+  if pos == -1 {
+      pos = prev_pos + e.screencols - e.left_margin_offset;
+  } else if pos == prev_pos {
+      row = strings.Replace(row[:pos+1], " ", "+", -1) + row[pos+1:]
+      pos = prev_pos + e.screencols - e.left_margin_offset;
+  }
+    /*
+    else
+      replace(row.begin()+prev_pos+1, row.begin()+pos+1, ' ', '+');
+    */
+
+  if pos >= c {
+    break
+  }
+  }
+  return c - prev_pos - 1
+}
+
+func (e *Editor) getScreenYFromRowColWW(r, c int) int {
+  screenline := 0
+
+  for n := 0; n < r; n++ {
+    screenline += e.getLinesInRowWW(n)
+  }
+
+  screenline = screenline + e.getLineInRowWW(r, c) - 1
+  return screenline
+}
+
+func (e *Editor) getLinesInRowWW(r int) int {
+  row := e.rows[r]
+
+  if len(row) <= e.screencols - e.left_margin_offset {
+    return 1
+  }
+
+  lines := 0;
+  pos := -1; //pos is the position of the last character in the line (zero-based)
+  prev_pos := 0
+
+  for {
+
+    // we know the first time around this can't be true
+    // could add if (line > 1 && row.substr(pos+1).size() ...);
+    if len(row[pos+1:]) <= e.screencols - e.left_margin_offset {
+      lines++
+      break
+    }
+
+    prev_pos = pos
+   //cpp find_last_of -the parameter defines the position from beginning to look at (inclusive)
+   //need to add + 1 because slice :n includes chars up to the n - 1 char
+    pos = strings.LastIndex(row[:pos + e.screencols - e.left_margin_offset + 1], " ")
+
+    if pos == -1 {
+      pos = prev_pos + e.screencols - e.left_margin_offset
+    } else if pos == prev_pos {
+      row = row[pos+1:]
+      pos = e.screencols - e.left_margin_offset - 1
+    }
+    lines++
+  }
+  return lines
+}
+
+func (e *Editor) getLineInRowWW(r, c int) int {
+  // can't use reference to row because replacing blanks to handle corner case
+  row := e.rows[r]
+
+  if len(row) <= e.screencols - e.left_margin_offset {
+    return 1
+  }
+
+  /* pos is the position of the last char in the line
+   * and pos+1 is the position of first character of the next row
+   */
+
+  lines := 0;
+  pos := -1; //pos is the position of the last character in the line (zero-based)
+  prev_pos := 0
+  for  {
+
+    // we know the first time around this can't be true
+    // could add if (line > 1 && row.substr(pos+1).size() ...);
+    if len(row[pos+1:]) <= e.screencols - e.left_margin_offset {
+      lines++
+      break
+    }
+
+    prev_pos = pos;
+    //cpp find_last_of -the parameter defines the position from beginning to look at (inclusive)
+    //need to add + 1 because slice :n includes chars up to the n - 1 char
+    pos = strings.LastIndex(row[:pos + e.screencols - e.left_margin_offset + 1], " ")
+
+    if (pos == -1) {
+        pos = prev_pos + e.screencols - e.left_margin_offset;
+
+   // only replace if you have enough characters without a space to trigger this
+   // need to start at the beginning each time you hit this
+   // unless you want to save the position which doesn't seem worth it
+    } else if pos == prev_pos {
+      row = strings.Replace(row[:pos+1], " ", "+", -1) + row[pos+1:]
+      pos = prev_pos + e.screencols - e.left_margin_offset;
+    }
+
+    lines++
+    if pos >= c {
+    break
+    }
+  }
+  return lines
+}
+
+func (e *Editor) indentAmount(r int) int {
+  if len(e.rows) == 0 {
+    return 0
+  }
+  var i int
+  row := e.rows[r]
+
+  for i = 0; i < len(row); i++ {
+    if row[i] != ' ' {
+      break
+    }
+  }
+
+  return i
+}
+
+func (e *Editor) insertReturn() { // right now only used for editor->INSERT mode->'\r'
+  r := &e.rows[e.fr]
+  r1 := (*r)[:e.fc] //(current_row.begin(), current_row.begin() + fc);
+  r2 := (*r)[e.fc:] //(current_row.begin() + fc, current_row.end());
+
+  //int indent = (e.smartindent) ? editorIndentAmount(fr) : 0;
+  indent := 0
+  if e.smartindent > 0 {
+    indent = e.indentAmount(e.fr)
+  }
+
+  *r = r1
+
+  e.rows = append(e.rows, "")
+  copy(e.rows[e.fr + 1:], e.rows[e.fr:])
+  e.rows[e.fr] = r2
+  e.fr++
+
+
+  if e.fc==0 {
+    return
+  }
+
+  e.fc = 0
+  for i := 0; i < indent; i++ {
+    e.insertChar(' ')
+  }
+}
+
+func (e *Editor) insertChar(chr int) {
+  // does not handle returns which must be intercepted before calling this function
+  // necessary even with NO_ROWS because putting new entries into insert mode
+  if len(e.rows) == 0 {
+    e.insertRow(0, "")
+  }
+  r := &e.rows[e.fr]
+  //row.insert(row.begin() + fc, chr); // works if row is empty
+  *r = (*r)[:e.fc] + string(chr) + (*r)[e.fc:]
+  e.dirty++
+  e.fc++
+}
+
+func (e *Editor) backspace() {
+
+  if ( e.fc == 0 && e.fr == 0 ) {
+    return
+  }
+
+  r := &e.rows[e.fr]
+  if e.fc > 0 {
+    *r = (*r)[:e.fc] + (*r)[e.fc + 1:]
+    e.fc--
+  } else if len(*r) > 1 {
+    e.rows[e.fr-1] = e.rows[e.fr-1] + *r
+    e.delRow(e.fr)
+    e.fr--
+    e.fc = len(e.rows[e.fr])
+  } else {
+    e.delRow(e.fr)
+    e.fr--
+    e.fc = len(e.rows[e.fr])
+}
+  e.dirty++;
+}
+
+func (e *Editor) delRow(r int) {
+  if len(e.rows) == 0 {
+    return // creation of NO_ROWS may make this unnecessary
+  }
+
+  copy(e.rows[r:], e.rows[r+1:])
+  if len(e.rows) == 0 {
+    e.fr, e.fc, e.cy, e.cx, e.line_offset, e.prev_line_offset, e.first_visible_row, e.last_visible_row = 0,0,0,0,0,0,0,0
+    e.mode = NO_ROWS
+  }
+
+  e.dirty++
+  //editorSetMessage("Row deleted = %d; numrows after deletion = %d cx = %d row[fr].size = %d", fr,
+  //numrows, cx, row[fr].size); 
+}
+
+func (e *Editor) delChar() {
+  if len(e.rows) == 0 {
+    return // creation of NO_ROWS may make this unnecessary
+  }
+  r := &e.rows[e.fr]
+  if ( len(*r) == 0 || e.fc > len(*r) - 1 ) {
+    return
+  }
+  *r = (*r)[:e.fc] + (*r)[e.fc + 1:]
+  e.dirty++
+}
+
+func (e *Editor) refreshScreen(draw bool) {
+  var ab strings.Builder
+  var tid int
+
+  ab.WriteString("\x1b[?25l") //hides the cursor
+  //ab.WriteString(fmt.Sprintf("\x1b[%d;%dH", e.top_margin, e.left_margin + 1))
+  fmt.Fprintf(&ab, "\x1b[%d;%dH", e.top_margin, e.left_margin + 1)
+
+  if draw {
+    // \x1b[NC moves cursor forward by N columns
+    lf_ret := fmt.Sprintf("\r\n\x1b[%dC", e.left_margin)
+    erase_chars := fmt.Sprintf("\x1b[%dX", e.screencols)
+    for i := 0; i < e.screenlines; i++ {
+      ab.WriteString(erase_chars)
+      ab.WriteString(lf_ret)
+    }
+
+    tid = getFolderTid(e.id);
+    if ((tid == 18 || tid == 14) && !(e.is_subeditor)) {
+      //e.drawCodeRows(ab) ///////////////////////////////////////////////////////////////////////////
+      e.drawRows()
+    } else {
+      e.drawRows()
+    }
+  }
+
+  e.drawStatusBar()
+  e.drawMessageBar()
+
+  // the lines below position the cursor where it should go
+  if e.mode != COMMAND_LINE {
+    //ab.WriteString(fmt.Sprintf("\x1b[%d;%dH", e.cy + e.top_margin, e.cx + e.left_margin + e.left_margin_offset + 1))
+    fmt.Fprintf(&ab, "\x1b[%d;%dH", e.cy + e.top_margin, e.cx + e.left_margin + e.left_margin_offset + 1)
+  }
+  fmt.Print(ab.String())
+
+  /*
+  // can't do the below until ab is written or will just overwite highlights
+  if (draw && spellcheck) editorSpellCheck();
+
+  if (rows.empty() || rows.at(fr).empty()) return;
+
+  if (!tid) tid = getFolderTid(id);
+  if ((tid == 18 || tid == 14) && !(is_subeditor)) draw_highlighted_braces();;
+  */
+}
+
+func (e *Editor) drawRows() {
+
+  if len(e.rows) == 0 {
+    return
+  }
+  var ab strings.Builder
+
+  lf_ret := fmt.Sprintf("\r\n\x1b[%dC", e.left_margin)
+  ab.WriteString("\x1b[?25l"); //hides the cursor
+
+  // format for positioning cursor is "\x1b[%d;%dH"
+  fmt.Fprintf(&ab, "\x1b[%d;%dH", e.top_margin, e.left_margin + 1)
+
+  y := 0
+  filerow := e.first_visible_row
+  flag := false;
+
+  for {
+
+    if flag {
+      break
+    }
+
+    if filerow == len(e.rows) {
+      e.last_visible_row = filerow - 1
+      break
+    }
+
+    row := e.rows[filerow]
+
+    if len(row) == 0 {
+      if y == e.screenlines - 1 {
+      break
+    }
+      ab.WriteString(lf_ret)
+      filerow++
+      y++
+      continue
+    }
+
+    pos := 0
+    prev_pos := 0 //except for start -> pos + 1
+    for  {
+      /* this is needed because it deals where the end of the line doesn't have a space*/
+      if prev_pos + e.screencols - e.left_margin_offset > len(row) {
+        ab.WriteString(row[prev_pos:])
+        if y == e.screenlines - 1 {
+          flag = true
+          break
+        }
+        ab.WriteString(lf_ret)
+        y++
+        filerow++
+        break
+      }
+
+      pos = strings.LastIndex(row[:prev_pos + e.screencols - e.left_margin_offset], " ")
+
+      //note npos when signed = -1 and order of if/else may matter
+      if pos == -1 || pos == prev_pos - 1 {
+        pos = prev_pos + e.screencols - e.left_margin_offset -1
+      }
+
+      ab.WriteString(row[prev_pos:pos+1]) //? pos+1
+      if y == e.screenlines - 1 {
+        flag = true
+        break
+      }
+      ab.WriteString(lf_ret)
+      prev_pos = pos + 1
+      y++
+    }
+  }
+  // ? only used so spellcheck stops at end of visible note
+  e.last_visible_row = filerow - 1 // note that this is not exactly true - could be the whole last row is visible
+  fmt.Print(ab.String())
+
+  //draw_visual(ab)
+}
+
+func (e *Editor) drawStatusBar() {
+  var ab strings.Builder
+  fmt.Fprintf(&ab, "\x1b[%d;%dH", e.screenlines + e.top_margin, e.left_margin + 1)
+
+  //erase from start of an Editor's status bar to the end of the Editor's status bar
+  //ab.append("\x1b[K"); //erases from cursor to end of screen on right - not what we want
+  fmt.Fprintf(&ab, "\x1b[%dX", e.screencols)
+
+  ab.WriteString("\x1b[7m ") //switches to inverted colors
+  title := getTitle(e.id)
+  if len(title) > 30 {
+    title = title[:30]
+  }
+  if e.dirty > 0 {
+    title += "[+]"
+  }
+  var sub string
+  if e.is_subeditor {
+    sub = "subeditor"
+  }
+  status := fmt.Sprintf("%d - %s ... %s", e.id, title, sub)
+
+  if len(status) > e.screencols - 1 {
+    status = status[:e.screencols - 1]
+  }
+  ab.WriteString(status)
+  spaces := strings.Repeat(" ", e.screencols - len(status))
+  ab.WriteString(spaces)
+  ab.WriteString("\x1b[0m") //switches back to normal formatting
+  fmt.Print(ab.String())
+}
+
+func (e *Editor) drawMessageBar() {
+  var ab strings.Builder
+  fmt.Fprintf(&ab, "\x1b[%d;%dH", sess.textLines + e.top_margin + 1, sess.divider + 1)
+
+  ab.WriteString("\x1b[K") // will erase midscreen -> R; cursor doesn't move after erase
+  if len(e.message) > e.screencols {
+   e.message = e.message[:e.screencols]
+  }
+  ab.WriteString(e.message)
+  fmt.Print(ab.String())
+}
+

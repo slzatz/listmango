@@ -3,7 +3,7 @@ package main
 var n_lookup = map[string]func(){
   string(ctrlKey('l')): goto_editor_N,
   string([]byte{0x17,0x17}): goto_editor_N,
-  "\r": return_N, //return_O
+//  "\r": return_N, //return_O
   "i": insert_N,
   "s": s_N,
   "~": tilde_N,
@@ -15,14 +15,14 @@ var n_lookup = map[string]func(){
 
   "daw": daw_N,
   "dw": dw_N,
-  "daw": caw_N,
-  "dw": cw_N,
+  "caw": caw_N,
+  "cw": cw_N,
   "de": de_N,
   "d$": d_dollar_N,
 
   "gg": gg_N,
 
-  "gt": gt_N,
+  //"gt": gt_N,
 
   string(ctrlKey('i')): info_N, //{{0x9}}
   "b": b_N,
@@ -37,7 +37,7 @@ var n_lookup = map[string]func(){
   "*": asterisk_N,
   "m": m_N,
   "n": n_N,
-  "u": u_N,
+  //"u": u_N,
   "dd": dd_N,
   string(0x4): dd_N, //ctrl-d
   string(0x2): star_N, //ctrl-b -probably want this go backwards (unimplemented) and use ctrl-e for this
@@ -70,13 +70,13 @@ func x_N() {
 
 func daw_N() {
   for i := 0; i < org.repeat; i++ {
-    org.outlineDelWord()
+    org.delWord()
   }
 }
 
 func caw_N() {
   for i := 0; i < org.repeat; i++ {
-    org.outlineDelWord()
+    org.delWord()
   }
   org.mode = INSERT;
   sess.showOrgMessage("\x1b[1m-- INSERT --\x1b[0m");
@@ -88,7 +88,7 @@ func dw_N() {
     org.moveEndWord2()
     end := org.fc
     org.fc = start
-    t = &org.rows[org.fr].title
+    t := &org.rows[org.fr].title
     *t = (*t)[:org.fc] +(*t)[end+1:]
   }
 }
@@ -99,7 +99,7 @@ func cw_N() {
     org.moveEndWord2()
     end := org.fc
     org.fc = start
-    t = &org.rows[org.fr].title
+    t := &org.rows[org.fr].title
     *t = (*t)[:org.fc] +(*t)[end+1:]
   }
   org.mode = INSERT;
@@ -108,14 +108,14 @@ func cw_N() {
 
 func de_N() {
   start := org.fc
-  org.outlineMoveEndWord(); //correct one to use to emulate vim
+  org.moveEndWord(); //correct one to use to emulate vim
   end := org.fc
   org.fc = start
-  t = &org.rows[org.fr].title
+  t := &org.rows[org.fr].title
   *t = (*t)[:org.fc] +(*t)[end:]
 }
 
-func di_dollar_N() {
+func d_dollar_N() {
   org.deleteToEndOfLine()
 }
 //case 'r':
@@ -178,12 +178,13 @@ func gg_N() {
   org.fr = org.repeat - 1 //this needs to take into account O.rowoff
   if org.view == TASK {
     sess.drawPreviewWindow(org.rows[org.fr].id)
-  } else {
-    c := getContainerInfo(org.rows[org.fr].id)
-    if c.id != 0 {
-      sess.displayContainerInfo(c)
-    }
   }
+ // } else {
+ //   c := getContainerInfo(org.rows[org.fr].id)
+ //   if c.id != 0 {
+ //     sess.displayContainerInfo(c)
+ //   }
+ // }
 }
 
 //case 'G':
@@ -192,12 +193,13 @@ func G_N() {
   org.fr = len(org.rows) - 1
   if org.view == TASK {
     sess.drawPreviewWindow(org.rows[org.fr].id)
-  } else {
-    c := getContainerInfo(org.rows[org.fr].id)
-    if c.id != 0 {
-      sess.displayContainerInfo(c);
-    }
   }
+ // } else {
+ //   c := getContainerInfo(org.rows[org.fr].id)
+ //   if c.id != 0 {
+ //     sess.displayContainerInfo(c);
+ //   }
+ // }
 }
 
 //case ':':
@@ -231,13 +233,13 @@ func asterisk_N() {
 
 //case 'm':
 func m_N() {
-  org.rows[org.fr].mark = !org.rows[org.fr].mark;
-  if org.rows[org.fr].mark {
-    org.marked_entries.insert(org.rows[org.fr].id)
+  org.rows[org.fr].marked = !org.rows[org.fr].marked
+  if org.rows[org.fr].marked {
+    org.marked_entries[org.rows[org.fr].id] = struct{}{}
   } else {
-    org.marked_entries.erase(org.rows[org.fr].id)
+    delete(org.marked_entries, org.rows[org.fr].id)
   }
-  sess.showOrgMessage("Toggle mark for item %d", org.rows[org.fr].id);
+  sess.showOrgMessage("Toggle mark for item %d", org.rows[org.fr].id)
 }
 
 //case 'n':
@@ -247,17 +249,17 @@ func n_N() {
 
 //dd and 0x4 -> ctrl-d
 func dd_N() {
-  org.toggleDeleted()
+  toggleDeleted()
 }
 
 //0x2 -> ctrl-b
 func star_N() {
-  org.toggleStar()
+  toggleStar()
 }
 
 //0x18 -> ctrl-x
 func completed_N() {
-  org.toggleCompleted()
+  toggleCompleted()
 }
 
 //void outlineMoveNextWord() {
@@ -267,7 +269,7 @@ func w_N() {
 
 func info_N() {
   e := getEntryInfo(getId())
-  sess.displayEntryInfo(e)
+  sess.displayEntryInfo(&e)
   sess.drawPreviewBox()
 }
 
@@ -280,7 +282,7 @@ func goto_editor_N() {
   sess.eraseRightScreen()
   sess.drawEditors()
 
-  sess.editor_mode = true
+  sess.editorMode = true
 }
 
 /*
