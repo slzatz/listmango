@@ -76,6 +76,31 @@ func (e *Editor) E_dw(repeat int) {
   }
 }
 
+func (e *Editor) resize(flag byte) {
+  if e.linked_editor == nil {
+    return
+  }
+
+  le := e.linked_editor
+  var subnote_height int
+  if flag == '=' {
+    subnote_height = sess.textLines/2
+  } else {
+    subnote_height = LINKED_NOTE_HEIGHT
+  }
+  if !e.is_subeditor {
+    e.screenlines = sess.textLines - subnote_height - 1
+    le.screenlines = subnote_height
+    le.top_margin = sess.textLines - subnote_height + 2
+  } else {
+    le.screenlines = sess.textLines - subnote_height - 1
+    e.screenlines = subnote_height
+    e.top_margin = sess.textLines - subnote_height + 2
+  }
+  le.refreshScreen(true)
+  e.refreshScreen(true)
+}
+
 func (e *Editor) E_daw(repeat int) {
 }
 

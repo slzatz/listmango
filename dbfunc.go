@@ -567,6 +567,32 @@ func readNoteIntoString(id int) string {
   return note
 }
 
+func readNoteIntoEditor(id int) {
+  if id ==-1 {
+    return // id given to new and unsaved entries
+  }
+
+  row := db.QueryRow("SELECT note FROM task WHERE id=?;", id)
+  var note string
+  err := row.Scan(&note)
+  if err != nil {
+    return
+  }
+
+  note = strings.ReplaceAll(note, "\r", "")
+  ss := strings.Split(note, "\n")
+  for i, s := range ss {
+    sess.p.insertRow(i, s)
+  }
+
+  sess.p.dirty = 0 //assume editorInsertRow increments dirty so this needed
+  if sess.p.linked_editor == nil {
+    return
+  }
+
+  sess.p.linked_editor.rows = []string{" "}
+}
+
 func getEntryInfo(id int) Entry {
   var e Entry
   if id ==-1 {

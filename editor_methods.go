@@ -35,7 +35,8 @@ func find_first_not_of(row *string, delimiters string, pos int) int {
 }
 
 func (e *Editor) showMessage(format string, a ...interface{}) {
-  fmt.Printf("\x1b[%d;%dH\x1b[0K\x1b[%d;%dH", sess.textLines + e.top_margin + 1, sess.divider, sess.textLines + e.top_margin + 1, sess.divider)
+  //fmt.Printf("\x1b[%d;%dH\x1b[0K\x1b[%d;%dH", sess.textLines + e.top_margin + 1, sess.divider, sess.textLines + e.top_margin + 1, sess.divider)
+  fmt.Printf("\x1b[%d;%dH\x1b[K", sess.textLines + e.top_margin + 1, sess.divider + 1)
   str := fmt.Sprintf(format, a...)
   if len(str) > e.screencols {
     str = str[:e.screencols]
@@ -735,7 +736,7 @@ func (e *Editor) refreshScreen(draw bool) {
   //ab.WriteString(fmt.Sprintf("\x1b[%d;%dH", e.top_margin, e.left_margin + 1))
   fmt.Fprintf(&ab, "\x1b[%d;%dH", e.top_margin, e.left_margin + 1)
 
-  if draw {
+  if draw { //draw
     // \x1b[NC moves cursor forward by N columns
     lf_ret := fmt.Sprintf("\r\n\x1b[%dC", e.left_margin)
     erase_chars := fmt.Sprintf("\x1b[%dX", e.screencols)
@@ -744,8 +745,11 @@ func (e *Editor) refreshScreen(draw bool) {
       ab.WriteString(lf_ret)
     }
 
-    tid = getFolderTid(e.id);
-    if ((tid == 18 || tid == 14) && !(e.is_subeditor)) {
+    // this must be here -- if at end it erases the rows that are drawn by the calls to drawRows and drawCodeRows below
+    fmt.Print(ab.String())
+
+    tid = getFolderTid(e.id)
+    if ( (tid == 18 || tid == 14) && !e.is_subeditor ) {
       //e.drawCodeRows(ab) ///////////////////////////////////////////////////////////////////////////
       e.drawRows()
     } else {
@@ -754,14 +758,14 @@ func (e *Editor) refreshScreen(draw bool) {
   }
 
   e.drawStatusBar()
-  e.drawMessageBar()
+  //e.drawMessageBar()
 
   // the lines below position the cursor where it should go
   if e.mode != COMMAND_LINE {
     //ab.WriteString(fmt.Sprintf("\x1b[%d;%dH", e.cy + e.top_margin, e.cx + e.left_margin + e.left_margin_offset + 1))
     fmt.Fprintf(&ab, "\x1b[%d;%dH", e.cy + e.top_margin, e.cx + e.left_margin + e.left_margin_offset + 1)
   }
-  fmt.Print(ab.String())
+  //fmt.Print(ab.String())
 
   /*
   // can't do the below until ab is written or will just overwite highlights
@@ -782,7 +786,7 @@ func (e *Editor) drawRows() {
   var ab strings.Builder
 
   lf_ret := fmt.Sprintf("\r\n\x1b[%dC", e.left_margin)
-  ab.WriteString("\x1b[?25l"); //hides the cursor
+  ab.WriteString("\x1b[?25l") //hides the cursor
 
   // format for positioning cursor is "\x1b[%d;%dH"
   fmt.Fprintf(&ab, "\x1b[%d;%dH", e.top_margin, e.left_margin + 1)
@@ -834,7 +838,7 @@ func (e *Editor) drawRows() {
 
       //note npos when signed = -1 and order of if/else may matter
       if pos == -1 || pos == prev_pos - 1 {
-        pos = prev_pos + e.screencols - e.left_margin_offset -1
+        pos = prev_pos + e.screencols - e.left_margin_offset - 1
       }
 
       ab.WriteString(row[prev_pos:pos+1]) //? pos+1
@@ -898,3 +902,102 @@ func (e *Editor) drawMessageBar() {
   fmt.Print(ab.String())
 }
 
+func (e *Editor) scroll() bool {
+
+  if len(e.rows) == 0  {
+    e.fr, e.fc, e.cy, e.cx, e.line_offset, e.prev_line_offset, e.first_visible_row, e.last_visible_row = 0,0,0,0,0,0,0,0
+    return true
+  }
+
+  if e.fr >= len(e.rows) {
+    e.fr = len(e.rows) - 1
+  }
+
+  row_size := len(e.rows[e.fr])
+  if e.fc >= row_size {
+    if e.mode != INSERT {
+      e.fc = row_size - 1
+    } else {
+    e.fc = row_size
+    }
+  }
+
+  if e.fc < 0 {
+    e.fc = 0
+  }
+
+  e.cx = e.getScreenXFromRowColWW(e.fr, e.fc)
+  cy_ := e.getScreenYFromRowColWW(e.fr, e.fc);
+
+  //my guess is that if you wanted to adjust line_offset to take into account that you wanted
+  // to only have full rows at the top (easier for drawing code) you would do it here.
+  // something like screenlines goes from 4 to 5 so that adjusts cy
+  // it's complicated and may not be worth it.
+
+  //deal with scroll insufficient to include the current line
+  if cy_ > e.screenlines + e.line_offset - 1 {
+    e.line_offset = cy_ - e.screenlines + 1 ////
+    e.first_visible_row, e.line_offset = e.getInitialRow(e.line_offset)
+  }
+
+ //let's check if the current line_offset is causing there to be an incomplete row at the top
+
+  // this may further increase line_offset so we can start
+  // at the top with the first line of some row
+  // and not start mid-row which complicates drawing the rows
+
+  //deal with scrol where current line wouldn't be visible because we're scrolled too far
+  if cy_ < e.line_offset {
+    e.line_offset = cy_
+    //e.first_visible_row = e.getInitialRow(e.line_offset, SCROLL_UP); ????????????????????????????? 2 getInitialRow
+    e.first_visible_row, e.line_offset = e.getInitialRow(e.line_offset)
+  }
+
+  if e.line_offset == 0 {
+    e.first_visible_row = 0
+  }
+
+  e.cy = cy_ - e.line_offset;
+
+  // vim seems to want full rows to be displayed although I am not sure
+  // it's either helpful or worth it but this is a placeholder for the idea
+
+  // returns true if display needs to scroll and false if it doesn't
+  // could just be redraw = true or do nothing since don't want to override if already true.
+  if e.line_offset == e.prev_line_offset {
+    return false
+  } else {
+    e.prev_line_offset = e.line_offset; return true
+  }
+}
+
+func (e *Editor) getInitialRow(line_offset int) (int, int) {
+
+  if line_offset == 0 {
+    return 0,0
+  }
+
+  initial_row := 0
+  lines := 0
+
+  for  {
+    lines += e.getLinesInRowWW(initial_row)
+    initial_row++
+
+    // there is no need to adjust line_offset
+    // if it happens that we start
+    // on the first line of row r
+    if lines == line_offset {
+      break
+    }
+
+    // need to adjust line_offset
+    // so we can start on the first
+    // line of row r
+    if lines > line_offset {
+      line_offset = lines
+      break
+    }
+  }
+  return initial_row, line_offset
+}

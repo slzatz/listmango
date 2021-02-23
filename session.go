@@ -26,6 +26,16 @@ type Session struct {
   ftsSearchTerms string
   //cfg config
   origTermCfg []byte //from GoKilo
+  cfg Config
+}
+
+type Config struct {
+  user string
+  password string
+  dbname string
+  hostaddr string
+  port int
+  ed_pct int
 }
 
 func contains(s []int, x int) bool {
@@ -37,7 +47,7 @@ func contains(s []int, x int) bool {
     return false
 }
 
-func (s Session) eraseScreenRedrawLines() {
+func (s *Session) eraseScreenRedrawLines() {
   fmt.Fprint(os.Stdout, "\x1b[2J") //Erase the screen
   fmt.Fprint(os.Stdout, "\x1b(0") //Enter line drawing mode
   for j := 1; j < s.screenLines + 1; j++ {
@@ -67,7 +77,7 @@ func (s Session) eraseScreenRedrawLines() {
   fmt.Fprint(os.Stdout, "\x1b(B") //exit line drawing mode
 }
 
-func (s Session) eraseRightScreen() {
+func (s *Session) eraseRightScreen() {
   var ab strings.Builder
 
   ab.WriteString("\x1b[?25l") //hides the cursor
@@ -105,7 +115,7 @@ func (s Session) eraseRightScreen() {
   fmt.Fprint(os.Stdout, ab.String())
 }
 
-func (s Session) positionEditors() {
+func (s *Session) positionEditors() {
   editorSlots := 0
   for _, z := range s.editors {
     if !z.is_below {editorSlots++}
@@ -121,7 +131,7 @@ func (s Session) positionEditors() {
   }
 }
 
-func (s Session) drawOrgRows() {
+func (s *Session) drawOrgRows() {
 
   if len(org.rows) == 0  {
     return
@@ -221,7 +231,7 @@ func (s Session) drawOrgRows() {
   fmt.Fprint(os.Stdout, ab.String())
 }
 
-func (s Session) drawOrgSearchRows() {
+func (s *Session) drawOrgSearchRows() {
 
   if len(org.rows) == 0 { return}
 
@@ -279,7 +289,7 @@ func (s Session) drawOrgSearchRows() {
   fmt.Fprint(os.Stdout, ab.String())
 }
 
-func (s Session) drawEditors() {
+func (s *Session) drawEditors() {
   var ab strings.Builder
   for _, e := range s.editors {
   //for (size_t i=0, max=editors.size(); i!=max; ++i) {
@@ -314,7 +324,7 @@ func (s Session) drawEditors() {
   fmt.Fprint(os.Stdout, ab.String())
 }
 
-func (s Session) GetWindowSize() error {
+func (s *Session) GetWindowSize() error {
 
 	ws, err := unix.IoctlGetWinsize(unix.Stdout, unix.TIOCGWINSZ)
 	if err != nil {
@@ -333,7 +343,7 @@ func (s Session) GetWindowSize() error {
   return nil
 }
 
-func (s Session) enableRawMode() ([]byte, error) {
+func (s *Session) enableRawMode() ([]byte, error) {
 
 	// Gets TermIOS data structure. From glibc, we find the cmd should be TCGETS
 	// https://code.woboq.org/userspace/glibc/sysdeps/unix/sysv/linux/tcgetattr.c.html
@@ -378,7 +388,7 @@ func Restore(original []byte) error {
 	return nil
 }
 
-func (s Session) refreshOrgScreen() {
+func (s *Session) refreshOrgScreen() {
   var ab strings.Builder
   titlecols := s.divider - TIME_COL_WIDTH - LEFT_MARGIN;
 
@@ -409,7 +419,7 @@ func (s Session) refreshOrgScreen() {
   }
 }
 
-func (s Session) showOrgMessage(format string, a ...interface{}) {
+func (s *Session) showOrgMessage(format string, a ...interface{}) {
   fmt.Printf("\x1b[%d;%dH\x1b[1K\x1b[%d;1H", s.textLines + 2 + TOP_MARGIN, s.divider, s.textLines + 2 + TOP_MARGIN)
   str := fmt.Sprintf(format, a...)
   if len(str) > s.divider {
@@ -418,7 +428,7 @@ func (s Session) showOrgMessage(format string, a ...interface{}) {
   fmt.Print(str)
 }
 
-func (s Session) drawOrgStatusBar() {
+func (s *Session) drawOrgStatusBar() {
 
   /*
   so the below should 1) position the cursor on the status
@@ -503,14 +513,14 @@ func (s Session) drawOrgStatusBar() {
   fmt.Print(ab.String())
 }
 
-func (s Session) returnCursor(){
+func (s *Session) returnCursor(){
   var ab strings.Builder
   if s.editorMode {
   // the lines below position the cursor where it should go
     if s.p.mode != COMMAND_LINE {
       ab.WriteString(fmt.Sprintf("\x1b[%d;%dH", s.p.cy + s.p.top_margin, s.p.cx + s.p.left_margin + s.p.left_margin_offset + 1))
     } else { //E.mode == COMMAND_LINE
-      ab.WriteString(fmt.Sprintf("\x1b[%d;%ldH", s.textLines + TOP_MARGIN + 2, len(s.p.command_line) + s.divider + 2))
+      ab.WriteString(fmt.Sprintf("\x1b[%d;%dH", s.textLines + TOP_MARGIN + 2, len(s.p.command_line) + s.divider + 2))
       ab.WriteString("\x1b[?25h"); // show cursor
     }
   } else {
@@ -531,7 +541,7 @@ func (s Session) returnCursor(){
   fmt.Print(ab.String())
 }
 
-func (s Session) drawPreviewWindow(id int) { //get_preview
+func (s *Session) drawPreviewWindow(id int) { //get_preview
 
   if (org.taskview != BY_FIND) {
     s.drawPreviewText()
@@ -548,7 +558,7 @@ func (s Session) drawPreviewWindow(id int) { //get_preview
   } 
   */
 }
-func (s Session) drawPreviewText() { //draw_preview
+func (s *Session) drawPreviewText() { //draw_preview
 
   var ab strings.Builder
 
@@ -581,7 +591,7 @@ func (s Session) drawPreviewText() { //draw_preview
   }
   fmt.Print(ab.String())
 }
-func (s Session) displayEntryInfo(e *Entry) {
+func (s *Session) displayEntryInfo(e *Entry) {
   var ab strings.Builder
   width := s.totaleditorcols - 10
   length := s.textLines - 10
@@ -655,7 +665,7 @@ func (s Session) displayEntryInfo(e *Entry) {
   //if (tid) display_item_info_pg(tid); //// ***** remember to remove this guard
 }
 
-func (s Session) drawPreviewBox() {
+func (s *Session) drawPreviewBox() {
   width := s.totaleditorcols - 10
   length := s.textLines - 10
   var ab strings.Builder
@@ -697,7 +707,7 @@ func (s Session) drawPreviewBox() {
   fmt.Print(ab.String())
 }
 
-func (s Session) quitApp() {
+func (s *Session) quitApp() {
   fmt.Print("\x1b[2J\x1b[H") //clears the screen and sends cursor home
   //Py_FinalizeEx();
   //sqlite3_close(S.db); //something should probably be done here
@@ -709,6 +719,36 @@ func (s Session) quitApp() {
 		os.Exit(1)
 	}
   os.Exit(0)
+}
+
+func (s *Session) moveDivider(pct int) {
+  // note below only necessary if window resized or font size changed
+  s.textLines = s.screenLines - 2 - TOP_MARGIN
+
+  if pct == 100 {
+    s.divider = 1
+  } else {
+    s.divider = s.screenCols - pct * s.screenCols/100
+  }
+  s.totaleditorcols = s.screenCols - s.divider - 2 //? OUTLINE MARGINS?
+
+  s.eraseScreenRedrawLines()
+
+  if s.divider > 10 {   //////////////////////////////////////////////////////
+    s.refreshOrgScreen()
+    s.drawOrgStatusBar()
+  }
+
+  if (s.editorMode) {
+    s.positionEditors()
+    s.eraseRightScreen() //erases editor area + statusbar + msg
+    s.drawEditors()
+  } else if ( org.view == TASK && org.mode != NO_ROWS ) {
+      s.drawPreviewWindow(org.rows[org.fr].id) //get_preview
+  }
+  s.showOrgMessage("rows: %d  cols: %d  divider: %d", s.screenLines, s.screenCols, s.divider)
+
+  s.returnCursor()
 }
 /*
 func (s Session) moveDivider()

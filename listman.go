@@ -28,6 +28,11 @@ var navigation = map[int]struct{} {
                   'l':z0,
                   }
 
+var insert_cmds = map[string]struct{}{"I":z0, "i":z0, "A":z0, "a":z0, "o":z0, "O":z0, "s":z0, "cw":z0, "caw":z0}
+var quit_cmds = map[string]struct{}{"quit":z0, "q":z0, "quit!":z0, "q!":z0, "x":z0}
+var file_cmds = map[string]struct{}{"savefile":z0, "save":z0, "readfile":z0, "read":z0}
+var move_only = map[string]struct{}{"w":z0, "e":z0, "b":z0, "0":z0, "$":z0, ":":z0, "*":z0, "n":z0, "[s":z0, "]s":z0, "z=":z0, "gg":z0, "G":z0, "yy":z0} //could put 'u' ctrl-r here
+
 // SafeExit restores terminal using the original terminal config stored
 // in the global session variable
 /*
@@ -135,7 +140,14 @@ func main() {
     }
 
 		if sess.editorMode {
-			editorProcessKey(k)
+      textChange := editorProcessKey(k)
+
+      if !sess.editorMode {
+        continue
+      }
+      scroll := sess.p.scroll()
+      redraw := textChange || scroll || sess.p.redraw
+      sess.p.refreshScreen(redraw)
 		} else {
 			organizerProcessKey(k)
       org.scroll()
@@ -143,6 +155,9 @@ func main() {
       sess.drawOrgStatusBar();
 		}
 
+    if sess.divider > 10 {
+      sess.drawOrgStatusBar()
+    }
     sess.returnCursor()
 		// if it's been 5 secs since the last status message, reset
 		//if time.Now().Sub(sess.StatusMessageTime) > time.Second*5 && sess.State == stateEditing {
@@ -293,7 +308,7 @@ func editorProcessKey(c int) bool {
 
 	switch sess.p.mode {
 
-    case NO_ROWS:
+  case NO_ROWS:
       switch c {
       case '\x1b':
         sess.p.command = ""
@@ -320,7 +335,8 @@ func editorProcessKey(c int) bool {
         // ? p.redraw = true
         return true
       }
-    case INSERT:
+
+  case INSERT:
       switch c {
 
       case '\r':
@@ -350,106 +366,22 @@ func editorProcessKey(c int) bool {
             sess.p.last_typed = sess.p.last_typed[:length-1]
           }
           return true
-    
+
         case DEL_KEY:
           sess.p.delChar()
           return true
-    
+
         case ARROW_UP, ARROW_DOWN, ARROW_LEFT, ARROW_RIGHT:
           sess.p.moveCursor(c)
           return false
-    
+
         case ctrlKey('b'), ctrlKey('e'):
           //sess.p.push_current() //p.editorCreateSnapshot()
           //sess.p.editorDecorateWord(c)
           return true
-    
-          /*
-        // this should be a command line command
-        case ctrlKey('z'):
-          if sess.p.smartindex != 0 {
-            sess.p.smartindent = 0
-          } else {
-            sess.p.smartindex = SMARTINDENT
-          }
-          sess.p.editorSetMessage("smartindent = %d", sess.p.smartindent)
-          return false
-    */
+ 
         case '\x1b':
 
-          /*
-           * below deals with certain NORMAL mode commands that
-           * cause entry to INSERT mode includes dealing with repeats
-           */
-         /*
-          //i,I,a,A - deals with repeat
-          if _, found := cmd_map1[sess.p.last_command]; found {
-            sess.p.push_current() //
-            for n := 0; n < sess.p.last_repeat-1; n++ {
-              for pos, char := range sess.p.last_typed {
-                sess.p.editorInsertChar(char)
-              }
-            }
-          }
-
-          //cmd_map2 -> E_o_escape and E_O_escape - here deals with deals with repeat > 1
-          if cmd, found := cmd_map2[sess.p.last_command]; found {
-            cmd(sess.p, sess.p.last_repeat - 1)
-            sess.p.push_current()
-          }
-
-          //cw, caw, s
-          if _, found := cmd_map4[sess.p.last_command]; found {
-            sess.p.push_current()
-          }
-          //'I' in VISUAL BLOCK mode
-          if sess.p.last_command == "VBI" {
-            for n := 0; n < sess.p.last_repeat-1; n++ {
-              for pos, char := range sess.p.last_typed {
-                sess.p.editorInsertChar(char)
-              }
-            }
-            temp := sess.p.fr
-
-            for sess.p.fr=sess.p.fr+1; sess.p.fr<sess.p.vb0[1]+1; sess.p.fr++ {
-              for n := 0; n<sess.p.last_repeat; n++ { //NOTICE not p.last_repeat - 1
-                sess.p.fc = sess.p.vb0[0]
-                for pos, char := range sess.p.last_typed {
-                  sess.p.editorInsertChar(char)
-                }
-              }
-            }
-            sess.p.fr = temp
-            sess.p.fc = sess.p.vb0[0]
-          }
-
-          //'A' in VISUAL BLOCK mode
-          if sess.p.last_command == "VBA" {
-            for n := 0; n < sess.p.last_repeat-1; n++ {
-              for pos, char := range sess.p.last_typed {
-                sess.p.editorInsertChar(char)
-              }
-            }
-            //{ 12302020
-            temp := sess.p.fr
-
-            for sess.p.fr=sess.p.fr+1; sess.p.fr<sess.p.vb0[1]+1; sess.p.fr++ {
-              for n := 0; n<sess.p.last_repeat; n++ { //NOTICE not p.last_repeat - 1
-                length := len(sess.p.rows[sess.p.fr])
-                if sess.p.vb0[2] > length {
-                  sess.p.rows[sess.p.fr] + strings.Repeat(" ", sess.p.vb0[2] - length)
-                }
-                sess.p.fc = sess.p.vb0[2]
-              for pos, char := range sess.p.last_typed {
-                sess.p.editorInsertChar(char)
-              }
-              }
-            }
-            sess.p.fr = temp
-            sess.p.fc = sess.p.vb0[0]
-          //} 12302020
-          }
-           */
           /*Escape whatever else happens falls through to here*/
           sess.p.mode = NORMAL
           sess.p.repeat = 0
@@ -459,40 +391,362 @@ func editorProcessKey(c int) bool {
             sess.p.fc--
           }
 
-          /*
-          // below - if the indent amount == size of line then it's all blanks
-          // can hit escape with p.row == NULL or p.row[p.fr].size == 0
-          if len(sess.p.rows) != 0 && len(sess.p.rows[sess.p.fr]) != 0 {
-            n := sess.p.editorIndentAmount(sess.p.fr)
-            if n == len(sess.p.rows[sess.p.fr]) {
-              sess.p.fc = 0
-              for i := 0; i < n; i++ {
-                sess.p.editorDelChar()
-              }
-            }
-          }
-          sess.p.editorSetMessage("") // commented out to debug push_current
-          //editorSetMessage(p.last_typed.c_str())
-          sess.p.last_typed = "" /////////// 09182020
-          */
           return true //end case x1b:
-    
+
         // deal with tab in insert mode - was causing segfault  
         case '\t':
           for  i := 0; i < 4; i++{
             sess.p.insertChar(' ')
           }
-          return true  
+          return true
 
         default:
           sess.p.insertChar(c)
           sess.p.last_typed += string(c)
           return true
-     
+
       } //end inner switch for outer case INSERT
 
       return true // end of case INSERT: - should not be executed
 
-	}
+  case NORMAL:
+      switch(c) {
+
+        case '\x1b':
+          sess.p.command = ""
+          sess.p.repeat = 0
+          return false
+
+        case ':':
+          sess.p.mode = COMMAND_LINE
+          sess.p.command_line = ""
+          sess.p.command = ""
+          sess.p.showMessage(":")
+          return false;
+
+        case '/':
+          sess.p.mode = SEARCH;
+          sess.p.command_line = ""
+          sess.p.command = ""
+          sess.p.showMessage("/")
+          return false;
+
+          /*
+        case 'u':
+          sess.p.command = ""
+          sess.p.undo()
+          return true
+
+        case ctrlKey('r'):
+          sess.p.command = ""
+          sess.p.redo()
+          return true
+
+         */
+
+        case ctrlKey('h'):
+          sess.p.command = ""
+          if len(sess.editors) == 1 {
+
+            if (sess.divider < 10) {
+              sess.cfg.ed_pct = 80
+              sess.moveDivider(80)
+            }
+
+            sess.editorMode = false //needs to be here
+
+            sess.drawPreviewWindow(org.rows[org.fr].id)
+            org.mode = NORMAL
+            sess.returnCursor()
+            return false
+          }
+
+
+          if sess.p.is_below {
+            sess.p = sess.p.linked_editor
+          }
+
+          temp := []*Editor{}
+          for _, e := range sess.editors {
+            if !e.is_below {
+              temp = append(temp, e)
+            }
+          }
+
+          index := 0
+          for i, e := range temp {
+            if e == sess.p {
+              index = i
+              break
+            }
+          }
+
+          sess.p.showMessage("index: %d; length: %d", index, len(temp))
+
+          if index > 0 {
+            sess.p = temp[index - 1]
+            if len(sess.p.rows) == 0 {
+              sess.p.mode = NO_ROWS
+            } else {
+              sess.p.mode = NORMAL;
+            }
+            return false
+          } else {
+
+            if sess.divider < 10 {
+              sess.cfg.ed_pct = 80
+              sess.moveDivider(80)
+            }
+
+            sess.editorMode = false //needs to be here
+
+            sess.drawPreviewWindow(org.rows[org.fr].id)
+            org.mode = NORMAL
+            sess.returnCursor()
+            return false
+          }
+
+        case ctrlKey('l'):
+          sess.p.command = ""
+
+          if sess.p.is_below {
+            sess.p = sess.p.linked_editor
+          }
+
+          temp := []*Editor{}
+          for _, e := range sess.editors {
+            if !e.is_below {
+              temp = append(temp, e)
+            }
+          }
+
+          index := 0
+          for i, e := range temp {
+            if e == sess.p {
+              index = i
+              break
+            }
+          }
+
+          sess.p.showMessage("index: %d; length: %d", index, len(temp))
+
+          if index < len(temp) - 1 {
+            sess.p = temp[index + 1]
+            if len(sess.p.rows) == 0 {
+              sess.p.mode = NO_ROWS
+            } else {
+              sess.p.mode = NORMAL
+            }
+          }
+
+          return false
+
+        case ctrlKey('j'):
+          if sess.p.linked_editor.is_below {
+            sess.p = sess.p.linked_editor
+          }
+          if len(sess.p.rows) == 0 {
+            sess.p.mode = NO_ROWS
+          } else {
+            sess.p.mode = NORMAL
+          }
+          sess.p.command = ""
+          return false
+
+        case ctrlKey('k'):
+          if sess.p.is_below {
+            sess.p = sess.p.linked_editor
+          }
+          if len(sess.p.rows) == 0 {
+            sess.p.mode = NO_ROWS
+          } else {
+            sess.p.mode = NORMAL
+          }
+          sess.p.command = ""
+          return false
+
+      } //end switch in NORMAL
+
+      /*leading digit is a multiplier*/
+
+      if ( (c > 47 && c < 58) && sess.p.command == "") {
+
+        if ( sess.p.repeat == 0 && c == 48 ) {
+
+        } else if sess.p.repeat == 0 {
+          sess.p.repeat = c - 48;
+          // return false because command not complete
+          return false
+        } else {
+          sess.p.repeat = sess.p.repeat*10 + c - 48
+          // return false because command not complete
+          return false
+        }
+      }
+
+      if sess.p.repeat == 0 {
+        sess.p.repeat = 1
+      }
+      sess.p.command += string(c)
+
+      /* this and next if should probably be dropped
+       * and just use CTRL_KEY('w') to toggle
+       * size of windows and right now can't reach
+       * them given CTRL('w') above
+       */
+
+      //if (std::string_view(p->command) == std::string({0x17,'='})) 
+      //if (p->command == std::string({0x17,'='})) 
+      if sess.p.command == "\x17=" {
+        sess.p.resize('=')
+        sess.p.command = ""
+        sess.p.repeat = 0
+        return false
+      }
+
+      //if (std::string_view(p->command) == std::string({0x17,'_'})) 
+      //if (p->command == std::string({0x17,'_'})) 
+      if sess.p.command == "\x17_" {
+        sess.p.resize('_')
+        sess.p.command = ""
+        sess.p.repeat = 0
+        return false;
+      }
+
+      if cmd, found := e_lookup[sess.p.command]; found {
+
+        sess.p.prev_fr = sess.p.fr
+        sess.p.prev_fc = sess.p.fc
+
+        sess.p.snapshot = sess.p.rows ////////////////////////////////////////////09182020
+
+        cmd(sess.p, sess.p.repeat) //money shot
+
+        if _, found := insert_cmds[sess.p.command]; found {
+          sess.p.mode = INSERT
+          sess.p.showMessage("\x1b[1m-- INSERT --\x1b[0m")
+          sess.p.last_repeat = sess.p.repeat
+          sess.p.last_command = sess.p.command //p->last_command must be a string
+          sess.p.command = ""
+          sess.p.repeat = 0
+          return true
+        } else if _, found := move_only[sess.p.command]; found {
+          sess.p.command = ""
+          sess.p.repeat = 0
+          return false //note text did not change
+        }
+
+      }
+
+      // needs to be here because needs to pick up repeat
+      //Arrows + h,j,k,l
+      if _, found := navigation[c]; found {
+        for i := 0; i < sess.p.repeat; i++ {
+          sess.p.moveCursor(c);
+        }
+        sess.p.command = ""
+        sess.p.repeat = 0
+        return false
+      }
+
+      return true// end of case NORMAL - there are breaks that can get to code above
+
+    case COMMAND_LINE:
+
+      if c == '\r' {
+        pos := strings.Index(sess.p.command_line, " ")
+        var cmd string
+        if pos != - 1 {
+          cmd = org.command_line[:pos]
+        } else {
+          pos = 0
+          cmd = org.command_line
+        }
+
+        // note that right now we are not calling editor commands like E_write_close_C
+        // and E_quit_C and E_quit0_C
+        if _, found := quit_cmds[cmd]; found {
+          if cmd == "x" {
+            if sess.p.is_subeditor {
+              sess.p.mode = NORMAL;
+              sess.p.command = ""
+              sess.p.command_line = ""
+              sess.p.showMessage("You can't save the contents of the Output Window");
+              return false
+            }
+            //update_note(false, true); //should be p->E_write_C(); closing_editor = true;
+            updateNote() //should be p->E_write_C(); closing_editor = true;
+          } else if ( cmd == "q!" || cmd == "quit!" ) {
+            // do nothing = allow editor to be closed
+          } else if sess.p.dirty > 0 {
+              sess.p.mode = NORMAL
+              sess.p.command = ""
+              sess.p.command_line = ""
+              sess.p.showMessage("No write since last change")
+              return false
+          }
+
+          index := -1
+          for i := range sess.editors {
+            if sess.editors[i] == sess.p {
+              index = i
+              break
+            }
+          }
+          copy(sess.editors[index:], sess.editors[index + 1:])
+          sess.editors = sess.editors[:len(sess.editors) - 1]
+
+          if sess.p.linked_editor  != nil {
+            index := -1
+            for i := range sess.editors {
+              if sess.editors[i] == sess.p.linked_editor {
+                index = i
+                break
+              }
+            }
+            copy(sess.editors[index:], sess.editors[index + 1:])
+            sess.editors = sess.editors[:len(sess.editors) - 1]
+          }
+
+          if len(sess.editors) > 0 {
+
+            sess.p = sess.editors[0] //kluge should move in some logical fashion
+            sess.positionEditors()
+            sess.eraseRightScreen() //moved down here on 10-24-2020
+            sess.drawEditors()
+
+          } else { // we've quit the last remaining editor(s)
+            sess.p = nil
+            sess.editorMode = false
+            sess.eraseRightScreen()
+
+            if (sess.divider < 10) {
+              sess.cfg.ed_pct = 80
+              sess.moveDivider(80)
+            }
+
+            sess.drawPreviewWindow(org.rows[org.fr].id)
+            sess.returnCursor() //because main while loop if started in editor_mode -- need this 09302020
+          }
+
+          return false
+        } //end quit_cmds
+
+    }
+
+      if ( c == DEL_KEY || c == BACKSPACE ) {
+        if len(sess.p.command_line) > 0 {
+          sess.p.command_line = sess.p.command_line[:len(sess.p.command_line) - 1]
+        }
+      } else {
+        sess.p.command_line += string(c)
+      }
+
+      sess.p.showMessage(":%s", sess.p.command_line)
+      //sess.p.showMessage(":%s", "hello")
+      sess.showOrgMessage(":%s", sess.p.command_line)
+      return false //end of case COMMAND_LINE
   return true
+}
+return true
 }

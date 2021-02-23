@@ -24,6 +24,8 @@ const (
        MAX = 500
        TIME_COL_WIDTH = 18
        LEFT_MARGIN = 1
+       LEFT_MARGIN_OFFSET = 4
+       //SCROLL_UP = 1
        COLOR_1 = "\x1b[0;31m"
 )
 

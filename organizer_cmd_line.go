@@ -14,6 +14,7 @@ var cmd_lookup = map[string]func(int){
   "ok": F_openkeyword,
   "quit": F_quit_app,
   "q": F_quit_app,
+  "e": F_edit,
   /*
   "deletekeywords": F_deletekeywords,
   "delkw": F_deletekeywords,
@@ -213,3 +214,95 @@ func F_quit_app(pos int) {
     */
   }
 }
+func F_edit(id int) {
+
+  if org.view != TASK {
+    org.command = ""
+    org.mode = NORMAL
+    sess.showOrgMessage("Only tasks have notes to edit!")
+    return
+  }
+
+  //pos is zero if no space and command modifier
+  if id == 0 {
+    id = getId()
+  }
+  if id == -1 {
+    sess.showOrgMessage("You need to save item before you can create a note")
+    org.command = ""
+    org.mode = NORMAL
+    return
+  }
+
+  sess.showOrgMessage("Edit note %d", id);
+  sess.editorMode = true;
+
+  if len(sess.editors) > 0 {
+    active := false
+    for _, e := range sess.editors {
+      if e.id == id {
+        active = true
+        sess.p = e
+        break
+      }
+    }
+
+
+    if !active {
+      sess.p = &Editor{}
+      sess.editors = append(sess.editors, sess.p)
+      sess.p.id = id
+      sess.p.top_margin = TOP_MARGIN + 1
+
+      folder_tid := getFolderTid(org.rows[org.fr].id)
+      if (folder_tid == 18 || folder_tid == 14) {
+        sess.p.linked_editor = &Editor{}
+        sess.editors = append(sess.editors, sess.p.linked_editor)
+        sess.p.linked_editor.id = id
+        sess.p.linked_editor.is_subeditor = true
+        sess.p.linked_editor.is_below = true
+        sess.p.linked_editor.linked_editor = sess.p
+        sess.p.left_margin_offset = LEFT_MARGIN_OFFSET
+      }
+      readNoteIntoEditor(id) //if id == -1 does not try to retrieve note
+    }
+
+  } else {
+    sess.p = &Editor{};
+    sess.editors = append(sess.editors, sess.p)
+    sess.p.id = id
+    sess.p.top_margin = TOP_MARGIN + 1
+
+    folder_tid := getFolderTid(org.rows[org.fr].id)
+    if (folder_tid == 18 || folder_tid == 14) {
+      sess.p.linked_editor = &Editor{}
+      sess.editors = append(sess.editors, sess.p.linked_editor)
+      sess.p.linked_editor.id = id
+      sess.p.linked_editor.is_subeditor = true
+      sess.p.linked_editor.is_below = true
+      sess.p.linked_editor.linked_editor = sess.p
+      sess.p.left_margin_offset = LEFT_MARGIN_OFFSET
+    }
+    readNoteIntoEditor(id) //if id == -1 does not try to retrieve note
+ }
+  sess.positionEditors()
+  sess.eraseRightScreen() //erases editor area + statusbar + msg
+  sess.drawEditors()
+
+  if len(sess.p.rows) == 0 {
+    sess.p.mode = INSERT
+    // below all for undo
+    sess.p.last_command = "i"
+    sess.p.prev_fr = 0
+    sess.p.prev_fc = 0
+    sess.p.last_repeat = 1
+    //sess.p.snapshot.push_back("");
+    sess.p.showMessage("\x1b[1m-- INSERT --\x1b[0m")
+  } else {
+    sess.p.mode = NORMAL
+  }
+
+  org.command = ""
+  org.mode = NORMAL
+}
+
