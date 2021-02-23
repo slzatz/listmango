@@ -391,7 +391,8 @@ func editorProcessKey(c int) bool {
             sess.p.fc--
           }
 
-          return true //end case x1b:
+          sess.p.showMessage("")
+          return false //end case x1b:
 
         // deal with tab in insert mode - was causing segfault  
         case '\t':
@@ -657,14 +658,15 @@ func editorProcessKey(c int) bool {
         pos := strings.Index(sess.p.command_line, " ")
         var cmd string
         if pos != - 1 {
-          cmd = org.command_line[:pos]
+          cmd = sess.p.command_line[:pos]
         } else {
           pos = 0
-          cmd = org.command_line
+          cmd = sess.p.command_line
         }
 
         // note that right now we are not calling editor commands like E_write_close_C
         // and E_quit_C and E_quit0_C
+        sess.showOrgMessage("You hit return and command is %v", cmd)
         if _, found := quit_cmds[cmd]; found {
           if cmd == "x" {
             if sess.p.is_subeditor {
@@ -729,10 +731,23 @@ func editorProcessKey(c int) bool {
             sess.returnCursor() //because main while loop if started in editor_mode -- need this 09302020
           }
 
+          //sess.p.command_line = ""
+          //sess.p.mode = NORMAL
           return false
         } //end quit_cmds
 
-    }
+        if cmd0, found := e_lookup_C[cmd]; found {
+          cmd0(sess.p)
+          sess.p.command_line = ""
+          sess.p.mode = NORMAL
+          return false
+        }
+
+        sess.p.showMessage("\x1b[41mNot an editor command: %s\x1b[0m", cmd)
+        sess.p.mode = NORMAL
+        sess.p.command_line = ""
+        return false
+      }
 
       if ( c == DEL_KEY || c == BACKSPACE ) {
         if len(sess.p.command_line) > 0 {
@@ -744,9 +759,8 @@ func editorProcessKey(c int) bool {
 
       sess.p.showMessage(":%s", sess.p.command_line)
       //sess.p.showMessage(":%s", "hello")
-      sess.showOrgMessage(":%s", sess.p.command_line)
+      //sess.showOrgMessage(":%s", sess.p.command_line)
       return false //end of case COMMAND_LINE
-  return true
 }
-return true
+return false
 }

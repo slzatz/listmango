@@ -580,10 +580,15 @@ func readNoteIntoEditor(id int) {
   }
 
   note = strings.ReplaceAll(note, "\r", "")
+  sess.p.rows = strings.Split(note, "\n")
+
+
+  /*
   ss := strings.Split(note, "\n")
   for i, s := range ss {
     sess.p.insertRow(i, s)
   }
+*/
 
   sess.p.dirty = 0 //assume editorInsertRow increments dirty so this needed
   if sess.p.linked_editor == nil {

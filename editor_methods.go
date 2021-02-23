@@ -1,8 +1,10 @@
 package main
 
 import (
+       "bufio"
        "strings"
        "fmt"
+       "os"
 )
 
 //var z0 = struct{}{}// in listmango
@@ -446,23 +448,19 @@ func (e *Editor) insertNewLine(direction int) {
   }
 
   //int indent = (smartindent) ? editorIndentAmount(fr) : 0;
-  indent := 2
-
-  var spaces string
-  for j := 0; j < indent; j++ {
-      spaces += " "
-  }
-  e.fc = indent
+  indent := e.indentAmount(e.fr)
+  spaces := strings.Repeat(" ", indent)
 
   e.fr += direction;
   e.insertRow(e.fr, spaces)
+  e.fc = indent
 }
 
 func (e *Editor) insertRow(r int, s string) {
   e.rows = append(e.rows, "")
-  copy(e.rows[:r+1], e.rows[r:])
+  copy(e.rows[r:], e.rows[r+1:])
   e.rows[r] = s
-  e.dirty++;
+  e.dirty++
 }
 
 func (e *Editor) rowsToString() string {
@@ -1000,4 +998,30 @@ func (e *Editor) getInitialRow(line_offset int) (int, int) {
     }
   }
   return initial_row, line_offset
+}
+
+func (e *Editor) readFileIntoNote(filename string) error {
+
+  r, err := os.Open(filename)
+  if err != nil {
+    return fmt.Errorf("error opening file %s: %w", filename, err)
+  }
+  defer r.Close()
+
+  e.rows = nil
+  scanner := bufio.NewScanner(r)
+  for scanner.Scan() {
+    e.rows = append(e.rows, strings.ReplaceAll(scanner.Text(), "\t", " "))
+  }
+
+  if err := scanner.Err(); err != nil {
+    return fmt.Errorf("error reading file %s: %w", filename, err)
+  }
+
+  e.fr, e.fc, e.cy, e.cx, e.line_offset, e.prev_line_offset, e.first_visible_row, e.last_visible_row = 0,0,0,0,0,0,0,0
+
+  e.dirty++
+  //sess.editor_mode = true;
+  e.refreshScreen(true)
+  return nil
 }
