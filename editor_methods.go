@@ -753,7 +753,7 @@ func (e *Editor) refreshScreen(draw bool) {
     if ( (tid == 18 || tid == 14) && !e.is_subeditor ) {
       e.drawCodeRows()
     } else {
-      e.drawCodeRows()
+      e.drawRows()
     }
   }
 
