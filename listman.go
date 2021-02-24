@@ -4,6 +4,8 @@ import (
 	"flag"
 	"fmt"
 	"os"
+  "os/signal"
+  "syscall"
 //	"time"
   "strings"
 
@@ -56,6 +58,15 @@ var org Organizer
 
 func main() {
 
+  signal_chan := make(chan os.Signal, 1)
+  signal.Notify(signal_chan, syscall.SIGWINCH)
+
+  go func() {
+           for {
+              _ = <-signal_chan
+              sess.signalHandler()
+            }
+  }()
 	// parse config flags & parameters
 	flag.Parse()
 

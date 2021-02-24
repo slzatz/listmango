@@ -324,6 +324,7 @@ func (s *Session) drawEditors() {
   fmt.Fprint(os.Stdout, ab.String())
 }
 
+//not in use at moment - using rawmode.GetWindowSize
 func (s *Session) GetWindowSize() error {
 
 	ws, err := unix.IoctlGetWinsize(unix.Stdout, unix.TIOCGWINSZ)
@@ -749,6 +750,19 @@ func (s *Session) moveDivider(pct int) {
   s.showOrgMessage("rows: %d  cols: %d  divider: %d", s.screenLines, s.screenCols, s.divider)
 
   s.returnCursor()
+}
+func (s *Session) signalHandler() {
+  //s.GetWindowSize()
+  var err error
+  s.screenLines, s.screenCols, err = rawmode.GetWindowSize()
+	if err != nil {
+		//SafeExit(fmt.Errorf("couldn't get window size: %v", err))
+    os.Exit(1)
+	}
+  //that percentage should be in session
+  // so right now this reverts back if it was changed during session
+  //s.moveDivider(s.cfg.ed_pct)
+  s.moveDivider(60)
 }
 /*
 func (s Session) moveDivider()
