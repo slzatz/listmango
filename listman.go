@@ -635,8 +635,16 @@ func editorProcessKey(c int) bool {
           sess.p.command = ""
           sess.p.repeat = 0
           return false //note text did not change
-        }
-
+        } else if sess.p.command != "." {
+          sess.p.last_repeat = sess.p.repeat
+          sess.p.last_command = sess.p.command
+          //sess.p.push_current();
+          sess.p.command = ""
+          sess.p.repeat = 0
+         } else {//if dot
+            //if dot then just repeast last command at new location
+            //sess.p->push_previous();
+         }
       }
 
       // needs to be here because needs to pick up repeat
