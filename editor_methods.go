@@ -4,7 +4,10 @@ import (
        "bufio"
        "strings"
        "fmt"
+       "io"
        "os"
+       "os/exec"
+       "log"
 )
 
 //var z0 = struct{}{}// in listmango
@@ -748,10 +751,9 @@ func (e *Editor) refreshScreen(draw bool) {
 
     tid = getFolderTid(e.id)
     if ( (tid == 18 || tid == 14) && !e.is_subeditor ) {
-      //e.drawCodeRows(ab) ///////////////////////////////////////////////////////////////////////////
-      e.drawRows()
+      e.drawCodeRows()
     } else {
-      e.drawRows()
+      e.drawCodeRows()
     }
   }
 
@@ -820,7 +822,7 @@ func (e *Editor) drawRows() {
     prev_pos := 0 //except for start -> pos + 1
     for  {
       /* this is needed because it deals where the end of the line doesn't have a space*/
-      if prev_pos + e.screencols - e.left_margin_offset > len(row) {
+      if prev_pos + e.screencols - e.left_margin_offset > len(row) - 1 { //? if need -1;cpp generateWWString had it
         ab.WriteString(row[prev_pos:])
         if y == e.screenlines - 1 {
           flag = true
@@ -854,6 +856,152 @@ func (e *Editor) drawRows() {
   fmt.Print(ab.String())
 
   //draw_visual(ab)
+}
+
+func (e *Editor) drawCodeRows() {
+  //save the current file to code_file with correct extension
+  f, err := os.Create("code_file")
+  if err != nil {
+    log.Fatalf("error creating file: %s: %w", f, err)
+  }
+  //defer f.Close()
+
+  _, err = f.WriteString(e.generateWWString())
+  if err != nil {
+    log.Fatalf("error writing to file: %s: %w", f, err)
+  }
+  f.Close()
+
+  var ab strings.Builder
+
+  var syntax string
+  if getFolderTid(e.id) == 18 {
+    syntax = "--syntax=cpp"
+  } else {
+    syntax = "--syntax=go"
+  }
+  //cmd := exec.Command("highlight", "code_file", "--out-format=xterm256", "--style=gruvbox-dark-hard-slz", "--syntax=go")
+  cmd := exec.Command("highlight", "code_file", "--out-format=xterm256", "--style=gruvbox-dark-hard-slz", syntax)
+  stdout, err := cmd.StdoutPipe()
+  if err != nil {
+    log.Fatal(err)
+  }
+
+  err = cmd.Start()
+  if err != nil {
+    log.Fatal(err)
+  }
+  buffer := bufio.NewReader(stdout)
+
+  /* alternative is to use a Scanner
+  scanner := bufio.NewScanner(stdout)
+  for scanner.Scan() {
+   z = scanner.Text()
+   */
+
+  lf_ret := fmt.Sprintf("\r\n\x1b[%dC", e.left_margin)
+  fmt.Fprintf(&ab, "\x1b[?25l\x1b[%d;%dH", e.top_margin, e.left_margin + 1)
+
+  // below draws the line number 'rectangle' only matters for the word-wrapped lines
+  fmt.Fprintf(&ab, "\x1b[2*x\x1b[%d;%d;%d;%d;48;5;235$r\x1b[*x",
+               e.top_margin, e.left_margin, e.top_margin + e.screenlines, e.left_margin + e.left_margin_offset)
+  n := 0
+  //func (b *Reader) ReadLine() (line []byte, isPrefix bool, err)
+  for {
+    bytes,  _, err := buffer.ReadLine()
+      if err == io.EOF {
+        break
+      }
+
+    if n >= e.first_visible_row { //substituted for above on 12312020
+      line := string(bytes)
+      fmt.Fprintf(&ab, "\x1b[48;5;235m\x1b[38;5;245m%3d \x1b[0m", n)
+      ll := strings.Split(line, "\t")
+      for i := 0; i < len(ll) - 1; i++ {
+        fmt.Fprintf(&ab, "%s%s\x1b[%dC", ll[i], lf_ret, e.left_margin_offset)
+      }
+      fmt.Fprintf(&ab, "%s%s", line, lf_ret)
+    }
+    n++;
+  }
+  fmt.Print(ab.String())
+  //draw_visual(ab);
+}
+
+/* below exists to create a text file that has the proper
+ * line breaks based on screen width for syntax highlighters
+ * that are utilized by drawCodeRows
+ * Produces a text string that starts at the first line of the
+ * file (need to deal with comments where start of comment might be scrolled
+ * and ends on the last visible linei. Also multilines are indicated by \t
+ * so highlighter deals with them correctly and converted to \n in drawCodeRows
+ * Only used by editorDrawCodeRows
+ */
+func (e *Editor) generateWWString() string {
+  if len(e.rows) == 0 {
+    return ""
+  }
+
+  var ab strings.Builder
+  y := -e.line_offset
+  filerow := 0
+
+  for  {
+    if filerow == len(e.rows) {
+      e.last_visible_row = filerow - 1
+      return ab.String()
+    }
+
+    //char ret = '\n';
+    ret := "\t"
+    row := e.rows[filerow]
+    // if you put a \n in the middle of a comment the wrapped portion won't be italic
+    //if (row.find("//") != std::string::npos) ret = '\t';
+    //ret = '\t';
+
+    if len(row) == 0 {
+      if y == e.screenlines - 1 {
+        return ab.String()
+      }
+      ab.WriteString("\n")
+      filerow++
+      y++
+      continue
+    }
+
+    pos := 0
+    prev_pos := 0 //except for start -> pos + 1
+    for  {
+      // if remainder of line is less than screen width
+      if prev_pos + e.screencols - e.left_margin_offset > len(row)  - 1 {
+        ab.WriteString(row[prev_pos:])
+        if y == e.screenlines - 1 {
+          e.last_visible_row = filerow - 1
+          return ab.String()
+        }
+        ab.WriteString("\n")
+        y++
+        filerow++
+        break
+      }
+
+      pos = strings.LastIndex(row[:prev_pos + e.screencols - e.left_margin_offset], " ")
+
+      //note npos when signed = -1 and order of if/else may matter
+      if pos == -1 || pos == prev_pos - 1 {
+        pos = prev_pos + e.screencols - e.left_margin_offset - 1
+      }
+
+      ab.WriteString(row[prev_pos:pos+1]) //? pos+1
+      if y == e.screenlines - 1 {
+        e.last_visible_row = filerow - 1
+        return ab.String()
+      }
+      ab.WriteString(ret)
+      prev_pos = pos + 1
+      y++
+    }
+  }
 }
 
 func (e *Editor) drawStatusBar() {

@@ -654,6 +654,14 @@ func editorProcessKey(c int) bool {
 
     case COMMAND_LINE:
 
+      if c == '\x1b' {
+        sess.p.mode = NORMAL
+        sess.p.command = ""
+        sess.p.repeat, sess.p.last_repeat = 0,0
+        sess.p.showMessage("")
+        return false
+      }
+
       if c == '\r' {
         pos := strings.Index(sess.p.command_line, " ")
         var cmd string
