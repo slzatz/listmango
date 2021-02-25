@@ -686,7 +686,7 @@ func (e *Editor) backspace() {
 
   r := &e.rows[e.fr]
   if e.fc > 0 {
-    *r = (*r)[:e.fc] + (*r)[e.fc + 1:]
+    *r = (*r)[:e.fc-1] + (*r)[e.fc:]
     e.fc--
   } else if len(*r) > 1 {
     e.rows[e.fr-1] = e.rows[e.fr-1] + *r
