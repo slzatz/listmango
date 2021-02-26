@@ -3,10 +3,10 @@ package main
 import (
 	"database/sql"
 	"fmt"
-  "log"
 	_ "github.com/mattn/go-sqlite3"
+	"log"
+	"strings"
 	"time"
-  "strings"
 )
 
 var db, _ = sql.Open("sqlite3", "/home/slzatz/mylistmanager3/lmdb_s/mylistmanager_s.db")
@@ -45,45 +45,45 @@ func timeDelta(t string) string {
 }
 
 func keywordExists(name string) int {
-  row := db.QueryRow("SELECT keyword.id FROM keyword WHERE keyword.name=?;", name)
-  var id int
-  err := row.Scan(&id)
-  if err != nil {
-    return -1
-  }
-  return id
+	row := db.QueryRow("SELECT keyword.id FROM keyword WHERE keyword.name=?;", name)
+	var id int
+	err := row.Scan(&id)
+	if err != nil {
+		return -1
+	}
+	return id
 }
 
 func generateContextMap() {
-  rows, err := db.Query("SELECT tid, title FROM context;")
+	rows, err := db.Query("SELECT tid, title FROM context;")
 	if err != nil {
 		log.Fatal(err)
 	}
-  defer rows.Close()
+	defer rows.Close()
 
-  for rows.Next() {
-    var tid int
-    var title string
+	for rows.Next() {
+		var tid int
+		var title string
 
-    err = rows.Scan(&tid, &title)
-    org.context_map[title] = tid
-  }
+		err = rows.Scan(&tid, &title)
+		org.context_map[title] = tid
+	}
 }
 
 func generateFolderMap() {
-  rows, err := db.Query("SELECT tid, title FROM folder;")
+	rows, err := db.Query("SELECT tid, title FROM folder;")
 	if err != nil {
 		log.Fatal(err)
 	}
-  defer rows.Close()
+	defer rows.Close()
 
-  for rows.Next() {
-    var tid int
-    var title string
+	for rows.Next() {
+		var tid int
+		var title string
 
-    err = rows.Scan(&tid, &title)
-    org.folder_map[title] = tid
-  }
+		err = rows.Scan(&tid, &title)
+		org.folder_map[title] = tid
+	}
 }
 
 func toggleStar() {
@@ -170,7 +170,7 @@ func toggleDeleted() {
 	}
 
 	s := fmt.Sprintf("UPDATE %s SET deleted=?, modified=datetime('now') WHERE id=?;", table)
-  res, err := db.Exec(s, !org.rows[org.fr].deleted, id)
+	res, err := db.Exec(s, !org.rows[org.fr].deleted, id)
 
 	/*
 		stmt, err := db.Prepare(fmt.Sprintf("UPDATE %s SET deleted=?, modified=datetime('now') WHERE id=?;",
@@ -248,7 +248,7 @@ func toggleCompleted() {
 
 func updateTaskContext(new_context string, id int) {
 	//id := getId()
-	context_tid := org.context_map[new_context] 
+	context_tid := org.context_map[new_context]
 
 	res, err := db.Exec("UPDATE task SET context_tid=?, modified=datetime('now') "+
 		"WHERE id=?;", context_tid, id)
@@ -398,10 +398,10 @@ func getItems(max int) {
 	}
 	s += fmt.Sprintf(" ORDER BY task.star DESC, task.%s DESC LIMIT %d;", org.sort, max)
 	//int sortcolnum = org.sort_map[org.sort] //cpp
-  var rows *sql.Rows
-  var err error
+	var rows *sql.Rows
+	var err error
 	if arg == "" { //Recent
-    rows, err = db.Query(s)
+		rows, err = db.Query(s)
 	} else {
 		rows, err = db.Query(s, arg)
 	}
@@ -454,278 +454,274 @@ func getItems(max int) {
 }
 
 func updateRows() {
-  var updated_rows []int
+	var updated_rows []int
 
-  for _, row := range org.rows {
-    if !row.dirty {
-      continue
-    }
+	for _, row := range org.rows {
+		if !row.dirty {
+			continue
+		}
 
-    if row.id == -1 {
-      id := insertRow(row)
-      updated_rows = append(updated_rows, id)
-      row.dirty = false
-      continue
-    }
+		if row.id == -1 {
+			id := insertRow(row)
+			updated_rows = append(updated_rows, id)
+			row.dirty = false
+			continue
+		}
 
-    res, err := db.Exec("UPDATE task SET title=?, modified=datetime('now') WHERE id=?", row.title, row.id)
-    if err != nil {
-      log.Fatal(err)
-    }
+		res, err := db.Exec("UPDATE task SET title=?, modified=datetime('now') WHERE id=?", row.title, row.id)
+		if err != nil {
+			log.Fatal(err)
+		}
 
-    _, err = res.RowsAffected()
-    if err != nil {
-      log.Fatal(err)
-        return
-    }
+		_, err = res.RowsAffected()
+		if err != nil {
+			log.Fatal(err)
+			return
+		}
 
-    row.dirty = false
-    updated_rows = append(updated_rows, row.id)
-  }
+		row.dirty = false
+		updated_rows = append(updated_rows, row.id)
+	}
 
-  if (len(updated_rows) == 0) {
-    sess.showOrgMessage("There were no rows to update")
-    return
-  }
-  sess.showOrgMessage("These ids were updated: %v",  updated_rows)
+	if len(updated_rows) == 0 {
+		sess.showOrgMessage("There were no rows to update")
+		return
+	}
+	sess.showOrgMessage("These ids were updated: %v", updated_rows)
 }
 
 func insertRow(row Row) int {
 
-  var folder_tid int
-  var context_tid int
+	var folder_tid int
+	var context_tid int
 
-  if org.context == "" {
-    context_tid = 1
-  } else {
-    context_tid = org.context_map[org.context]
-  }
+	if org.context == "" {
+		context_tid = 1
+	} else {
+		context_tid = org.context_map[org.context]
+	}
 
-  if org.folder == "" {
-    folder_tid = 1
-  } else {
-    folder_tid = org.folder_map[org.folder]
-  }
-  res, err := db.Exec("INSERT INTO task (priority, title, folder_tid, context_tid, " +
-              "star, added, note, deleted, created, modified) " +
-              "VALUES (3, ?, ?, ?, True, date(), '', False, " +
-              fmt.Sprintf("datetime('now', '-%s hours'), ", TZ_OFFSET) +
-              "datetime('now'));",
-              row.title, folder_tid, context_tid)
+	if org.folder == "" {
+		folder_tid = 1
+	} else {
+		folder_tid = org.folder_map[org.folder]
+	}
+	res, err := db.Exec("INSERT INTO task (priority, title, folder_tid, context_tid, "+
+		"star, added, note, deleted, created, modified) "+
+		"VALUES (3, ?, ?, ?, True, date(), '', False, "+
+		fmt.Sprintf("datetime('now', '-%s hours'), ", TZ_OFFSET)+
+		"datetime('now'));",
+		row.title, folder_tid, context_tid)
 
-  /*
-    not used:
-    tid,
-    tag,
-    duetime,
-    completed,
-    duedate,
-    repeat,
-    remind
-  */
-  if err != nil {
-    return -1
-  }
+	/*
+	   not used:
+	   tid,
+	   tag,
+	   duetime,
+	   completed,
+	   duedate,
+	   repeat,
+	   remind
+	*/
+	if err != nil {
+		return -1
+	}
 
-  row_id, err :=  res.LastInsertId()
-  if err != nil {
-    log.Fatal(err)
-    return -1
-  }
-  row.id = int(row_id)
-  row.dirty = false
+	row_id, err := res.LastInsertId()
+	if err != nil {
+		log.Fatal(err)
+		return -1
+	}
+	row.id = int(row_id)
+	row.dirty = false
 
+	/***************fts virtual table update*********************/
 
-  /***************fts virtual table update*********************/
-
-  //should probably create a separate function that is a klugy
-  //way of making up for fact that pg created tasks don't appear in fts db
-  //"INSERT OR IGNORE INTO fts (title, lm_id) VALUES ('" << title << row.id << ");";
-  /***************fts virtual table update*********************/
+	//should probably create a separate function that is a klugy
+	//way of making up for fact that pg created tasks don't appear in fts db
+	//"INSERT OR IGNORE INTO fts (title, lm_id) VALUES ('" << title << row.id << ");";
+	/***************fts virtual table update*********************/
 	_, err = fts_db.Exec("INSERT INTO fts (title, lm_id) VALUES (?, ?);", row.title, row.id)
 	if err != nil {
 		log.Fatal(err)
-    return -1
+		return -1
 	}
 
-  sess.showOrgMessage("Successfully inserted new row with id {} and indexed it (new vesrsion)", row.id);
+	sess.showOrgMessage("Successfully inserted new row with id {} and indexed it (new vesrsion)", row.id)
 
-  return row.id
+	return row.id
 }
 
 func readNoteIntoString(id int) string {
-  if id == -1 {
-    return "" // id given to new and unsaved entries
-  }
+	if id == -1 {
+		return "" // id given to new and unsaved entries
+	}
 
-  row := db.QueryRow("SELECT note FROM task WHERE id=?;", id)
-  var note string
-  err := row.Scan(&note)
-  if err != nil {
-    return ""
-  }
-  return note
+	row := db.QueryRow("SELECT note FROM task WHERE id=?;", id)
+	var note string
+	err := row.Scan(&note)
+	if err != nil {
+		return ""
+	}
+	return note
 }
 
 func readNoteIntoEditor(id int) {
-  if id ==-1 {
-    return // id given to new and unsaved entries
-  }
+	if id == -1 {
+		return // id given to new and unsaved entries
+	}
 
-  row := db.QueryRow("SELECT note FROM task WHERE id=?;", id)
-  var note string
-  err := row.Scan(&note)
-  if err != nil {
-    return
-  }
+	row := db.QueryRow("SELECT note FROM task WHERE id=?;", id)
+	var note string
+	err := row.Scan(&note)
+	if err != nil {
+		return
+	}
 
-  note = strings.ReplaceAll(note, "\r", "")
-  sess.p.rows = strings.Split(note, "\n")
+	note = strings.ReplaceAll(note, "\r", "")
+	sess.p.rows = strings.Split(note, "\n")
+	// send note to nvim
+	//var b [][]byte
+	for _, s := range sess.p.rows {
+		vimb = append(b, []byte(s))
+	}
+	v.SetBufferLines(0, 0, -1, true, b)
 
+	//sess.p.dirty = 0 //assume editorInsertRow increments dirty so this needed
+	if sess.p.linked_editor == nil {
+		return
+	}
 
-  /*
-  ss := strings.Split(note, "\n")
-  for i, s := range ss {
-    sess.p.insertRow(i, s)
-  }
-*/
-
-  sess.p.dirty = 0 //assume editorInsertRow increments dirty so this needed
-  if sess.p.linked_editor == nil {
-    return
-  }
-
-  sess.p.linked_editor.rows = []string{" "}
+	sess.p.linked_editor.rows = []string{" "}
 }
 
 func getEntryInfo(id int) Entry {
-  var e Entry
-  if id ==-1 {
-    return e
-  }
-  row := db.QueryRow("SELECT id, tid, title, created, folder_tid, context_tid, star, added, completed, deleted, modified FROM task WHERE id=?;", id)
+	var e Entry
+	if id == -1 {
+		return e
+	}
+	row := db.QueryRow("SELECT id, tid, title, created, folder_tid, context_tid, star, added, completed, deleted, modified FROM task WHERE id=?;", id)
 
-  err := row.Scan(
-                 &e.id,
-                 &e.tid,
-                 &e.title,
-                 &e.created,
-                 &e.folder_tid,
-                 &e.context_tid,
-                 &e.star,
-                 &e.added,
-                 &e.deleted,
-                 &e.completed,
-                 &e.deleted,
-                 &e.modified,
+	err := row.Scan(
+		&e.id,
+		&e.tid,
+		&e.title,
+		&e.created,
+		&e.folder_tid,
+		&e.context_tid,
+		&e.star,
+		&e.added,
+		&e.deleted,
+		&e.completed,
+		&e.deleted,
+		&e.modified,
 	)
 
 	if err != nil {
 		log.Fatal(err)
-    return e
+		return e
 	}
-  return e
+	return e
 }
 
 func getFolderTid(id int) int {
-  row := db.QueryRow("SELECT folder_tid FROM task WHERE id=?;", id)
-  var tid int
-  err := row.Scan(&tid)
-  if err != nil {
-    return -1
-  }
-  return tid
+	row := db.QueryRow("SELECT folder_tid FROM task WHERE id=?;", id)
+	var tid int
+	err := row.Scan(&tid)
+	if err != nil {
+		return -1
+	}
+	return tid
 }
 
 // used in Editor.cpp
 func getTitle(id int) string {
-  row := db.QueryRow("SELECT title FROM task WHERE id=?;", id)
-  var title string
-  err := row.Scan(&title)
-  if err != nil {
-    return ""
-  }
-  return title
+	row := db.QueryRow("SELECT title FROM task WHERE id=?;", id)
+	var title string
+	err := row.Scan(&title)
+	if err != nil {
+		return ""
+	}
+	return title
 }
 
-func getTaskKeywords(id int) (string) {
+func getTaskKeywords(id int) string {
 
-  rows, err := db.Query("SELECT keyword.name FROM task_keyword LEFT OUTER JOIN keyword ON "+
-                        "keyword.id=task_keyword.keyword_id WHERE task_keyword.task_id=?;",
-                        id)
+	rows, err := db.Query("SELECT keyword.name FROM task_keyword LEFT OUTER JOIN keyword ON "+
+		"keyword.id=task_keyword.keyword_id WHERE task_keyword.task_id=?;",
+		id)
 	if err != nil {
 		log.Fatal(err)
 	}
-  defer rows.Close()
+	defer rows.Close()
 
-  kk := []string{}
-  for rows.Next() {
-    var name string
+	kk := []string{}
+	for rows.Next() {
+		var name string
 
-    err = rows.Scan(&name)
-    kk = append(kk, name)
-  }
-  if len(kk) == 0 {
-    return ""
-  }
-  return strings.Join(kk, ",")
+		err = rows.Scan(&name)
+		kk = append(kk, name)
+	}
+	if len(kk) == 0 {
+		return ""
+	}
+	return strings.Join(kk, ",")
 }
 
 func generateWWString(text string, width int, length int, ret string) string {
 
-  if text == "" {
-    return ""
-  }
-  ss := strings.Split(text, "\n")
-  var ab strings.Builder
+	if text == "" {
+		return ""
+	}
+	ss := strings.Split(text, "\n")
+	var ab strings.Builder
 
-  y := 0
-  filerow := 0
+	y := 0
+	filerow := 0
 
-  for _, s := range ss {
-    if filerow == len(ss) {
-      return ab.String()
-    }
+	for _, s := range ss {
+		if filerow == len(ss) {
+			return ab.String()
+		}
 
-    if s == "" {
-      if y == length - 1 {
-        return ab.String()
-      }
-      ab.WriteString(ret)
-      filerow++
-      y++
-      continue
-    }
+		if s == "" {
+			if y == length-1 {
+				return ab.String()
+			}
+			ab.WriteString(ret)
+			filerow++
+			y++
+			continue
+		}
 
-    pos := 0
-    prev_pos := 0
+		pos := 0
+		prev_pos := 0
 
-    for {
-      if prev_pos + width > len(s) - 1 {
-        ab.WriteString(s[prev_pos:])
-        if y == length - 1 {
-          return ab.String()
-        }
-        ab.WriteString(ret)
-        y++
-        filerow++
-        break
-      }
-      pos = strings.LastIndex(s[:prev_pos+width], " ")
-      if ( pos == -1 || pos == prev_pos - 1 ) {
-        pos = prev_pos + width - 1
-      }
+		for {
+			if prev_pos+width > len(s)-1 {
+				ab.WriteString(s[prev_pos:])
+				if y == length-1 {
+					return ab.String()
+				}
+				ab.WriteString(ret)
+				y++
+				filerow++
+				break
+			}
+			pos = strings.LastIndex(s[:prev_pos+width], " ")
+			if pos == -1 || pos == prev_pos-1 {
+				pos = prev_pos + width - 1
+			}
 
-      ab.WriteString(s[prev_pos:pos+1])
+			ab.WriteString(s[prev_pos : pos+1])
 
-      if y == length - 1 {
-        return ab.String()
-      }
-      ab.WriteString(ret)
-      y++
-      prev_pos = pos + 1
-    }
-  }
-  return ab.String()
+			if y == length-1 {
+				return ab.String()
+			}
+			ab.WriteString(ret)
+			y++
+			prev_pos = pos + 1
+		}
+	}
+	return ab.String()
 }
-

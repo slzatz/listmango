@@ -1,14 +1,17 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
+	"log"
 	"os"
 	"os/signal"
 	"syscall"
 	//	"time"
 	"strings"
 
+	"github.com/neovim/go-client/nvim"
 	"github.com/slzatz/listmango/rawmode"
 	"github.com/slzatz/listmango/terminal"
 )
@@ -38,6 +41,10 @@ var move_only = map[string]struct{}{"w": z0, "e": z0, "b": z0, "0": z0, "$": z0,
 var sess Session
 var org Organizer
 
+var v *nvim.Nvim
+var w nvim.Window
+var vimb [][]byte
+
 func main() {
 
 	signal_chan := make(chan os.Signal, 1)
@@ -51,6 +58,41 @@ func main() {
 	}()
 	// parse config flags & parameters
 	flag.Parse()
+
+	// initialize neovim server
+	ctx := context.Background()
+	opts := []nvim.ChildProcessOption{
+
+		// -u NONE is no vimrc and -n is no swap file
+		nvim.ChildProcessArgs("-u", "NONE", "-n", "--embed", "--headless", "--noplugin"),
+
+		//without headless nothing happens but should be OK once ui attached.
+		//nvim.ChildProcessArgs("-u", "NONE", "-n", "--embed", "--noplugin"),
+
+		nvim.ChildProcessContext(ctx),
+		nvim.ChildProcessLogf(log.Printf),
+	}
+
+	/*
+		if runtime.GOOS == "windows" {
+			opts = append(opts, nvim.ChildProcessCommand("nvim.exe"))
+		}
+	*/
+
+	var err error
+	v, err = nvim.NewChildProcess(opts...)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Cleanup on return.
+	defer v.Close()
+
+	wins, err := v.Windows()
+	if err != nil {
+		fmt.Printf("%v\n", err)
+	}
+	w = wins[0]
 
 	// enable raw mode
 	origCfg, err := rawmode.Enable()
@@ -201,6 +243,7 @@ func organizerProcessKey(c int) {
 		}
 
 	case NORMAL:
+
 		if c == '\x1b' {
 			if org.view == TASK {
 				sess.drawPreviewWindow(org.rows[org.fr].id)
@@ -402,6 +445,22 @@ func editorProcessKey(c int) bool {
 		return true // end of case INSERT: - should not be executed
 
 	case NORMAL:
+		_, err := v.Input(string(c))
+		if err != nil {
+			fmt.Printf("%v\n", err)
+		}
+		mode, _ := v.Mode() //status msg and branch if v
+		sess.showOrgMessage("char = %v => mode = %v; blocking = %v", string(c), mode.Mode, mode.Blocking)
+		if mode.Blocking == false {
+			pos, _ := v.WindowCursor(w) //set screen cx and cy from pos
+			sess.p.showMessage(" => position = %v", pos)
+		}
+
+		z, _ := v.Bufferlines(vimb, 0, -1, true)
+		for _, vv := range z {
+			sess.p.rows[i] = string(vv)
+		}
+
 		switch c {
 
 		case '\x1b':
