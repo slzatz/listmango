@@ -581,9 +581,9 @@ func readNoteIntoEditor(id int) {
 	note = strings.ReplaceAll(note, "\r", "")
 	sess.p.rows = strings.Split(note, "\n")
 	// send note to nvim
-	//var b [][]byte
+	var b [][]byte
 	for _, s := range sess.p.rows {
-		vimb = append(b, []byte(s))
+		b = append(b, []byte(s))
 	}
 	v.SetBufferLines(0, 0, -1, true, b)
 

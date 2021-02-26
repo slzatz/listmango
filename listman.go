@@ -43,7 +43,6 @@ var org Organizer
 
 var v *nvim.Nvim
 var w nvim.Window
-var vimb [][]byte
 
 func main() {
 
@@ -445,6 +444,20 @@ func editorProcessKey(c int) bool {
 		return true // end of case INSERT: - should not be executed
 
 	case NORMAL:
+		switch c {
+
+		case '\x1b':
+			sess.p.command = ""
+			sess.p.repeat = 0
+
+		case ':':
+			sess.p.mode = COMMAND_LINE
+			sess.p.command_line = ""
+			sess.p.command = ""
+			sess.p.showMessage(":")
+			return false
+		}
+
 		_, err := v.Input(string(c))
 		if err != nil {
 			fmt.Printf("%v\n", err)
@@ -454,12 +467,23 @@ func editorProcessKey(c int) bool {
 		if mode.Blocking == false {
 			pos, _ := v.WindowCursor(w) //set screen cx and cy from pos
 			sess.p.showMessage(" => position = %v", pos)
+			sess.p.fr = pos[0] - 1
+			sess.p.fc = pos[1]
+		} else {
+			return false
+		}
+		bufs, err := v.Buffers()
+		if err != nil {
+			log.Fatal(err)
+		}
+		vbuf := bufs[0]
+		bb, _ := v.BufferLines(vbuf, 0, -1, true)
+		sess.p.rows = nil
+		for _, b := range bb {
+			sess.p.rows = append(sess.p.rows, string(b))
 		}
 
-		z, _ := v.Bufferlines(vimb, 0, -1, true)
-		for _, vv := range z {
-			sess.p.rows[i] = string(vv)
-		}
+		return true
 
 		switch c {
 
