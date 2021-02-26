@@ -578,14 +578,16 @@ func readNoteIntoEditor(id int) {
 		return
 	}
 
+	//? use scan which will catch /r/n
 	note = strings.ReplaceAll(note, "\r", "")
 	sess.p.rows = strings.Split(note, "\n")
+	//rows := strings.Split(note, "\n")
 	// send note to nvim
-	var b [][]byte
+	var bb [][]byte
 	for _, s := range sess.p.rows {
-		b = append(b, []byte(s))
+		bb = append(bb, []byte(s))
 	}
-	v.SetBufferLines(0, 0, -1, true, b)
+	v.SetBufferLines(0, 0, -1, true, bb)
 
 	//sess.p.dirty = 0 //assume editorInsertRow increments dirty so this needed
 	if sess.p.linked_editor == nil {

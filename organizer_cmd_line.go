@@ -289,14 +289,15 @@ func F_edit(id int) {
 	sess.drawEditors()
 
 	if len(sess.p.rows) == 0 {
-		sess.p.mode = INSERT
+		//sess.p.mode = INSERT
+		sess.p.mode = NORMAL
 		// below all for undo
 		sess.p.last_command = "i"
 		sess.p.prev_fr = 0
 		sess.p.prev_fc = 0
 		sess.p.last_repeat = 1
 		//sess.p.snapshot.push_back("");
-		sess.p.showMessage("\x1b[1m-- INSERT --\x1b[0m")
+		//sess.p.showMessage("\x1b[1m-- INSERT --\x1b[0m")
 	} else {
 		sess.p.mode = NORMAL
 	}

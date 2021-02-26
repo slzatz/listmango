@@ -170,6 +170,16 @@ func main() {
 			k = int(key.Regular)
 		} else {
 			k = key.Special
+			switch k {
+			case ARROW_UP:
+				k = int('k')
+			case ARROW_DOWN:
+				k = int('j')
+			case ARROW_RIGHT:
+				k = int('l')
+			case ARROW_LEFT:
+				k = int('h')
+			}
 		}
 
 		if sess.editorMode {
@@ -443,7 +453,7 @@ func editorProcessKey(c int) bool {
 
 		return true // end of case INSERT: - should not be executed
 
-	case NORMAL:
+	case NORMAL: //actually handling NORMAL and INSERT
 		switch c {
 
 		case '\x1b':
@@ -458,13 +468,26 @@ func editorProcessKey(c int) bool {
 			return false
 		}
 
+		/*
+			bufs, err := v.Buffers()
+			if err != nil {
+				log.Fatal(err)
+			}
+			vbuf := bufs[0]
+		*/
 		_, err := v.Input(string(c))
 		if err != nil {
 			fmt.Printf("%v\n", err)
 		}
+
 		mode, _ := v.Mode() //status msg and branch if v
-		sess.showOrgMessage("char = %v => mode = %v; blocking = %v", string(c), mode.Mode, mode.Blocking)
+		sess.showOrgMessage("char = %v => mode = %#v; blocking = %#v", string(c), mode.Mode, mode.Blocking)
 		if mode.Blocking == false {
+			sess.p.rows = nil
+			bb, _ := v.BufferLines(0, 0, -1, true)
+			for _, b := range bb {
+				sess.p.rows = append(sess.p.rows, string(b))
+			}
 			pos, _ := v.WindowCursor(w) //set screen cx and cy from pos
 			sess.p.showMessage(" => position = %v", pos)
 			sess.p.fr = pos[0] - 1
@@ -472,16 +495,24 @@ func editorProcessKey(c int) bool {
 		} else {
 			return false
 		}
-		bufs, err := v.Buffers()
-		if err != nil {
-			log.Fatal(err)
-		}
-		vbuf := bufs[0]
-		bb, _ := v.BufferLines(vbuf, 0, -1, true)
-		sess.p.rows = nil
-		for _, b := range bb {
-			sess.p.rows = append(sess.p.rows, string(b))
-		}
+		/*
+			bufs, err := v.Buffers()
+			if err != nil {
+				log.Fatal(err)
+			}
+			vbuf := bufs[0]
+		*/
+
+		//type Buffer int
+		// 0-> current buffer
+		//bb, _ := v.BufferLines(vbuf, 0, -1, true)
+		/*
+			bb, _ := v.BufferLines(0, 0, -1, true)
+			sess.p.rows = nil
+			for _, b := range bb {
+				sess.p.rows = append(sess.p.rows, string(b))
+			}
+		*/
 
 		return true
 

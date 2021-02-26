@@ -488,6 +488,8 @@ func (e *Editor) rowsToString() string {
 
 func (e *Editor) getScreenXFromRowColWW(r, c int) int {
 	// can't use reference to row because replacing blanks to handle corner case
+	//bb, _ := v.BufferLines(0, 0, -1, true)
+	//row := string(bb[r])
 	row := e.rows[r]
 
 	/* pos is the position of the last char in the line
@@ -863,6 +865,93 @@ func (e *Editor) drawRows(pab *strings.Builder) {
 
 	//draw_visual(ab)
 }
+func (e *Editor) drawRows2(pab *strings.Builder) {
+	/*
+		bufs, err := v.Buffers()
+		if err != nil {
+			log.Fatal(err)
+		}
+		vbuf := bufs[0]
+		bb, _ := v.BufferLines(vbuf, 0, -1, true)
+	*/
+	bb, _ := v.BufferLines(0, 0, -1, true)
+
+	if len(bb) == 0 {
+		return
+	}
+	//var ab strings.Builder
+
+	lf_ret := fmt.Sprintf("\r\n\x1b[%dC", e.left_margin)
+	(*pab).WriteString("\x1b[?25l") //hides the cursor
+
+	// format for positioning cursor is "\x1b[%d;%dH"
+	fmt.Fprintf(pab, "\x1b[%d;%dH", e.top_margin, e.left_margin+1)
+
+	y := 0
+	filerow := e.first_visible_row
+	flag := false
+
+	for {
+
+		if flag {
+			break
+		}
+
+		if filerow == len(bb) {
+			e.last_visible_row = filerow - 1
+			break
+		}
+
+		row := string(bb[filerow])
+
+		if len(row) == 0 {
+			if y == e.screenlines-1 {
+				break
+			}
+			(*pab).WriteString(lf_ret)
+			filerow++
+			y++
+			continue
+		}
+
+		pos := 0
+		prev_pos := 0 //except for start -> pos + 1
+		for {
+			/* this is needed because it deals where the end of the line doesn't have a space*/
+			if prev_pos+e.screencols-e.left_margin_offset > len(row)-1 { //? if need -1;cpp generateWWString had it
+				(*pab).WriteString(row[prev_pos:])
+				if y == e.screenlines-1 {
+					flag = true
+					break
+				}
+				(*pab).WriteString(lf_ret)
+				y++
+				filerow++
+				break
+			}
+
+			pos = strings.LastIndex(row[:prev_pos+e.screencols-e.left_margin_offset], " ")
+
+			//note npos when signed = -1 and order of if/else may matter
+			if pos == -1 || pos == prev_pos-1 {
+				pos = prev_pos + e.screencols - e.left_margin_offset - 1
+			}
+
+			(*pab).WriteString(row[prev_pos : pos+1]) //? pos+1
+			if y == e.screenlines-1 {
+				flag = true
+				break
+			}
+			(*pab).WriteString(lf_ret)
+			prev_pos = pos + 1
+			y++
+		}
+	}
+	// ? only used so spellcheck stops at end of visible note
+	e.last_visible_row = filerow - 1 // note that this is not exactly true - could be the whole last row is visible
+
+	//draw_visual(ab)
+}
 
 func (e *Editor) drawCodeRows(pab *strings.Builder) {
 	//save the current file to code_file with correct extension
@@ -1054,27 +1143,33 @@ func (e *Editor) drawMessageBar() {
 
 func (e *Editor) scroll() bool {
 
-	if len(e.rows) == 0 {
-		e.fr, e.fc, e.cy, e.cx, e.line_offset, e.prev_line_offset, e.first_visible_row, e.last_visible_row = 0, 0, 0, 0, 0, 0, 0, 0
+	if e.fc == 0 && e.fr == 0 {
+		e.cy, e.cx, e.line_offset, e.prev_line_offset, e.first_visible_row, e.last_visible_row = 0, 0, 0, 0, 0, 0
 		return true
 	}
-
-	if e.fr >= len(e.rows) {
-		e.fr = len(e.rows) - 1
-	}
-
-	row_size := len(e.rows[e.fr])
-	if e.fc >= row_size {
-		if e.mode != INSERT {
-			e.fc = row_size - 1
-		} else {
-			e.fc = row_size
+	/*
+		if len(e.rows) == 0 {
+			e.fr, e.fc, e.cy, e.cx, e.line_offset, e.prev_line_offset, e.first_visible_row, e.last_visible_row = 0, 0, 0, 0, 0, 0, 0, 0
+			return true
 		}
-	}
 
-	if e.fc < 0 {
-		e.fc = 0
-	}
+		if e.fr >= len(e.rows) {
+			e.fr = len(e.rows) - 1
+		}
+
+		row_size := len(e.rows[e.fr])
+		if e.fc >= row_size {
+			if e.mode != INSERT {
+				e.fc = row_size - 1
+			} else {
+				e.fc = row_size
+			}
+		}
+
+		if e.fc < 0 {
+			e.fc = 0
+		}
+	*/
 
 	e.cx = e.getScreenXFromRowColWW(e.fr, e.fc)
 	cy_ := e.getScreenYFromRowColWW(e.fr, e.fc)
