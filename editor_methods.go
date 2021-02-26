@@ -926,7 +926,7 @@ func (e *Editor) drawCodeRows() {
 			for i := 0; i < len(ll)-1; i++ {
 				fmt.Fprintf(&ab, "%s%s\x1b[%dC", ll[i], lf_ret, e.left_margin_offset)
 			}
-			fmt.Fprintf(&ab, "%s%s", line, lf_ret)
+			fmt.Fprintf(&ab, "%s%s", ll[len(ll)-1], lf_ret)
 		}
 		n++
 	}
