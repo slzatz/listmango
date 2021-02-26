@@ -35,24 +35,6 @@ var quit_cmds = map[string]struct{}{"quit": z0, "q": z0, "quit!": z0, "q!": z0, 
 var file_cmds = map[string]struct{}{"savefile": z0, "save": z0, "readfile": z0, "read": z0}
 var move_only = map[string]struct{}{"w": z0, "e": z0, "b": z0, "0": z0, "$": z0, ":": z0, "*": z0, "n": z0, "[s": z0, "]s": z0, "z=": z0, "gg": z0, "G": z0, "yy": z0} //could put 'u' ctrl-r here
 
-// SafeExit restores terminal using the original terminal config stored
-// in the global session variable
-/*
-func SafeExit(err error) {
-	fmt.Fprint(os.Stdout, "\x1b[2J\x1b[H")
-
-	if err1 := rawmode.Restore(sess.origTermCfg); err1 != nil {
-		fmt.Fprintf(os.Stderr, "Error: disabling raw mode: %s\r\n", err)
-	}
-
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %s\r\n", err)
-		os.Exit(1)
-	}
-	os.Exit(0)
-}
-*/
-
 var sess Session
 var org Organizer
 
@@ -99,15 +81,15 @@ func main() {
 	org.sort = "modified"    //Entry sort column
 	org.show_deleted = false //not treating these separately right now
 	org.show_completed = true
-	org.message = "" //very bottom of screen; ex. -- INSERT --
+	org.message = "" //displayed at the bottom of screen; ex. -- INSERT --
 	org.highlight[0], org.highlight[1] = -1, -1
-	org.mode = NORMAL //0=normal; 1=insert; 2=command line; 3=visual line; 4=visual; 5='r'
+	org.mode = NORMAL
 	org.last_mode = NORMAL
 	org.command = ""
 	org.command_line = ""
 	org.repeat = 0 //number of times to repeat commands like x,s,yy also used for visual line mode x,y
 
-	org.view = TASK // not necessary here since set when searching database
+	org.view = TASK
 	org.taskview = BY_FOLDER
 	org.folder = "todo"
 	org.context = "No Context"
@@ -134,7 +116,6 @@ func main() {
 	sess.run = true
 
 	for sess.run {
-		//sess.View.RefreshScreen(sess.Editor, sess.StatusMessage, sess.Prompt)
 
 		// read key
 		key, err := terminal.ReadKey()
@@ -170,6 +151,7 @@ func main() {
 			sess.drawOrgStatusBar()
 		}
 		sess.returnCursor()
+
 		// if it's been 5 secs since the last status message, reset
 		//if time.Now().Sub(sess.StatusMessageTime) > time.Second*5 && sess.State == stateEditing {
 		//	sess.setStatusMessage("")

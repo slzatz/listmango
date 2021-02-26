@@ -740,7 +740,6 @@ func (e *Editor) refreshScreen(draw bool) {
 	var tid int
 
 	ab.WriteString("\x1b[?25l") //hides the cursor
-	//ab.WriteString(fmt.Sprintf("\x1b[%d;%dH", e.top_margin, e.left_margin + 1))
 	fmt.Fprintf(&ab, "\x1b[%d;%dH", e.top_margin, e.left_margin+1)
 
 	if draw { //draw
@@ -752,26 +751,21 @@ func (e *Editor) refreshScreen(draw bool) {
 			ab.WriteString(lf_ret)
 		}
 
-		// this must be here -- if at end it erases the rows that are drawn by the calls to drawRows and drawCodeRows below
-		fmt.Print(ab.String())
-
 		tid = getFolderTid(e.id)
 		if (tid == 18 || tid == 14) && !e.is_subeditor {
-			e.drawCodeRows()
+			e.drawCodeRows(&ab) //uaing pointer so drawing is smoother
 		} else {
-			e.drawRows()
+			e.drawRows(&ab)
 		}
 	}
 
-	e.drawStatusBar()
-	//e.drawMessageBar()
-
 	// the lines below position the cursor where it should go
+	// ? if we're every in COMMAND_LINE when we are drawing rows??
 	if e.mode != COMMAND_LINE {
-		//ab.WriteString(fmt.Sprintf("\x1b[%d;%dH", e.cy + e.top_margin, e.cx + e.left_margin + e.left_margin_offset + 1))
 		fmt.Fprintf(&ab, "\x1b[%d;%dH", e.cy+e.top_margin, e.cx+e.left_margin+e.left_margin_offset+1)
 	}
-	//fmt.Print(ab.String())
+	fmt.Print(ab.String())
+	e.drawStatusBar()
 
 	/*
 	  // can't do the below until ab is written or will just overwite highlights
@@ -784,18 +778,18 @@ func (e *Editor) refreshScreen(draw bool) {
 	*/
 }
 
-func (e *Editor) drawRows() {
+func (e *Editor) drawRows(pab *strings.Builder) {
 
 	if len(e.rows) == 0 {
 		return
 	}
-	var ab strings.Builder
+	//var ab strings.Builder
 
 	lf_ret := fmt.Sprintf("\r\n\x1b[%dC", e.left_margin)
-	ab.WriteString("\x1b[?25l") //hides the cursor
+	(*pab).WriteString("\x1b[?25l") //hides the cursor
 
 	// format for positioning cursor is "\x1b[%d;%dH"
-	fmt.Fprintf(&ab, "\x1b[%d;%dH", e.top_margin, e.left_margin+1)
+	fmt.Fprintf(pab, "\x1b[%d;%dH", e.top_margin, e.left_margin+1)
 
 	y := 0
 	filerow := e.first_visible_row
@@ -818,7 +812,7 @@ func (e *Editor) drawRows() {
 			if y == e.screenlines-1 {
 				break
 			}
-			ab.WriteString(lf_ret)
+			(*pab).WriteString(lf_ret)
 			filerow++
 			y++
 			continue
@@ -829,12 +823,12 @@ func (e *Editor) drawRows() {
 		for {
 			/* this is needed because it deals where the end of the line doesn't have a space*/
 			if prev_pos+e.screencols-e.left_margin_offset > len(row)-1 { //? if need -1;cpp generateWWString had it
-				ab.WriteString(row[prev_pos:])
+				(*pab).WriteString(row[prev_pos:])
 				if y == e.screenlines-1 {
 					flag = true
 					break
 				}
-				ab.WriteString(lf_ret)
+				(*pab).WriteString(lf_ret)
 				y++
 				filerow++
 				break
@@ -847,24 +841,23 @@ func (e *Editor) drawRows() {
 				pos = prev_pos + e.screencols - e.left_margin_offset - 1
 			}
 
-			ab.WriteString(row[prev_pos : pos+1]) //? pos+1
+			(*pab).WriteString(row[prev_pos : pos+1]) //? pos+1
 			if y == e.screenlines-1 {
 				flag = true
 				break
 			}
-			ab.WriteString(lf_ret)
+			(*pab).WriteString(lf_ret)
 			prev_pos = pos + 1
 			y++
 		}
 	}
 	// ? only used so spellcheck stops at end of visible note
 	e.last_visible_row = filerow - 1 // note that this is not exactly true - could be the whole last row is visible
-	fmt.Print(ab.String())
 
 	//draw_visual(ab)
 }
 
-func (e *Editor) drawCodeRows() {
+func (e *Editor) drawCodeRows(pab *strings.Builder) {
 	//save the current file to code_file with correct extension
 	f, err := os.Create("code_file")
 	if err != nil {
@@ -878,7 +871,7 @@ func (e *Editor) drawCodeRows() {
 	}
 	f.Close()
 
-	var ab strings.Builder
+	//var ab strings.Builder
 
 	var syntax string
 	if getFolderTid(e.id) == 18 {
@@ -886,7 +879,6 @@ func (e *Editor) drawCodeRows() {
 	} else {
 		syntax = "--syntax=go"
 	}
-	//cmd := exec.Command("highlight", "code_file", "--out-format=xterm256", "--style=gruvbox-dark-hard-slz", "--syntax=go")
 	cmd := exec.Command("highlight", "code_file", "--out-format=xterm256", "--style=gruvbox-dark-hard-slz", syntax)
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
@@ -906,10 +898,10 @@ func (e *Editor) drawCodeRows() {
 	*/
 
 	lf_ret := fmt.Sprintf("\r\n\x1b[%dC", e.left_margin)
-	fmt.Fprintf(&ab, "\x1b[?25l\x1b[%d;%dH", e.top_margin, e.left_margin+1)
+	fmt.Fprintf(pab, "\x1b[?25l\x1b[%d;%dH", e.top_margin, e.left_margin+1)
 
 	// below draws the line number 'rectangle' only matters for the word-wrapped lines
-	fmt.Fprintf(&ab, "\x1b[2*x\x1b[%d;%d;%d;%d;48;5;235$r\x1b[*x",
+	fmt.Fprintf(pab, "\x1b[2*x\x1b[%d;%d;%d;%d;48;5;235$r\x1b[*x",
 		e.top_margin, e.left_margin, e.top_margin+e.screenlines, e.left_margin+e.left_margin_offset)
 	n := 0
 	//func (b *Reader) ReadLine() (line []byte, isPrefix bool, err)
@@ -921,16 +913,15 @@ func (e *Editor) drawCodeRows() {
 
 		if n >= e.first_visible_row { //substituted for above on 12312020
 			line := string(bytes)
-			fmt.Fprintf(&ab, "\x1b[48;5;235m\x1b[38;5;245m%3d \x1b[0m", n)
+			fmt.Fprintf(pab, "\x1b[48;5;235m\x1b[38;5;245m%3d \x1b[0m", n)
 			ll := strings.Split(line, "\t")
 			for i := 0; i < len(ll)-1; i++ {
-				fmt.Fprintf(&ab, "%s%s\x1b[%dC", ll[i], lf_ret, e.left_margin_offset)
+				fmt.Fprintf(pab, "%s%s\x1b[%dC", ll[i], lf_ret, e.left_margin_offset)
 			}
-			fmt.Fprintf(&ab, "%s%s", ll[len(ll)-1], lf_ret)
+			fmt.Fprintf(pab, "%s%s", ll[len(ll)-1], lf_ret)
 		}
 		n++
 	}
-	fmt.Print(ab.String())
 	//draw_visual(ab);
 }
 
