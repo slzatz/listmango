@@ -655,8 +655,9 @@ func (e *Editor) insertReturn() { // right now only used for editor->INSERT mode
 	*r = r1
 
 	e.rows = append(e.rows, "")
+	//copy(e.rows[e.fr+1:], e.rows[e.fr:])
 	copy(e.rows[e.fr+1:], e.rows[e.fr:])
-	e.rows[e.fr] = r2
+	e.rows[e.fr+1] = r2
 	e.fr++
 
 	if e.fc == 0 {
