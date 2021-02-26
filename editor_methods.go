@@ -735,14 +735,16 @@ func (e *Editor) delChar() {
 	e.dirty++
 }
 
+// if draw is false this only draws cursor
 func (e *Editor) refreshScreen(draw bool) {
 	var ab strings.Builder
 	var tid int
 
-	ab.WriteString("\x1b[?25l") //hides the cursor
-	fmt.Fprintf(&ab, "\x1b[%d;%dH", e.top_margin, e.left_margin+1)
+	//ab.WriteString("\x1b[?25l") //hides the cursor
+	//fmt.Fprintf(&ab, "\x1b[%d;%dH", e.top_margin, e.left_margin+1)
 
 	if draw { //draw
+		fmt.Fprintf(&ab, "\x1b[?25l\x1b[%d;%dH", e.top_margin, e.left_margin+1)
 		// \x1b[NC moves cursor forward by N columns
 		lf_ret := fmt.Sprintf("\r\n\x1b[%dC", e.left_margin)
 		erase_chars := fmt.Sprintf("\x1b[%dX", e.screencols)
@@ -757,15 +759,20 @@ func (e *Editor) refreshScreen(draw bool) {
 		} else {
 			e.drawRows(&ab)
 		}
+		fmt.Print(ab.String())
+		e.drawStatusBar()
 	}
 
 	// the lines below position the cursor where it should go
 	// ? if we're every in COMMAND_LINE when we are drawing rows??
-	if e.mode != COMMAND_LINE {
+	//if e.mode != COMMAND_LINE {
+	if true {
 		fmt.Fprintf(&ab, "\x1b[%d;%dH", e.cy+e.top_margin, e.cx+e.left_margin+e.left_margin_offset+1)
 	}
-	fmt.Print(ab.String())
-	e.drawStatusBar()
+	//fmt.Print(ab.String())
+	//if draw {
+	//	e.drawStatusBar()
+	//	}
 
 	/*
 	  // can't do the below until ab is written or will just overwite highlights
