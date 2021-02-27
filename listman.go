@@ -481,10 +481,14 @@ func editorProcessKey(c int) bool {
 		}
 
 		mode, _ := v.Mode() //status msg and branch if v
-		sess.showOrgMessage("char = %v => mode = %#v; blocking = %#v", string(c), mode.Mode, mode.Blocking)
+		var cb nvim.Buffer
+		if !mode.Blocking {
+			cb, _ = v.CurrentBuffer()
+		}
+		sess.showOrgMessage("char = %v => mode = %#v; blocking = %#v; buffer = %v", string(c), mode.Mode, mode.Blocking, cb)
 		if mode.Blocking == false {
 			sess.p.rows = nil
-			bb, _ := v.BufferLines(0, 0, -1, true)
+			bb, _ := v.BufferLines(sess.p.vbuf, 0, -1, true)
 			for _, b := range bb {
 				sess.p.rows = append(sess.p.rows, string(b))
 			}
@@ -798,7 +802,27 @@ func editorProcessKey(c int) bool {
 					}
 					//update_note(false, true); //should be p->E_write_C(); closing_editor = true;
 					updateNote() //should be p->E_write_C(); closing_editor = true;
+					_, err := v.Input("q!")
+					if err != nil {
+						fmt.Printf("%v\n", err)
+					}
+					v.DeleteBuffer(sess.p.vbuf, map[string]bool{})
 				} else if cmd == "q!" || cmd == "quit!" {
+					_, err := v.Input(":q!")
+					if err != nil {
+						fmt.Printf("%v\n", err)
+					}
+					/*
+						deleteBufferOpts := map[string]bool{
+							"force":  true,
+							"unload": false,
+						}
+						err = v.DeleteBuffer(0, deleteBufferOpts)
+						if err != nil {
+							sess.showOrgMessage("DeleteBuffer error %v", err)
+						}
+					*/
+
 					// do nothing = allow editor to be closed
 				} else if sess.p.dirty > 0 {
 					sess.p.mode = NORMAL

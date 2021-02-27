@@ -587,7 +587,19 @@ func readNoteIntoEditor(id int) {
 	for _, s := range sess.p.rows {
 		bb = append(bb, []byte(s))
 	}
-	v.SetBufferLines(0, 0, -1, true, bb)
+	//func (v *Nvim) CreateBuffer(listed bool, scratch bool) (buffer Buffer, err error) {
+	//sess.p.vbuf, err = v.CreateBuffer(true, false)
+	sess.p.vbuf, err = v.CreateBuffer(true, true)
+	if err != nil {
+		sess.showOrgMessage("%v", err)
+	}
+	err = v.SetCurrentBuffer(sess.p.vbuf)
+	if err != nil {
+		sess.showOrgMessage("%v", err)
+	} else {
+		sess.showOrgMessage("%v", sess.p.vbuf)
+	}
+	v.SetBufferLines(sess.p.vbuf, 0, -1, true, bb)
 
 	//sess.p.dirty = 0 //assume editorInsertRow increments dirty so this needed
 	if sess.p.linked_editor == nil {

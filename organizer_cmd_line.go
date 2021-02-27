@@ -234,7 +234,7 @@ func F_edit(id int) {
 		return
 	}
 
-	sess.showOrgMessage("Edit note %d", id)
+	//sess.showOrgMessage("Edit note %d", id)
 	sess.editorMode = true
 
 	if len(sess.editors) > 0 {
