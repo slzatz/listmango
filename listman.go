@@ -475,7 +475,7 @@ func editorProcessKey(c int) bool {
 
 		return true // end of case INSERT: - should not be executed
 
-	case NORMAL, VISUAL, VISUAL_LINE: //actually handling NORMAL and INSERT
+	case NORMAL, VISUAL, VISUAL_LINE, VISUAL_BLOCK: //actually handling NORMAL and INSERT
 		switch c {
 
 		case '\x1b':
@@ -511,7 +511,7 @@ func editorProcessKey(c int) bool {
 		sess.showOrgMessage("char = %v => mode = %#v; blocking = %#v; buffer = %v", string(c), mode.Mode, mode.Blocking, cb)
 		if mode.Blocking == false {
 
-			if mode.Mode == "v" || mode.Mode == "V" {
+			if mode.Mode == "v" || mode.Mode == "V" || mode.Mode == string('\x16') {
 
 				sess.showOrgMessage("mode: %v -> h0=%v; h1= %v", mode.Mode, highlightInfo(v)[0], highlightInfo(v)[1])
 			}
@@ -526,6 +526,9 @@ func editorProcessKey(c int) bool {
 				sess.p.mode = VISUAL_LINE
 				sess.p.highlight[0] = highlightInfo(v)[0][1] - 1
 				sess.p.highlight[1] = highlightInfo(v)[1][1] - 1
+			case string('\x16'):
+				sess.p.mode = VISUAL_BLOCK
+				sess.p.vb_highlight = highlightInfo(v)
 			}
 
 			sess.p.rows = nil

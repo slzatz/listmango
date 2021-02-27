@@ -941,18 +941,20 @@ func (e *Editor) draw_visual(pab *strings.Builder) {
 		}
 	}
 
-	/*
-	  if (mode == VISUAL_BLOCK) {
-	    int x = editorGetScreenXFromRowColWW(vb0[1], vb0[0]) + left_margin + left_margin_offset + 1;
-	    int y = editorGetScreenYFromRowColWW(vb0[1], vb0[0]) + top_margin - line_offset;
-	    ab.append("\x1b[48;5;244m");
-	    for (int n=0; n < (fr-vb0[1] + 1);++n) {
-	      ab.append(fmt::format("\x1b[{};{}H", y + n, x));
-	      if (rows.at(vb0[1] + n).empty() || rows.at(vb0[1] + n).size() < vb0[0] + 1) continue;
-	      ab.append(rows.at(vb0[1] + n).substr(vb0[0], fc - vb0[0] + 1));
-	    }
-	  }
-	*/
+	if e.mode == VISUAL_BLOCK {
+		x := e.getScreenXFromRowColWW(e.vb_highlight[0][1], e.vb_highlight[0][2]) + e.left_margin + e.left_margin_offset
+		y := e.getScreenYFromRowColWW(e.vb_highlight[0][1], e.vb_highlight[0][2]) + e.top_margin - e.line_offset - 1
+		(*pab).WriteString("\x1b[48;5;244m")
+		for n := 0; n < (e.vb_highlight[1][1] - e.vb_highlight[0][1] + 1); n++ { //++n
+			fmt.Fprintf(pab, "\x1b[%d;%dH", y+n, x)
+			row := e.rows[e.vb_highlight[0][1]+n-1]
+			row_len := len(row)
+			if row_len == 0 || row_len < e.vb_highlight[1][2] {
+				continue
+			}
+			(*pab).WriteString(row[e.vb_highlight[0][2]-1 : e.vb_highlight[1][2]])
+		}
+	}
 
 	(*pab).WriteString("\x1b[0m")
 }
