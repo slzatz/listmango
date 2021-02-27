@@ -44,6 +44,28 @@ var org Organizer
 var v *nvim.Nvim
 var w nvim.Window
 
+func highlightInfo(v *nvim.Nvim) [2][4]int {
+	var bufnum, lnum, col, off int
+	var z [2][4]int
+	v.Input("\x1bgv") //I need to send this but may be a problem
+
+	err := v.Eval("getpos(\"'<\")", []*int{&bufnum, &lnum, &col, &off})
+	if err != nil {
+		fmt.Printf("getpos error: %v", err)
+	}
+	//fmt.Printf("beginning: bufnum = %v; lnum = %v; col = %v; off = %v\n", bufnum, lnum, col, off)
+	z[0] = [4]int{bufnum, lnum, col, off}
+
+	err = v.Eval("getpos(\"'>\")", []*int{&bufnum, &lnum, &col, &off})
+	if err != nil {
+		fmt.Printf("getpos error: %v\n", err)
+	}
+	//fmt.Printf("end: bufnum = %v; lnum = %v; col = %v; off = %v\n", bufnum, lnum, col, off)
+	z[1] = [4]int{bufnum, lnum, col, off}
+
+	return z
+}
+
 func main() {
 
 	signal_chan := make(chan os.Signal, 1)
@@ -453,12 +475,13 @@ func editorProcessKey(c int) bool {
 
 		return true // end of case INSERT: - should not be executed
 
-	case NORMAL: //actually handling NORMAL and INSERT
+	case NORMAL, VISUAL, VISUAL_LINE: //actually handling NORMAL and INSERT
 		switch c {
 
 		case '\x1b':
 			sess.p.command = ""
 			sess.p.repeat = 0
+			sess.p.mode = NORMAL
 
 		case ':':
 			sess.p.mode = COMMAND_LINE
@@ -487,12 +510,37 @@ func editorProcessKey(c int) bool {
 		}
 		sess.showOrgMessage("char = %v => mode = %#v; blocking = %#v; buffer = %v", string(c), mode.Mode, mode.Blocking, cb)
 		if mode.Blocking == false {
+
+			if mode.Mode == "v" || mode.Mode == "V" {
+
+				sess.showOrgMessage("mode: %v -> h0=%v; h1= %v", mode.Mode, highlightInfo(v)[0], highlightInfo(v)[1])
+			}
+			switch mode.Mode {
+			case "n":
+				sess.p.mode = NORMAL
+			case "v":
+				sess.p.mode = VISUAL
+				sess.p.highlight[0] = highlightInfo(v)[0][2] - 1
+				sess.p.highlight[1] = highlightInfo(v)[1][2] - 1
+			case "V":
+				sess.p.mode = VISUAL_LINE
+				sess.p.highlight[0] = highlightInfo(v)[0][1] - 1
+				sess.p.highlight[1] = highlightInfo(v)[1][1] - 1
+			}
+
 			sess.p.rows = nil
 			bb, _ := v.BufferLines(sess.p.vbuf, 0, -1, true)
 			for _, b := range bb {
 				sess.p.rows = append(sess.p.rows, string(b))
 			}
 			pos, _ := v.WindowCursor(w) //set screen cx and cy from pos
+
+			/*
+				if mode.Mode == string('v') || mode.Mode == string('V') || mode.Mode == string('\x16') {
+					sess.showOrgMessage("visual mode %v: %v", mode.Mode, highlightInfo(v))
+				}
+			*/
+
 			sess.p.showMessage(" => position = %v", pos)
 			sess.p.fr = pos[0] - 1
 			sess.p.fc = pos[1]
@@ -802,22 +850,51 @@ func editorProcessKey(c int) bool {
 					}
 					//update_note(false, true); //should be p->E_write_C(); closing_editor = true;
 					updateNote() //should be p->E_write_C(); closing_editor = true;
-					_, err := v.Input("q!")
+
+					// this seems like a kluge but I can't delete buffer
+					// without generating an error
+					err := v.SetBufferLines(0, 0, -1, true, [][]byte{})
 					if err != nil {
-						fmt.Printf("%v\n", err)
+						sess.showOrgMessage("SetBufferLines to []  error %v", err)
 					}
-					v.DeleteBuffer(sess.p.vbuf, map[string]bool{})
-				} else if cmd == "q!" || cmd == "quit!" {
-					_, err := v.Input(":q!")
-					if err != nil {
-						fmt.Printf("%v\n", err)
-					}
+
 					/*
+						_, err := v.Input(":q!")
+						if err != nil {
+							fmt.Printf("%v\n", err)
+						}
 						deleteBufferOpts := map[string]bool{
 							"force":  true,
 							"unload": false,
 						}
+
+						//err = v.DeleteBuffer(sess.p.vbuf, deleteBufferOpts)
 						err = v.DeleteBuffer(0, deleteBufferOpts)
+						if err != nil {
+							sess.showOrgMessage("DeleteBuffer error %v", err)
+						}
+					*/
+
+				} else if cmd == "q!" || cmd == "quit!" {
+					/*
+						_, err := v.Input(":q!")
+						if err != nil {
+							fmt.Printf("%v\n", err)
+						}
+					*/
+
+					err := v.SetBufferLines(0, 0, -1, true, [][]byte{})
+					if err != nil {
+						sess.showOrgMessage("SetBufferLines to []  error %v", err)
+					}
+					/*
+							deleteBufferOpts := map[string]bool{
+								"force":  true,
+								"unload": false,
+							}
+						//err = v.DeleteBuffer(0, deleteBufferOpts)
+						//zero is the current buffer
+						err = v.DeleteBuffer(0, map[string]bool{})
 						if err != nil {
 							sess.showOrgMessage("DeleteBuffer error %v", err)
 						}

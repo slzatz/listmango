@@ -863,8 +863,144 @@ func (e *Editor) drawRows(pab *strings.Builder) {
 	// ? only used so spellcheck stops at end of visible note
 	e.last_visible_row = filerow - 1 // note that this is not exactly true - could be the whole last row is visible
 
-	//draw_visual(ab)
+	e.draw_visual(pab)
 }
+
+func (e *Editor) draw_visual(pab *strings.Builder) {
+
+	lf_ret := fmt.Sprintf("\r\n\x1b[%dC", e.left_margin+e.left_margin_offset)
+
+	if e.mode == VISUAL_LINE {
+
+		// \x1b[NC moves cursor forward by N columns
+		// snprintf(lf_ret, sizeof(lf_ret), "\r\n\x1b[%dC", left_margin + left_margin_offset);
+
+		x := e.left_margin + e.left_margin_offset + 1
+		//int y = editorGetScreenYFromRowColWW(h_light[0], 0) + top_margin - line_offset;
+		y := e.getScreenYFromRowColWW(e.highlight[0], 0) - e.line_offset
+
+		if y >= 0 {
+			fmt.Fprintf(pab, "\x1b[%d;%dH\x1b[48;5;244m", y+e.top_margin, x)
+		} else {
+			fmt.Fprintf(pab, "\x1b[%d;%dH\x1b[48;5;244m", e.top_margin, x)
+		}
+
+		for n := 0; n < (e.highlight[1] - e.highlight[0] + 1); n++ { //++n
+			row_num := e.highlight[0] + n
+			pos := 0
+			for line := 1; line <= e.getLinesInRowWW(row_num); line++ { //++line
+				if y < 0 {
+					y += 1
+					continue
+				}
+				if y == e.screenlines {
+					break //out for should be done (theoretically) - 1
+				}
+				line_char_count := e.getLineCharCountWW(row_num, line)
+				(*pab).WriteString(e.rows[row_num][pos : pos+line_char_count])
+				(*pab).WriteString(lf_ret)
+				y += 1
+				pos += line_char_count
+			}
+		}
+	}
+
+	if e.mode == VISUAL {
+
+		// someday cleanup the multiple calls to editorGetLineInRow
+		pos := e.getScreenXFromRowColWW(e.fr, e.highlight[0])
+		x := pos + e.left_margin + e.left_margin_offset + 1
+		y := e.getScreenYFromRowColWW(e.fr, e.highlight[0]) + e.top_margin - e.line_offset
+		fragment := e.rows[e.fr][e.highlight[0] : e.highlight[1]+1]
+		fmt.Fprintf(pab, "\x1b[%d;%dH\x1b[48;5;244m", y, x)
+		lines_in_row := e.getLinesInRowWW(e.fr)
+		if lines_in_row == 1 {
+			(*pab).WriteString(fragment)
+			e.showMessage("In only one line in the row")
+		} else if e.getLineInRowWW(e.fr, e.highlight[0]) == e.getLineInRowWW(e.fr, e.highlight[1]) {
+			(*pab).WriteString(fragment)
+			e.showMessage("multiline but beginning and end in same line")
+		} else {
+			start_line := e.getLineInRowWW(e.fr, e.highlight[0])
+			line_char_count := e.getLineCharCountWW(e.fr, start_line)
+			(*pab).WriteString(fragment[:line_char_count-pos])
+			(*pab).WriteString(lf_ret)
+			fragment = fragment[line_char_count-pos:]
+			e.showMessage("fragment = %s; pos = %d; lcc = %d", fragment, pos, line_char_count)
+			for line := 1 + start_line; line <= e.getLinesInRowWW(e.fr); line++ { //++line
+				line_char_count := e.getLineCharCountWW(e.fr, line)
+				if len(fragment) < line_char_count {
+					(*pab).WriteString(fragment)
+					break
+				} else {
+					(*pab).WriteString(fragment[:line_char_count])
+					(*pab).WriteString(lf_ret)
+					fragment = fragment[line_char_count:]
+				}
+			}
+		}
+	}
+
+	/*
+	  if (mode == VISUAL_BLOCK) {
+	    int x = editorGetScreenXFromRowColWW(vb0[1], vb0[0]) + left_margin + left_margin_offset + 1;
+	    int y = editorGetScreenYFromRowColWW(vb0[1], vb0[0]) + top_margin - line_offset;
+	    ab.append("\x1b[48;5;244m");
+	    for (int n=0; n < (fr-vb0[1] + 1);++n) {
+	      ab.append(fmt::format("\x1b[{};{}H", y + n, x));
+	      if (rows.at(vb0[1] + n).empty() || rows.at(vb0[1] + n).size() < vb0[0] + 1) continue;
+	      ab.append(rows.at(vb0[1] + n).substr(vb0[0], fc - vb0[0] + 1));
+	    }
+	  }
+	*/
+
+	(*pab).WriteString("\x1b[0m")
+}
+
+func (e *Editor) getLineCharCountWW(r, line int) int {
+	//This should be a string view and use substring like lines in row
+	row := e.rows[r]
+	if len(row) == 0 {
+		return 0
+	}
+
+	if len(row) <= e.screencols-e.left_margin_offset {
+		return len(row)
+	}
+
+	lines := 0 //1
+	pos := -1
+	prev_pos := 0
+	for {
+
+		// we know the first time around this can't be true
+		// could add if (line > 1 && row.substr(pos+1).size() ...);
+		if len(row[pos+1:]) <= e.screencols-e.left_margin_offset {
+			return len(row[pos+1:])
+		}
+
+		prev_pos = pos
+		pos = strings.LastIndex(row[:pos+e.screencols-e.left_margin_offset], " ")
+
+		if pos == -1 {
+			pos = prev_pos + e.screencols - e.left_margin_offset
+
+			// only replace if you have enough characters without a space to trigger this
+			// need to start at the beginning each time you hit this
+			// unless you want to save the position which doesn't seem worth it
+		} else if pos == prev_pos {
+			row = strings.ReplaceAll(row[:pos+1], " ", "+") + row[pos+1:]
+			pos = prev_pos + e.screencols - e.left_margin_offset
+		}
+
+		lines++
+		if lines == line {
+			break
+		}
+	}
+	return pos - prev_pos
+}
+
 func (e *Editor) drawRows2(pab *strings.Builder) {
 	/*
 		bufs, err := v.Buffers()
