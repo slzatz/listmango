@@ -18,16 +18,16 @@ type Editor struct {
 	rows               []string
 	code               string //used by lsp thread and intended to avoid unnecessary calls to editorRowsToString
 	dirty              int    //file changes since last save
-	highlight          [2]int
-	vb0                [3]int
-	vb_highlight       [2][4]int
-	mode               Mode
-	command_line       string //for commands on the command line; string doesn't include ':'
-	command            string // right now includes normal mode commands and command line commands
-	last_command       string
-	repeat             int
-	last_repeat        int
-	prev_fr, prev_fc   int
+	//highlight          [2]int
+	vb0              [3]int
+	vb_highlight     [2][4]int
+	mode             Mode
+	command_line     string //for commands on the command line; string doesn't include ':'
+	command          string // right now includes normal mode commands and command line commands
+	last_command     string
+	repeat           int
+	last_repeat      int
+	prev_fr, prev_fc int
 	//what's typed between going into INSERT mode and leaving INSERT mode
 	last_typed          string
 	indent              int
@@ -65,9 +65,9 @@ func NewEditor() *Editor {
 		line_offset:      0, //the number of lines of text at the top scrolled off the screen
 		prev_line_offset: 0, //the prev number of lines of text at the top scrolled off the screen
 		//E.coloff: 0,  //always zero because currently only word wrap supported
-		dirty:              0,  //has filed changed since last save
-		message:            "", //very bottom of screen, ex. -- INSERT --
-		highlight:          [2]int{-1, -1},
+		dirty:   0,  //has filed changed since last save
+		message: "", //very bottom of screen, ex. -- INSERT --
+		//highlight:          [2]int{-1, -1},
 		mode:               0, //0=normal, 1=insert, 2=command line, 3=visual line, 4=visual, 5='r'
 		command:            "",
 		command_line:       "",

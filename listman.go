@@ -520,12 +520,14 @@ func editorProcessKey(c int) bool {
 				sess.p.mode = NORMAL
 			case "v":
 				sess.p.mode = VISUAL
-				sess.p.highlight[0] = highlightInfo(v)[0][2] - 1
-				sess.p.highlight[1] = highlightInfo(v)[1][2] - 1
+				//sess.p.highlight[0] = highlightInfo(v)[0][2] - 1
+				//sess.p.highlight[1] = highlightInfo(v)[1][2] - 1
+				sess.p.vb_highlight = highlightInfo(v)
 			case "V":
 				sess.p.mode = VISUAL_LINE
-				sess.p.highlight[0] = highlightInfo(v)[0][1] - 1
-				sess.p.highlight[1] = highlightInfo(v)[1][1] - 1
+				//sess.p.highlight[0] = highlightInfo(v)[0][1] - 1
+				//sess.p.highlight[1] = highlightInfo(v)[1][1] - 1
+				sess.p.vb_highlight = highlightInfo(v)
 			case string('\x16'):
 				sess.p.mode = VISUAL_BLOCK
 				sess.p.vb_highlight = highlightInfo(v)

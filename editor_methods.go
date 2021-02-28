@@ -871,13 +871,15 @@ func (e *Editor) draw_visual(pab *strings.Builder) {
 	lf_ret := fmt.Sprintf("\r\n\x1b[%dC", e.left_margin+e.left_margin_offset)
 
 	if e.mode == VISUAL_LINE {
+		startRow := e.vb_highlight[0][1] - 1 // I think better to subtract one here
+		endRow := e.vb_highlight[1][1] - 1   //ditto - done differently for VISUAL and V_BLOCK
 
 		// \x1b[NC moves cursor forward by N columns
 		// snprintf(lf_ret, sizeof(lf_ret), "\r\n\x1b[%dC", left_margin + left_margin_offset);
 
 		x := e.left_margin + e.left_margin_offset + 1
 		//int y = editorGetScreenYFromRowColWW(h_light[0], 0) + top_margin - line_offset;
-		y := e.getScreenYFromRowColWW(e.highlight[0], 0) - e.line_offset
+		y := e.getScreenYFromRowColWW(startRow, 0) - e.line_offset
 
 		if y >= 0 {
 			fmt.Fprintf(pab, "\x1b[%d;%dH\x1b[48;5;244m", y+e.top_margin, x)
@@ -885,8 +887,8 @@ func (e *Editor) draw_visual(pab *strings.Builder) {
 			fmt.Fprintf(pab, "\x1b[%d;%dH\x1b[48;5;244m", e.top_margin, x)
 		}
 
-		for n := 0; n < (e.highlight[1] - e.highlight[0] + 1); n++ { //++n
-			row_num := e.highlight[0] + n
+		for n := 0; n < (endRow - startRow + 1); n++ { //++n
+			row_num := startRow + n
 			pos := 0
 			for line := 1; line <= e.getLinesInRowWW(row_num); line++ { //++line
 				if y < 0 {
@@ -906,53 +908,73 @@ func (e *Editor) draw_visual(pab *strings.Builder) {
 	}
 
 	if e.mode == VISUAL {
+		startCol, endCol := e.vb_highlight[0][2], e.vb_highlight[1][2]
+		startRow, endRow := e.vb_highlight[0][1], e.vb_highlight[1][1] //startRow always <= endRow
+		numRows := endRow - startRow + 1
 
-		// someday cleanup the multiple calls to editorGetLineInRow
-		pos := e.getScreenXFromRowColWW(e.fr, e.highlight[0])
-		x := pos + e.left_margin + e.left_margin_offset + 1
-		y := e.getScreenYFromRowColWW(e.fr, e.highlight[0]) + e.top_margin - e.line_offset
-		fragment := e.rows[e.fr][e.highlight[0] : e.highlight[1]+1]
-		fmt.Fprintf(pab, "\x1b[%d;%dH\x1b[48;5;244m", y, x)
-		lines_in_row := e.getLinesInRowWW(e.fr)
-		if lines_in_row == 1 {
-			(*pab).WriteString(fragment)
-			e.showMessage("In only one line in the row")
-		} else if e.getLineInRowWW(e.fr, e.highlight[0]) == e.getLineInRowWW(e.fr, e.highlight[1]) {
-			(*pab).WriteString(fragment)
-			e.showMessage("multiline but beginning and end in same line")
-		} else {
-			start_line := e.getLineInRowWW(e.fr, e.highlight[0])
-			line_char_count := e.getLineCharCountWW(e.fr, start_line)
-			(*pab).WriteString(fragment[:line_char_count-pos])
-			(*pab).WriteString(lf_ret)
-			fragment = fragment[line_char_count-pos:]
-			e.showMessage("fragment = %s; pos = %d; lcc = %d", fragment, pos, line_char_count)
-			for line := 1 + start_line; line <= e.getLinesInRowWW(e.fr); line++ { //++line
-				line_char_count := e.getLineCharCountWW(e.fr, line)
-				if len(fragment) < line_char_count {
-					(*pab).WriteString(fragment)
-					break
+		x := e.getScreenXFromRowColWW(startRow, startCol) + e.left_margin + e.left_margin_offset
+		y := e.getScreenYFromRowColWW(startRow, startCol) + e.top_margin - e.line_offset - 1
+
+		(*pab).WriteString("\x1b[48;5;244m")
+		for n := 0; n < numRows; n++ {
+			// I think would check here to see if a row has multiple lines (ie wraps)
+			if n == 0 {
+				fmt.Fprintf(pab, "\x1b[%d;%dH", y+n, x)
+			} else {
+				fmt.Fprintf(pab, "\x1b[%d;%dH", y+n, 1+e.left_margin+e.left_margin_offset)
+			}
+			//row := e.rows[startRow+n-1]
+			row := e.rows[startRow+n-1]
+			row_len := len(row)
+
+			if row_len == 0 { //|| row_len < left {
+				continue
+			}
+			if numRows == 1 {
+				(*pab).WriteString(row[startCol-1 : endCol])
+			} else if n == 0 {
+				(*pab).WriteString(row[startCol-1:])
+			} else if n < numRows-1 {
+				(*pab).WriteString(row)
+			} else {
+				if len(row) < endCol {
+					(*pab).WriteString(row)
 				} else {
-					(*pab).WriteString(fragment[:line_char_count])
-					(*pab).WriteString(lf_ret)
-					fragment = fragment[line_char_count:]
+					(*pab).WriteString(row[:endCol])
 				}
 			}
+			//(*pab).WriteString(row[startCol-1:])
+			sess.showOrgMessage("%v; %v; %v; %v", startCol, endCol, startRow, endRow)
 		}
 	}
 
 	if e.mode == VISUAL_BLOCK {
-		x := e.getScreenXFromRowColWW(e.vb_highlight[0][1], e.vb_highlight[0][2]) + e.left_margin + e.left_margin_offset
-		y := e.getScreenYFromRowColWW(e.vb_highlight[0][1], e.vb_highlight[0][2]) + e.top_margin - e.line_offset - 1
+
+		var left, right int
+		if e.vb_highlight[1][2] > e.vb_highlight[0][2] {
+			right, left = e.vb_highlight[1][2], e.vb_highlight[0][2]
+		} else {
+			left, right = e.vb_highlight[1][2], e.vb_highlight[0][2]
+		}
+
+		x := e.getScreenXFromRowColWW(e.vb_highlight[0][1], left) + e.left_margin + e.left_margin_offset
+		y := e.getScreenYFromRowColWW(e.vb_highlight[0][1], left) + e.top_margin - e.line_offset - 1
+
 		(*pab).WriteString("\x1b[48;5;244m")
-		for n := 0; n < (e.vb_highlight[1][1] - e.vb_highlight[0][1] + 1); n++ { //++n
+		for n := 0; n < (e.vb_highlight[1][1] - e.vb_highlight[0][1] + 1); n++ {
 			fmt.Fprintf(pab, "\x1b[%d;%dH", y+n, x)
 			row := e.rows[e.vb_highlight[0][1]+n-1]
 			row_len := len(row)
-			if row_len == 0 || row_len < e.vb_highlight[1][2] {
+
+			if row_len == 0 || row_len < left {
 				continue
 			}
-			(*pab).WriteString(row[e.vb_highlight[0][2]-1 : e.vb_highlight[1][2]])
+
+			if row_len < right {
+				(*pab).WriteString(row[left-1 : row_len])
+			} else {
+				(*pab).WriteString(row[left-1 : right])
+			}
 		}
 	}
 
