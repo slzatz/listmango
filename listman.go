@@ -66,6 +66,54 @@ func highlightInfo(v *nvim.Nvim) [2][4]int {
 	return z
 }
 
+func showMessage(v *nvim.Nvim, buf nvim.Buffer) {
+	//currentBuf, _ := v.CurrentBuffer()
+	_ = v.SetCurrentBuffer(buf)
+	//_ = v.FeedKeys("\x1bgg\"apqaq", "t", false)
+	//_ = v.FeedKeys("\x1b\"apqaq\x1bi\r\x1b", "t", false)
+
+	_ = v.SetBufferLines(buf, 0, -1, true, [][]byte{})
+	//_ = v.FeedKeys("\x1bG\"apqaq", "t", false)
+	_ = v.FeedKeys("\x1b\"apqaq", "t", false)
+	bb, _ := v.BufferLines(buf, 0, -1, true)
+	var message string
+	var i int
+	for i = len(bb) - 1; i >= 0; i-- {
+		message = string(bb[i])
+		if message != "" {
+			break
+		}
+	}
+	//_ = v.SetBufferLines(buf, 0, 0, true, [][]byte{})
+	v.SetCurrentBuffer(sess.p.vbuf)
+	currentBuf, _ := v.CurrentBuffer()
+	if message != "" {
+		//sess.showOrgMessage("len bb: %v; i: %v; message: %v", len(bb), i, message)
+		sess.p.showMessage("len bb: %v; i: %v; message: %v", len(bb), i, message)
+	} else {
+		//sess.showOrgMessage("No message, %v %v %v", sess.p.vbuf, buf, currentBuf)
+		//sess.showOrgMessage("No message: len bb %v; Current Buf %v", len(bb), currentBuf)
+		sess.p.showMessage("No message: len bb %v; Current Buf %v", len(bb), currentBuf)
+	}
+}
+
+// this doesn't work
+func redirectMessages(v *nvim.Nvim) {
+	//_, err := v.Input("\x1b:redir >> listman_messages.txt")
+	//err := v.FeedKeys("\x1b:redir >> listman_messages.txt\r", "t", false)
+	err := v.FeedKeys("\x1b:redir @a\r", "t", false)
+	if err != nil {
+		fmt.Printf("%v\n", err)
+	}
+	/*
+		out, err := v.Exec("redir >> listman_messages.txt", true)
+		if err != nil {
+			fmt.Printf("messages error: %v", err)
+		}
+		return out
+	*/
+}
+
 func main() {
 
 	signal_chan := make(chan os.Signal, 1)
@@ -114,6 +162,10 @@ func main() {
 		fmt.Printf("%v\n", err)
 	}
 	w = wins[0]
+
+	redirectMessages(v)
+	//messageBuf, _ := v.CurrentBuffer()
+	messageBuf, _ := v.CreateBuffer(true, true)
 
 	// enable raw mode
 	origCfg, err := rawmode.Enable()
@@ -205,7 +257,7 @@ func main() {
 		}
 
 		if sess.editorMode {
-			textChange := editorProcessKey(k)
+			textChange := editorProcessKey(k, messageBuf)
 
 			if !sess.editorMode {
 				continue
@@ -370,7 +422,7 @@ func organizerProcessKey(c int) {
 	} // end switch o.mode
 } // end func organizerProcessKey(c int)
 
-func editorProcessKey(c int) bool {
+func editorProcessKey(c int, messageBuf nvim.Buffer) bool {
 
 	switch sess.p.mode {
 
@@ -498,17 +550,31 @@ func editorProcessKey(c int) bool {
 			}
 			vbuf := bufs[0]
 		*/
+		if c == '+' {
+			showMessage(v, messageBuf)
+			return false
+		}
+
 		_, err := v.Input(string(c))
 		if err != nil {
 			fmt.Printf("%v\n", err)
 		}
 
+		/*
+			str := getStatusLine(v)
+			sess.showOrgMessage("statusline: %v", str)
+		*/
+
 		mode, _ := v.Mode() //status msg and branch if v
-		var cb nvim.Buffer
-		if !mode.Blocking {
-			cb, _ = v.CurrentBuffer()
-		}
-		sess.showOrgMessage("char = %v => mode = %#v; blocking = %#v; buffer = %v", string(c), mode.Mode, mode.Blocking, cb)
+
+		/*
+			var cb nvim.Buffer
+			if !mode.Blocking {
+				cb, _ = v.CurrentBuffer()
+			}
+			sess.showOrgMessage("char = %v => mode = %#v; blocking = %#v; buffer = %v", string(c), mode.Mode, mode.Blocking, cb)
+		*/
+
 		if mode.Blocking == false {
 
 			if mode.Mode == "v" || mode.Mode == "V" || mode.Mode == string('\x16') {
@@ -520,13 +586,9 @@ func editorProcessKey(c int) bool {
 				sess.p.mode = NORMAL
 			case "v":
 				sess.p.mode = VISUAL
-				//sess.p.highlight[0] = highlightInfo(v)[0][2] - 1
-				//sess.p.highlight[1] = highlightInfo(v)[1][2] - 1
 				sess.p.vb_highlight = highlightInfo(v)
 			case "V":
 				sess.p.mode = VISUAL_LINE
-				//sess.p.highlight[0] = highlightInfo(v)[0][1] - 1
-				//sess.p.highlight[1] = highlightInfo(v)[1][1] - 1
 				sess.p.vb_highlight = highlightInfo(v)
 			case string('\x16'):
 				sess.p.mode = VISUAL_BLOCK
@@ -546,9 +608,12 @@ func editorProcessKey(c int) bool {
 				}
 			*/
 
-			sess.p.showMessage(" => position = %v", pos)
+			//sess.p.showMessage(" => position = %v", pos)
 			sess.p.fr = pos[0] - 1
 			sess.p.fc = pos[1]
+			if c == 'u' && sess.p.mode == NORMAL {
+				showMessage(v, messageBuf)
+			}
 		} else {
 			return false
 		}
@@ -961,6 +1026,21 @@ func editorProcessKey(c int) bool {
 				//sess.p.mode = NORMAL
 				return false
 			} //end quit_cmds
+
+			if cmd == "s" {
+				bufs, _ := v.Buffers()
+				if int(sess.p.vbuf) == 2 {
+					_ = v.SetCurrentBuffer(bufs[len(bufs)-1])
+					sess.p.vbuf = bufs[len(bufs)-1]
+				} else {
+					_ = v.SetCurrentBuffer(bufs[1])
+					sess.p.vbuf = bufs[1]
+				}
+				sess.p.command_line = ""
+				sess.p.mode = NORMAL
+				sess.p.refreshScreen(true)
+				return true
+			}
 
 			if cmd0, found := e_lookup_C[cmd]; found {
 				cmd0(sess.p)

@@ -58,17 +58,15 @@ type Editor struct {
 
 func NewEditor() *Editor {
 	return &Editor{
-		cx:               0, //actual cursor x position (takes into account any scroll/offset)
-		cy:               0, //actual cursor y position ""
-		fc:               0, //'file' x position as defined by reading sqlite text into rows vector
-		fr:               0, //'file' y position ""
-		line_offset:      0, //the number of lines of text at the top scrolled off the screen
-		prev_line_offset: 0, //the prev number of lines of text at the top scrolled off the screen
-		//E.coloff: 0,  //always zero because currently only word wrap supported
-		dirty:   0,  //has filed changed since last save
-		message: "", //very bottom of screen, ex. -- INSERT --
-		//highlight:          [2]int{-1, -1},
-		mode:               0, //0=normal, 1=insert, 2=command line, 3=visual line, 4=visual, 5='r'
+		cx:                 0,  //actual cursor x position (takes into account any scroll/offset)
+		cy:                 0,  //actual cursor y position ""
+		fc:                 0,  //'file' x position as defined by reading sqlite text into rows vector
+		fr:                 0,  //'file' y position ""
+		line_offset:        0,  //the number of lines of text at the top scrolled off the screen
+		prev_line_offset:   0,  //the prev number of lines of text at the top scrolled off the screen
+		dirty:              0,  //has filed changed since last save
+		message:            "", //very bottom of screen, ex. -- INSERT --
+		mode:               0,  //0=normal, 1=insert, 2=command line, 3=visual line, 4=visual, 5='r'
 		command:            "",
 		command_line:       "",
 		repeat:             0, //number of times to repeat commands like x,s,yy also used for visual line mode x,y
@@ -83,6 +81,7 @@ func NewEditor() *Editor {
 		is_subeditor:       false,
 		is_below:           false,
 		left_margin_offset: 0, // 0 if no line numbers
+		//E.coloff: 0,  //always zero because currently only word wrap supported
 
 		/*
 		   auto dict_list: std::vector<std::pair<std::string, std::string>>{},
@@ -93,38 +92,6 @@ func NewEditor() *Editor {
 		*/
 	}
 }
-
-/* I believe these are only when escaping from INSERT mode
-// cmd1_map = make(map[string]func(*Editor, int),4)
-var cmd_map1 = map[string]func(*Editor, int){
-                   "i":(*Editor).E_i,
-                   "I":(*Editor).E_I,
-                   "a":(*Editor).E_a,
-                   "A":(*Editor).E_A,
-                 }
-// to call it's cmd1_map["i"](e, repeat)
-
-var cmd_map2 = map[string]func(*Editor, int){
-                   "o":(*Editor).E_o_escape,
-                   "O":(*Editor).E_O_escape,
-                 }
-
-var cmd_map3 = map[string]func(*Editor, int){
-                   "x":(*Editor).E_x,
-                   "dw":(*Editor).E_dw,
-                   "daw":(*Editor).E_daw,
-                   "dd":(*Editor).E_dd,
-                   "d$":(*Editor).E_deol,
-                   "de":(*Editor).E_de,
-                   "dG":(*Editor).E_dG,
-                 }
-
-var cmd_map4 = map[string]func(*Editor, int){
-                   "cw":(*Editor).E_cw,
-                   "caw":(*Editor).E_caw,
-                   "s":(*Editor).E_s,
-                 }
-*/
 
 type pair1 struct {
 	char byte
@@ -180,4 +147,3 @@ func (row ERow) CxToRx(cx int) int {
 	return rx
 }
 */
-// Editor represents the data in the being edited in memory
