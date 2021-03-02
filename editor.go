@@ -17,7 +17,10 @@ type Editor struct {
 	top_margin         int
 	rows               []string
 	code               string //used by lsp thread and intended to avoid unnecessary calls to editorRowsToString
-	dirty              int    //file changes since last save
+	dirty              int64  //file changes since last save
+	quit               chan struct{}
+	changedtickChan    chan *ChangedtickEvent
+	bufLinesChan       chan *BufLinesEvent
 	//highlight          [2]int
 	vb0              [3]int
 	vb_highlight     [2][4]int

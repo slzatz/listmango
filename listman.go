@@ -918,8 +918,19 @@ func editorProcessKey(c int, messageBuf nvim.Buffer) bool {
 						sess.p.showMessage("You can't save the contents of the Output Window")
 						return false
 					}
-					//update_note(false, true); //should be p->E_write_C(); closing_editor = true;
 					updateNote() //should be p->E_write_C(); closing_editor = true;
+
+					/*
+						ok, err := v.DetachBuffer(0)
+						if err != nil {
+							log.Fatal(err)
+						}
+						if !ok {
+							log.Fatal()
+						}
+					*/
+
+					sess.p.quit <- struct{}{}
 
 					// this seems like a kluge but I can't delete buffer
 					// without generating an error
@@ -946,10 +957,20 @@ func editorProcessKey(c int, messageBuf nvim.Buffer) bool {
 					*/
 
 				} else if cmd == "q!" || cmd == "quit!" {
+
+					sess.p.quit <- struct{}{}
+
+					// below results in following error but without it panic
+					//msgpack/rpc: notification service method nvim_buf_detach_event not found
+					// also it panics if I do sess.p.quit <- without the DetachBuffer
+					// so for moment all of it is commented out but seems like it should be done
 					/*
-						_, err := v.Input(":q!")
+						ok, err := v.DetachBuffer(sess.p.vbuf)
 						if err != nil {
-							fmt.Printf("%v\n", err)
+							log.Fatal(err)
+						}
+						if !ok {
+							log.Fatal()
 						}
 					*/
 
@@ -1009,7 +1030,8 @@ func editorProcessKey(c int, messageBuf nvim.Buffer) bool {
 					sess.drawEditors()
 
 				} else { // we've quit the last remaining editor(s)
-					sess.p = nil
+					// unless commented out earlier sess.p.quiet <- causes panic
+					//sess.p = nil
 					sess.editorMode = false
 					sess.eraseRightScreen()
 
@@ -1027,7 +1049,7 @@ func editorProcessKey(c int, messageBuf nvim.Buffer) bool {
 				return false
 			} //end quit_cmds
 
-			if cmd == "s" {
+			if cmd == "s" { //switch bufferd
 				bufs, _ := v.Buffers()
 				if int(sess.p.vbuf) == 2 {
 					_ = v.SetCurrentBuffer(bufs[len(bufs)-1])
@@ -1040,6 +1062,11 @@ func editorProcessKey(c int, messageBuf nvim.Buffer) bool {
 				sess.p.mode = NORMAL
 				sess.p.refreshScreen(true)
 				return true
+			}
+
+			if cmd == "m" {
+				sess.p.showMessage("mod number = %v", sess.p.dirty)
+				return false
 			}
 
 			if cmd0, found := e_lookup_C[cmd]; found {

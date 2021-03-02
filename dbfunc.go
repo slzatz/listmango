@@ -601,12 +601,6 @@ func readNoteIntoEditor(id int) {
 	}
 	v.SetBufferLines(sess.p.vbuf, 0, -1, true, bb)
 
-	//sess.p.dirty = 0 //assume editorInsertRow increments dirty so this needed
-	if sess.p.linked_editor == nil {
-		return
-	}
-
-	sess.p.linked_editor.rows = []string{" "}
 }
 
 func getEntryInfo(id int) Entry {

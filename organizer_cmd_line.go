@@ -2,7 +2,10 @@ package main
 
 import (
 	"fmt"
+	"github.com/neovim/go-client/nvim"
+	"log"
 	"strings"
+	"sync/atomic"
 )
 
 var cmd_lookup = map[string]func(int){
@@ -237,36 +240,16 @@ func F_edit(id int) {
 	//sess.showOrgMessage("Edit note %d", id)
 	sess.editorMode = true
 
-	if len(sess.editors) > 0 {
-		active := false
-		for _, e := range sess.editors {
-			if e.id == id {
-				active = true
-				sess.p = e
-				break
-			}
+	active := false
+	for _, e := range sess.editors {
+		if e.id == id {
+			active = true
+			sess.p = e
+			break
 		}
+	}
 
-		if !active {
-			sess.p = &Editor{}
-			sess.editors = append(sess.editors, sess.p)
-			sess.p.id = id
-			sess.p.top_margin = TOP_MARGIN + 1
-
-			folder_tid := getFolderTid(org.rows[org.fr].id)
-			if folder_tid == 18 || folder_tid == 14 {
-				sess.p.linked_editor = &Editor{}
-				sess.editors = append(sess.editors, sess.p.linked_editor)
-				sess.p.linked_editor.id = id
-				sess.p.linked_editor.is_subeditor = true
-				sess.p.linked_editor.is_below = true
-				sess.p.linked_editor.linked_editor = sess.p
-				sess.p.left_margin_offset = LEFT_MARGIN_OFFSET
-			}
-			readNoteIntoEditor(id)
-		}
-
-	} else {
+	if !active {
 		sess.p = &Editor{}
 		sess.editors = append(sess.editors, sess.p)
 		sess.p.id = id
@@ -280,27 +263,64 @@ func F_edit(id int) {
 			sess.p.linked_editor.is_subeditor = true
 			sess.p.linked_editor.is_below = true
 			sess.p.linked_editor.linked_editor = sess.p
+			sess.p.linked_editor.rows = []string{" "}
 			sess.p.left_margin_offset = LEFT_MARGIN_OFFSET
 		}
-		readNoteIntoEditor(id) //if id == -1 does not try to retrieve note
+		readNoteIntoEditor(id)
+		/////////////////////////////
+		sess.p.bufLinesChan = make(chan *BufLinesEvent)
+		v.RegisterHandler("nvim_buf_lines_event", func(bufLinesEvent ...interface{}) {
+			ev := &BufLinesEvent{
+				Buffer:      bufLinesEvent[0].(nvim.Buffer),
+				Changetick:  bufLinesEvent[1].(int64),
+				FirstLine:   bufLinesEvent[2].(int64),
+				LastLine:    bufLinesEvent[3].(int64),
+				LineData:    fmt.Sprint(bufLinesEvent[4]),
+				IsMultipart: bufLinesEvent[5].(bool),
+			}
+			sess.p.bufLinesChan <- ev
+		})
+
+		sess.p.changedtickChan = make(chan *ChangedtickEvent)
+		v.RegisterHandler("nvim_buf_changedtick_event", func(changedtickEvent ...interface{}) {
+			ev := &ChangedtickEvent{
+				Buffer:     changedtickEvent[0].(nvim.Buffer),
+				Changetick: changedtickEvent[1].(int64),
+			}
+			sess.p.changedtickChan <- ev
+		})
+		ok, err := v.AttachBuffer(0, false, make(map[string]interface{})) // 0 => current buffer
+		if err != nil {
+			log.Fatal(err)
+		}
+		if !ok {
+			log.Fatal()
+		}
+		sess.p.quit = make(chan struct{})
+		//errc := make(chan error)
+		//done := make(chan struct{})
+		go func() {
+			for {
+				select {
+				//changedtick := <-changedtickChan
+				case <-sess.p.changedtickChan:
+					atomic.AddInt64(&sess.p.dirty, 1)
+				case <-sess.p.bufLinesChan:
+					atomic.AddInt64(&sess.p.dirty, 1)
+				case <-sess.p.quit:
+					return
+
+				}
+			}
+		}()
+
+		//////////////////////////////
 	}
+
 	sess.positionEditors()
 	sess.eraseRightScreen() //erases editor area + statusbar + msg
 	sess.drawEditors()
-
-	if len(sess.p.rows) == 0 {
-		//sess.p.mode = INSERT
-		sess.p.mode = NORMAL
-		// below all for undo
-		sess.p.last_command = "i"
-		sess.p.prev_fr = 0
-		sess.p.prev_fc = 0
-		sess.p.last_repeat = 1
-		//sess.p.snapshot.push_back("");
-		//sess.p.showMessage("\x1b[1m-- INSERT --\x1b[0m")
-	} else {
-		sess.p.mode = NORMAL
-	}
+	sess.p.mode = NORMAL
 
 	org.command = ""
 	org.mode = NORMAL

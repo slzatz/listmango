@@ -1,5 +1,7 @@
 package main
 
+import "github.com/neovim/go-client/nvim"
+
 /*
 struct orow {  //Entry
   std::string title;
@@ -17,20 +19,20 @@ struct orow {  //Entry
 };
 */
 const (
-       TZ_OFFSET = 4
-       BASE_DATE = "1970-01-01 00:00"
-       LINKED_NOTE_HEIGHT = 20
-       TOP_MARGIN = 1
-       MAX = 500
-       TIME_COL_WIDTH = 18
-       LEFT_MARGIN = 1
-       LEFT_MARGIN_OFFSET = 4
-       //SCROLL_UP = 1
-       COLOR_1 = "\x1b[0;31m"
+	TZ_OFFSET          = 4
+	BASE_DATE          = "1970-01-01 00:00"
+	LINKED_NOTE_HEIGHT = 20
+	TOP_MARGIN         = 1
+	MAX                = 500
+	TIME_COL_WIDTH     = 18
+	LEFT_MARGIN        = 1
+	LEFT_MARGIN_OFFSET = 4
+	//SCROLL_UP = 1
+	COLOR_1 = "\x1b[0;31m"
 )
 
 func ctrlKey(b byte) int { //rune
-  return int(b & 0x1f)
+	return int(b & 0x1f)
 }
 
 type Row struct {
@@ -110,21 +112,22 @@ var mode_text [12]string = [12]string{
 }
 
 func (m Mode) String() string {
-  return [...]string{
-                   	"NORMAL",
-                   	"INSERT",
-                   	"COMMAND LINE",
-                   	"VISUAL LINE",
-                   	"VISUAL",
-                   	"REPLACE",
-                   	"FILE DISPLAY",
-                   	"NO ROWS",
-                   	"VISUAL BLOCK",
-                   	"SEARCH",
-                   	"FIND",
-                   	"ADD/CHANGE FILTER",
-                  }[m]
+	return [...]string{
+		"NORMAL",
+		"INSERT",
+		"COMMAND LINE",
+		"VISUAL LINE",
+		"VISUAL",
+		"REPLACE",
+		"FILE DISPLAY",
+		"NO ROWS",
+		"VISUAL BLOCK",
+		"SEARCH",
+		"FIND",
+		"ADD/CHANGE FILTER",
+	}[m]
 }
+
 //var m Mode = NORMAL
 //fmt.Print(m)
 /*
@@ -163,6 +166,19 @@ type Container struct {
 	deleted  bool
 	modified string
 	count    int
+}
+
+type ChangedtickEvent struct {
+	Buffer     nvim.Buffer
+	Changetick int64
+}
+type BufLinesEvent struct {
+	Buffer      nvim.Buffer
+	Changetick  int64
+	FirstLine   int64
+	LastLine    int64
+	LineData    string
+	IsMultipart bool
 }
 
 /*
