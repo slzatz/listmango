@@ -167,12 +167,61 @@ func main() {
 	//messageBuf, _ := v.CurrentBuffer()
 	messageBuf, _ := v.CreateBuffer(true, true)
 
+	////////////////////////////////////////////////
+	bufLinesChan := make(chan *BufLinesEvent)
+	v.RegisterHandler("nvim_buf_lines_event", func(bufLinesEvent ...interface{}) {
+		ev := &BufLinesEvent{
+			Buffer:      bufLinesEvent[0].(nvim.Buffer),
+			Changetick:  bufLinesEvent[1].(int64),
+			FirstLine:   bufLinesEvent[2].(int64),
+			LastLine:    bufLinesEvent[3].(int64),
+			LineData:    fmt.Sprint(bufLinesEvent[4]),
+			IsMultipart: bufLinesEvent[5].(bool),
+		}
+		bufLinesChan <- ev
+	})
+
+	changedtickChan := make(chan *ChangedtickEvent)
+	v.RegisterHandler("nvim_buf_changedtick_event", func(changedtickEvent ...interface{}) {
+		ev := &ChangedtickEvent{
+			Buffer:     changedtickEvent[0].(nvim.Buffer),
+			Changetick: changedtickEvent[1].(int64),
+		}
+		changedtickChan <- ev
+	})
+	quit := make(chan struct{})
+
+	go func() {
+		for {
+			select {
+			case c := <-changedtickChan:
+				for _, e := range sess.editors {
+					if c.Buffer == e.vbuf {
+						e.dirty++
+						break
+					}
+				}
+			case b := <-bufLinesChan:
+				for _, e := range sess.editors {
+					if b.Buffer == e.vbuf {
+						e.dirty++
+						break
+					}
+				}
+			case <-quit:
+				return
+
+			}
+		}
+	}()
+
 	// enable raw mode
 	origCfg, err := rawmode.Enable()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error enabling raw mode: %v", err)
 		os.Exit(1)
 	}
+
 	sess.origTermCfg = origCfg
 
 	sess.editorMode = false
@@ -930,7 +979,7 @@ func editorProcessKey(c int, messageBuf nvim.Buffer) bool {
 						}
 					*/
 
-					sess.p.quit <- struct{}{}
+					//sess.p.quit <- struct{}{}
 
 					// this seems like a kluge but I can't delete buffer
 					// without generating an error
@@ -958,7 +1007,7 @@ func editorProcessKey(c int, messageBuf nvim.Buffer) bool {
 
 				} else if cmd == "q!" || cmd == "quit!" {
 
-					sess.p.quit <- struct{}{}
+					//sess.p.quit <- struct{}{}
 
 					// below results in following error but without it panic
 					//msgpack/rpc: notification service method nvim_buf_detach_event not found
@@ -992,7 +1041,7 @@ func editorProcessKey(c int, messageBuf nvim.Buffer) bool {
 					*/
 
 					// do nothing = allow editor to be closed
-				} else if sess.p.dirty > 0 {
+				} else if sess.p.dirty > 1 {
 					sess.p.mode = NORMAL
 					sess.p.command = ""
 					sess.p.command_line = ""
@@ -1065,7 +1114,9 @@ func editorProcessKey(c int, messageBuf nvim.Buffer) bool {
 			}
 
 			if cmd == "m" {
-				sess.p.showMessage("mod number = %v", sess.p.dirty)
+				sess.p.showMessage("buffer %v has been modified %v times", sess.p.vbuf, sess.p.dirty)
+				sess.p.command_line = ""
+				sess.p.mode = NORMAL
 				return false
 			}
 

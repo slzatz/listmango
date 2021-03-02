@@ -2,10 +2,8 @@ package main
 
 import (
 	"fmt"
-	"github.com/neovim/go-client/nvim"
 	"log"
 	"strings"
-	"sync/atomic"
 )
 
 var cmd_lookup = map[string]func(int){
@@ -267,28 +265,7 @@ func F_edit(id int) {
 			sess.p.left_margin_offset = LEFT_MARGIN_OFFSET
 		}
 		readNoteIntoEditor(id)
-		/////////////////////////////
-		sess.p.bufLinesChan = make(chan *BufLinesEvent)
-		v.RegisterHandler("nvim_buf_lines_event", func(bufLinesEvent ...interface{}) {
-			ev := &BufLinesEvent{
-				Buffer:      bufLinesEvent[0].(nvim.Buffer),
-				Changetick:  bufLinesEvent[1].(int64),
-				FirstLine:   bufLinesEvent[2].(int64),
-				LastLine:    bufLinesEvent[3].(int64),
-				LineData:    fmt.Sprint(bufLinesEvent[4]),
-				IsMultipart: bufLinesEvent[5].(bool),
-			}
-			sess.p.bufLinesChan <- ev
-		})
 
-		sess.p.changedtickChan = make(chan *ChangedtickEvent)
-		v.RegisterHandler("nvim_buf_changedtick_event", func(changedtickEvent ...interface{}) {
-			ev := &ChangedtickEvent{
-				Buffer:     changedtickEvent[0].(nvim.Buffer),
-				Changetick: changedtickEvent[1].(int64),
-			}
-			sess.p.changedtickChan <- ev
-		})
 		ok, err := v.AttachBuffer(0, false, make(map[string]interface{})) // 0 => current buffer
 		if err != nil {
 			log.Fatal(err)
@@ -296,25 +273,6 @@ func F_edit(id int) {
 		if !ok {
 			log.Fatal()
 		}
-		sess.p.quit = make(chan struct{})
-		//errc := make(chan error)
-		//done := make(chan struct{})
-		go func() {
-			for {
-				select {
-				//changedtick := <-changedtickChan
-				case <-sess.p.changedtickChan:
-					atomic.AddInt64(&sess.p.dirty, 1)
-				case <-sess.p.bufLinesChan:
-					atomic.AddInt64(&sess.p.dirty, 1)
-				case <-sess.p.quit:
-					return
-
-				}
-			}
-		}()
-
-		//////////////////////////////
 	}
 
 	sess.positionEditors()

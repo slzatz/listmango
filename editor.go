@@ -18,19 +18,14 @@ type Editor struct {
 	rows               []string
 	code               string //used by lsp thread and intended to avoid unnecessary calls to editorRowsToString
 	dirty              int64  //file changes since last save
-	quit               chan struct{}
-	changedtickChan    chan *ChangedtickEvent
-	bufLinesChan       chan *BufLinesEvent
-	//highlight          [2]int
-	vb0              [3]int
-	vb_highlight     [2][4]int
-	mode             Mode
-	command_line     string //for commands on the command line; string doesn't include ':'
-	command          string // right now includes normal mode commands and command line commands
-	last_command     string
-	repeat           int
-	last_repeat      int
-	prev_fr, prev_fc int
+	vb_highlight       [2][4]int
+	mode               Mode
+	command_line       string //for commands on the command line; string doesn't include ':'
+	command            string // right now includes normal mode commands and command line commands
+	last_command       string
+	repeat             int
+	last_repeat        int
+	prev_fr, prev_fc   int
 	//what's typed between going into INSERT mode and leaving INSERT mode
 	last_typed          string
 	indent              int
