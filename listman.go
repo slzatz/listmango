@@ -293,16 +293,6 @@ func main() {
 			k = int(key.Regular)
 		} else {
 			k = key.Special
-			switch k {
-			case ARROW_UP:
-				k = int('k')
-			case ARROW_DOWN:
-				k = int('j')
-			case ARROW_RIGHT:
-				k = int('l')
-			case ARROW_LEFT:
-				k = int('h')
-			}
 		}
 
 		if sess.editorMode {
@@ -475,34 +465,6 @@ func editorProcessKey(c int, messageBuf nvim.Buffer) bool {
 
 	switch sess.p.mode {
 
-	case NO_ROWS:
-		switch c {
-		case '\x1b':
-			sess.p.command = ""
-			sess.p.repeat = 0
-			return false
-		case ':':
-			sess.p.mode = COMMAND_LINE
-			sess.p.command_line = ""
-			sess.p.command = ""
-			sess.p.showMessage(":")
-			return false
-		case 'i', 'I', 'a', 'A', 's', 'o', 'O':
-			//p.editorInsertRow(0, std::string())
-			sess.p.mode = INSERT
-			sess.p.last_command = "i" //all the commands equiv to i
-			sess.p.prev_fr = 0
-			sess.p.prev_fc = 0
-			sess.p.last_repeat = 1
-			sess.p.snapshot = nil
-			sess.p.snapshot = append(sess.p.snapshot, "")
-			sess.p.showMessage("\x1b[1m-- INSERT --\x1b[0m")
-			//p.command[0] = '\0'
-			//p.repeat = 0
-			// ? p.redraw = true
-			return true
-		}
-
 	case INSERT:
 		switch c {
 
@@ -590,39 +552,133 @@ func editorProcessKey(c int, messageBuf nvim.Buffer) bool {
 			sess.p.command = ""
 			sess.p.showMessage(":")
 			return false
-		}
 
-		/*
-			bufs, err := v.Buffers()
-			if err != nil {
-				log.Fatal(err)
+		case ctrlKey('h'):
+			sess.p.command = ""
+			if len(sess.editors) == 1 {
+
+				if sess.divider < 10 {
+					sess.cfg.ed_pct = 80
+					sess.moveDivider(80)
+				}
+
+				sess.editorMode = false //needs to be here
+
+				sess.drawPreviewWindow(org.rows[org.fr].id)
+				org.mode = NORMAL
+				sess.returnCursor()
+				return false
 			}
-			vbuf := bufs[0]
-		*/
-		if c == '+' {
-			showMessage(v, messageBuf)
+
+			if sess.p.is_below {
+				sess.p = sess.p.linked_editor
+			}
+
+			temp := []*Editor{}
+			for _, e := range sess.editors {
+				if !e.is_below {
+					temp = append(temp, e)
+				}
+			}
+
+			index := 0
+			for i, e := range temp {
+				if e == sess.p {
+					index = i
+					break
+				}
+			}
+
+			sess.p.showMessage("index: %d; length: %d", index, len(temp))
+
+			if index > 0 {
+				sess.p = temp[index-1]
+				err := v.SetCurrentBuffer(sess.p.vbuf)
+				if err != nil {
+					sess.p.showMessage("Problem setting current buffer")
+				}
+				sess.p.mode = NORMAL
+				return false
+			} else {
+
+				if sess.divider < 10 {
+					sess.cfg.ed_pct = 80
+					sess.moveDivider(80)
+				}
+
+				sess.editorMode = false //needs to be here
+
+				sess.drawPreviewWindow(org.rows[org.fr].id)
+				org.mode = NORMAL
+				sess.returnCursor()
+				return false
+			}
+
+		case ctrlKey('l'):
+			sess.p.command = ""
+
+			if sess.p.is_below {
+				sess.p = sess.p.linked_editor
+			}
+
+			temp := []*Editor{}
+			for _, e := range sess.editors {
+				if !e.is_below {
+					temp = append(temp, e)
+				}
+			}
+
+			index := 0
+			for i, e := range temp {
+				if e == sess.p {
+					index = i
+					break
+				}
+			}
+
+			sess.p.showMessage("index: %d; length: %d", index, len(temp))
+
+			if index < len(temp)-1 {
+				sess.p = temp[index+1]
+				sess.p.mode = NORMAL
+				err := v.SetCurrentBuffer(sess.p.vbuf)
+				if err != nil {
+					sess.p.showMessage("Problem setting current buffer")
+				}
+			}
+
 			return false
-		}
 
-		_, err := v.Input(string(c))
-		if err != nil {
-			fmt.Printf("%v\n", err)
-		}
-
+		} // end of switch in NORMAL
 		/*
-			str := getStatusLine(v)
-			sess.showOrgMessage("statusline: %v", str)
-		*/
-
-		mode, _ := v.Mode() //status msg and branch if v
-
-		/*
-			var cb nvim.Buffer
-			if !mode.Blocking {
-				cb, _ = v.CurrentBuffer()
+			if c == '+' {
+				showMessage(v, messageBuf)
+				return false
 			}
-			sess.showOrgMessage("char = %v => mode = %#v; blocking = %#v; buffer = %v", string(c), mode.Mode, mode.Blocking, cb)
 		*/
+
+		//sess.p.showMessage("char = %d", c) //debugging
+		// note below that arrow maps seem vim-specific
+		/*****************************/
+		switch c {
+		case ARROW_UP:
+			v.FeedKeys("\x80ku", "t", true)
+		case ARROW_DOWN:
+			v.FeedKeys("\x80kd", "t", true)
+		case ARROW_RIGHT:
+			v.FeedKeys("\x80kr", "t", true)
+		case ARROW_LEFT:
+			v.FeedKeys("\x80kl", "t", true)
+		case BACKSPACE:
+			v.FeedKeys("\x08", "t", true)
+		default:
+			_, err := v.Input(string(c))
+			if err != nil {
+				fmt.Printf("%v\n", err)
+			}
+		}
+
+		mode, _ := v.Mode()
 
 		if mode.Blocking == false {
 
@@ -666,24 +722,6 @@ func editorProcessKey(c int, messageBuf nvim.Buffer) bool {
 		} else {
 			return false
 		}
-		/*
-			bufs, err := v.Buffers()
-			if err != nil {
-				log.Fatal(err)
-			}
-			vbuf := bufs[0]
-		*/
-
-		//type Buffer int
-		// 0-> current buffer
-		//bb, _ := v.BufferLines(vbuf, 0, -1, true)
-		/*
-			bb, _ := v.BufferLines(0, 0, -1, true)
-			sess.p.rows = nil
-			for _, b := range bb {
-				sess.p.rows = append(sess.p.rows, string(b))
-			}
-		*/
 
 		return true
 
@@ -707,19 +745,6 @@ func editorProcessKey(c int, messageBuf nvim.Buffer) bool {
 			sess.p.command = ""
 			sess.p.showMessage("/")
 			return false
-
-			/*
-			   case 'u':
-			     sess.p.command = ""
-			     sess.p.undo()
-			     return true
-
-			   case ctrlKey('r'):
-			     sess.p.command = ""
-			     sess.p.redo()
-			     return true
-
-			*/
 
 		case ctrlKey('h'):
 			sess.p.command = ""
@@ -865,24 +890,14 @@ func editorProcessKey(c int, messageBuf nvim.Buffer) bool {
 		}
 		sess.p.command += string(c)
 
-		/* this and next if should probably be dropped
-		 * and just use CTRL_KEY('w') to toggle
-		 * size of windows and right now can't reach
-		 * them given CTRL('w') above
-		 */
-
-		//if (std::string_view(p->command) == std::string({0x17,'='}))
-		//if (p->command == std::string({0x17,'='}))
-		if sess.p.command == "\x17=" {
+		if sess.p.command == "\x17=" { //ctrl-w =
 			sess.p.resize('=')
 			sess.p.command = ""
 			sess.p.repeat = 0
 			return false
 		}
 
-		//if (std::string_view(p->command) == std::string({0x17,'_'}))
-		//if (p->command == std::string({0x17,'_'}))
-		if sess.p.command == "\x17_" {
+		if sess.p.command == "\x17_" { //ctrl-w _
 			sess.p.resize('_')
 			sess.p.command = ""
 			sess.p.repeat = 0
@@ -894,7 +909,7 @@ func editorProcessKey(c int, messageBuf nvim.Buffer) bool {
 			sess.p.prev_fr = sess.p.fr
 			sess.p.prev_fc = sess.p.fc
 
-			sess.p.snapshot = sess.p.rows ////////////////////////////////////////////09182020
+			//sess.p.snapshot = sess.p.rows ////////////////////////////////////////////09182020
 
 			cmd(sess.p, sess.p.repeat) //money shot
 
@@ -989,9 +1004,6 @@ func editorProcessKey(c int, messageBuf nvim.Buffer) bool {
 					}
 
 					/*
-						_, err := v.Input(":q!")
-						if err != nil {
-							fmt.Printf("%v\n", err)
 						}
 						deleteBufferOpts := map[string]bool{
 							"force":  true,
@@ -1006,22 +1018,6 @@ func editorProcessKey(c int, messageBuf nvim.Buffer) bool {
 					*/
 
 				} else if cmd == "q!" || cmd == "quit!" {
-
-					//sess.p.quit <- struct{}{}
-
-					// below results in following error but without it panic
-					//msgpack/rpc: notification service method nvim_buf_detach_event not found
-					// also it panics if I do sess.p.quit <- without the DetachBuffer
-					// so for moment all of it is commented out but seems like it should be done
-					/*
-						ok, err := v.DetachBuffer(sess.p.vbuf)
-						if err != nil {
-							log.Fatal(err)
-						}
-						if !ok {
-							log.Fatal()
-						}
-					*/
 
 					err := v.SetBufferLines(0, 0, -1, true, [][]byte{})
 					if err != nil {

@@ -43,10 +43,10 @@ type Editor struct {
 	//static int origin; //x column of Editor section
 	search_string string //word under cursor works with *, n, N etc.
 	id            int    //listmanager db id of the row
-	undo_deque    []Diff //if neg it was a delete
-	d_index       int    //undo_deque index
-	undo_mode     bool
-	snapshot      []string
+	//undo_deque    []Diff //if neg it was a delete
+	//d_index       int    //undo_deque index
+	//undo_mode     bool
+	//snapshot      []string
 	linked_editor *Editor
 	is_subeditor  bool
 	is_below      bool
@@ -56,25 +56,25 @@ type Editor struct {
 
 func NewEditor() *Editor {
 	return &Editor{
-		cx:                 0,  //actual cursor x position (takes into account any scroll/offset)
-		cy:                 0,  //actual cursor y position ""
-		fc:                 0,  //'file' x position as defined by reading sqlite text into rows vector
-		fr:                 0,  //'file' y position ""
-		line_offset:        0,  //the number of lines of text at the top scrolled off the screen
-		prev_line_offset:   0,  //the prev number of lines of text at the top scrolled off the screen
-		dirty:              0,  //has filed changed since last save
-		message:            "", //very bottom of screen, ex. -- INSERT --
-		mode:               0,  //0=normal, 1=insert, 2=command line, 3=visual line, 4=visual, 5='r'
-		command:            "",
-		command_line:       "",
-		repeat:             0, //number of times to repeat commands like x,s,yy also used for visual line mode x,y
-		indent:             4,
-		smartindent:        1, //CTRL-z toggles - don't want on what pasting from outside source
-		first_visible_row:  0,
-		spellcheck:         false,
-		highlight_syntax:   true, // should only apply to code
-		redraw:             false,
-		undo_mode:          false,
+		cx:                0,  //actual cursor x position (takes into account any scroll/offset)
+		cy:                0,  //actual cursor y position ""
+		fc:                0,  //'file' x position as defined by reading sqlite text into rows vector
+		fr:                0,  //'file' y position ""
+		line_offset:       0,  //the number of lines of text at the top scrolled off the screen
+		prev_line_offset:  0,  //the prev number of lines of text at the top scrolled off the screen
+		dirty:             0,  //has filed changed since last save
+		message:           "", //very bottom of screen, ex. -- INSERT --
+		mode:              0,  //0=normal, 1=insert, 2=command line, 3=visual line, 4=visual, 5='r'
+		command:           "",
+		command_line:      "",
+		repeat:            0, //number of times to repeat commands like x,s,yy also used for visual line mode x,y
+		indent:            4,
+		smartindent:       1, //CTRL-z toggles - don't want on what pasting from outside source
+		first_visible_row: 0,
+		spellcheck:        false,
+		highlight_syntax:  true, // should only apply to code
+		redraw:            false,
+		//undo_mode:          false,
 		linked_editor:      nil,
 		is_subeditor:       false,
 		is_below:           false,
@@ -91,6 +91,7 @@ func NewEditor() *Editor {
 	}
 }
 
+/*
 type pair1 struct {
 	char byte
 	num  int
@@ -115,6 +116,7 @@ type Diff struct {
 	undo_method   int //CHANGE_ROW< REPLACE_NOTE< ADD_ROWS, DELETE_ROWS
 	mode          int
 }
+*/
 
 // ERow represents a line of text in a file
 //type ERow []rune

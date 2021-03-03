@@ -63,7 +63,7 @@ func (e *Editor) E_write_C() {
 	  }
 	*/
 
-	e.dirty = 0
+	e.dirty = 1
 	e.drawStatusBar() //need this since now refresh won't do it unless redraw =true
 	e.showMessage("")
 }
