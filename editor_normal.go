@@ -1,5 +1,6 @@
 package main
 
+import "strings"
 /*
 var e_lookup2 = map[string]func(*Editor) {
   "\x17L":(*Editor).moveOutputWindowRight,
@@ -14,6 +15,9 @@ var e_lookup2 = map[string]interface{} {
   "\x17J":(*Editor).moveOutputWindowBelow,
   "\x08":controlH,
   "\x0c":controlL,
+  "\x02":(*Editor).decorateWord,
+  "\x05":(*Editor).decorateWord,
+  string(ctrlKey('i')):(*Editor).decorateWord,
 }
 
 func (e *Editor) resize(flag byte) {
@@ -205,6 +209,93 @@ func controlL() {
 
 		return
   }
+
+func (e *Editor) decorateWord(c int) {
+  if len(e.rows) == 0 {
+    return
+  }
+
+  row := e.rows[e.fr]
+  if row[e.fc] == ' ' {
+    return
+  }
+
+  //find beginning of word
+  var beg int
+  if e.fc != 0 {
+    beg = strings.LastIndex(row[:e.fc], " ") //LastIndexAny and delimiters would be better
+    if beg == -1 {
+      beg = 0
+    } else {
+      beg++
+    }
+  }
+
+  end := strings.Index(row[e.fc:], " ")
+  if end == -1 {
+    end = len(row) - 1
+  } else {
+    end = end + e.fc -1
+  }
+
+  var undo bool
+  if strings.HasPrefix(row[beg:], "**") {
+    row = row[:beg] + row[beg+2:]
+    end -= 4
+    row = row[:end+1] + row[end+3:]
+    e.fc -=2
+    if c == ctrlKey('b') {
+      undo = true
+    }
+  } else if row[beg] == '*' {
+    row = row[:beg] + row[beg+1:]
+    end -= 2
+    e.fc -= 1
+    row = row[:end+1] + row[end+2:]
+    if c == ctrlKey('i') {
+      undo = true
+    }
+  } else if row[beg] == '`' {
+    row = row[:beg] + row[beg+1:]
+    end -= 2
+    e.fc -= 1
+    row = row[:end+1] + row[end+2:]
+    if c == ctrlKey('e') {
+      undo = true
+    }
+  }
+  if undo {
+    e.rows[e.fr] = row
+	  v.SetBufferLines(e.vbuf, e.fr, e.fr+1, false, [][]byte{}) //true - out of bounds indexes are not clamped
+	  v.SetBufferLines(e.vbuf, e.fr, e.fr, false, [][]byte{[]byte(row)}) //true - out of bounds indexes are not clamped
+    v.SetWindowCursor(w, [2]int{e.fr+1, e.fc}) //set screen cx and cy from pos
+    return
+  }
+
+  // needed if word at end of row ????
+  if end == len(row) {
+    row += " "
+  }
+
+  switch c {
+    case ctrlKey('b'):
+      row = row[:beg] + "**" + row[beg:end+1] + "**" + row[1+end:]
+      e.fc +=2
+    case ctrlKey('i'):
+      row = row[:beg] + "*" + row[beg:end+1] + "*" + row[1+end:]
+      e.fc++
+    case ctrlKey('e'):
+      row = row[:beg] + "`" + row[beg:end+1] + "`" + row[1+end:]
+      e.fc++
+  }
+
+  e.rows[e.fr] = row
+  //v.SetWindowCursor(w, [2]int{e.fr-1, e.fc}) //set screen cx and cy from pos
+	v.SetBufferLines(e.vbuf, e.fr, e.fr+1, false, [][]byte{}) //true - out of bounds indexes are not clamped
+	v.SetBufferLines(e.vbuf, e.fr, e.fr, false, [][]byte{[]byte(row)}) //true - out of bounds indexes are not clamped
+  v.SetWindowCursor(w, [2]int{e.fr+1, e.fc}) //set screen cx and cy from pos
+  //v.SetWindowCursor(w, [2]int{1, 4}) //set screen cx and cy from pos {r, c} r is 1-based, c - o-based
+}
 
 var e_lookup = map[string]func(*Editor, int) {
                    "i":(*Editor).E_i,

@@ -539,117 +539,14 @@ func editorProcessKey(c int, messageBuf nvim.Buffer) bool {
 		return true // end of case INSERT: - should not be executed
 
 	case NORMAL, VISUAL, VISUAL_LINE, VISUAL_BLOCK: //actually handling NORMAL and INSERT
-		switch c {
 
-		case '\x1b':
-			sess.p.command = ""
-			//sess.p.repeat = 0
-			//sess.p.mode = NORMAL
-
-		case ':':
+		if c == ':' {
 			sess.p.mode = COMMAND_LINE
 			sess.p.command_line = ""
 			sess.p.command = ""
 			sess.p.showMessage(":")
 			return false
-
-		case ctrlKey('h'):
-			sess.p.command = ""
-			if len(sess.editors) == 1 {
-
-				if sess.divider < 10 {
-					sess.cfg.ed_pct = 80
-					sess.moveDivider(80)
-				}
-
-				sess.editorMode = false //needs to be here
-
-				sess.drawPreviewWindow(org.rows[org.fr].id)
-				org.mode = NORMAL
-				sess.returnCursor()
-				return false
-			}
-
-			if sess.p.is_below {
-				sess.p = sess.p.linked_editor
-			}
-
-			temp := []*Editor{}
-			for _, e := range sess.editors {
-				if !e.is_below {
-					temp = append(temp, e)
-				}
-			}
-
-			index := 0
-			for i, e := range temp {
-				if e == sess.p {
-					index = i
-					break
-				}
-			}
-
-			sess.p.showMessage("index: %d; length: %d", index, len(temp))
-
-			if index > 0 {
-				sess.p = temp[index-1]
-				err := v.SetCurrentBuffer(sess.p.vbuf)
-				if err != nil {
-					sess.p.showMessage("Problem setting current buffer")
-				}
-				sess.p.mode = NORMAL
-				return false
-			} else {
-
-				if sess.divider < 10 {
-					sess.cfg.ed_pct = 80
-					sess.moveDivider(80)
-				}
-
-				sess.editorMode = false //needs to be here
-
-				sess.drawPreviewWindow(org.rows[org.fr].id)
-				org.mode = NORMAL
-				sess.returnCursor()
-				return false
-			}
-
-		case ctrlKey('l'):
-			sess.p.command = ""
-
-			if sess.p.is_below {
-				sess.p = sess.p.linked_editor
-			}
-
-			temp := []*Editor{}
-			for _, e := range sess.editors {
-				if !e.is_below {
-					temp = append(temp, e)
-				}
-			}
-
-			index := 0
-			for i, e := range temp {
-				if e == sess.p {
-					index = i
-					break
-				}
-			}
-
-			sess.p.showMessage("index: %d; length: %d", index, len(temp))
-
-			if index < len(temp)-1 {
-				sess.p = temp[index+1]
-				sess.p.mode = NORMAL
-				err := v.SetCurrentBuffer(sess.p.vbuf)
-				if err != nil {
-					sess.p.showMessage("Problem setting current buffer")
-				}
-			}
-
-			return false
-
-		} // end of switch in NORMAL
+   }
 
 		/*
 			if c == '+' {
@@ -658,9 +555,9 @@ func editorProcessKey(c int, messageBuf nvim.Buffer) bool {
 			}
 		*/
 
-		sess.p.showMessage("char = %d", c) //debugging
 		sess.showOrgMessage("char = %d", c) //debugging
-		// note below that arrow maps seem vim-specific
+
+		// below are vim-specific maps
 		/*****************************/
 		switch c {
 		case ARROW_UP:
@@ -684,7 +581,7 @@ func editorProcessKey(c int, messageBuf nvim.Buffer) bool {
 		sess.p.showMessage("blocking = %t; mode = %v", mode.Blocking, mode.Mode) //debugging
 
 		if mode.Blocking == true {
-      //ctrl w blocks
+      // note that ctrl w blocks
 			sess.p.command += string(c)
       return false
     }
@@ -698,6 +595,9 @@ func editorProcessKey(c int, messageBuf nvim.Buffer) bool {
       sess.p.mode = NORMAL
       if c != '\x1b' {
 			  sess.p.command += string(c)
+        if strings.IndexAny(sess.p.command[0:1], "\x17\x08\x0c\x02\x05\x09") == -1{
+          sess.p.command = ""
+        }
 		    sess.p.showMessage("blocking = %t; mode = %v; command = %v", mode.Blocking, mode.Mode, sess.p.command) //debugging
 		    if cmd, found := e_lookup2[sess.p.command]; found {
           switch cmd := cmd.(type) {
@@ -705,14 +605,15 @@ func editorProcessKey(c int, messageBuf nvim.Buffer) bool {
             cmd(sess.p)
           case func():
             cmd()
+          case func (*Editor, int):
+           cmd(sess.p, c)
        }
-			    //cmd(sess.p) 
 			    _, err := v.Input("\x1b")
 			    if err != nil {
 			  	  fmt.Printf("%v\n", err)
 			    }
-       sess.p.command = ""   
-        return false
+        sess.p.command = ""   
+        return true
       }
     } else {
       sess.p.command = ""
