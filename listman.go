@@ -543,8 +543,8 @@ func editorProcessKey(c int, messageBuf nvim.Buffer) bool {
 
 		case '\x1b':
 			sess.p.command = ""
-			sess.p.repeat = 0
-			sess.p.mode = NORMAL
+			//sess.p.repeat = 0
+			//sess.p.mode = NORMAL
 
 		case ':':
 			sess.p.mode = COMMAND_LINE
@@ -650,6 +650,7 @@ func editorProcessKey(c int, messageBuf nvim.Buffer) bool {
 			return false
 
 		} // end of switch in NORMAL
+
 		/*
 			if c == '+' {
 				showMessage(v, messageBuf)
@@ -657,7 +658,8 @@ func editorProcessKey(c int, messageBuf nvim.Buffer) bool {
 			}
 		*/
 
-		//sess.p.showMessage("char = %d", c) //debugging
+		sess.p.showMessage("char = %d", c) //debugging
+		sess.showOrgMessage("char = %d", c) //debugging
 		// note below that arrow maps seem vim-specific
 		/*****************************/
 		switch c {
@@ -679,48 +681,68 @@ func editorProcessKey(c int, messageBuf nvim.Buffer) bool {
 		}
 
 		mode, _ := v.Mode()
+		sess.p.showMessage("blocking = %t; mode = %v", mode.Blocking, mode.Mode) //debugging
 
-		if mode.Blocking == false {
+		if mode.Blocking == true {
+      //ctrl w blocks
+			sess.p.command += string(c)
+      return false
+    }
 
-			if mode.Mode == "v" || mode.Mode == "V" || mode.Mode == string('\x16') {
+		if mode.Mode == "v" || mode.Mode == "V" || mode.Mode == string('\x16') {
+			sess.showOrgMessage("mode: %v -> h0=%v; h1= %v", mode.Mode, highlightInfo(v)[0], highlightInfo(v)[1])
+		}
 
-				sess.showOrgMessage("mode: %v -> h0=%v; h1= %v", mode.Mode, highlightInfo(v)[0], highlightInfo(v)[1])
-			}
-			switch mode.Mode {
-			case "n":
-				sess.p.mode = NORMAL
-			case "v":
-				sess.p.mode = VISUAL
-				sess.p.vb_highlight = highlightInfo(v)
-			case "V":
-				sess.p.mode = VISUAL_LINE
-				sess.p.vb_highlight = highlightInfo(v)
-			case string('\x16'):
-				sess.p.mode = VISUAL_BLOCK
-				sess.p.vb_highlight = highlightInfo(v)
-			}
+    if mode.Mode == "i" {
+    } else if mode.Mode == "n" {
+      sess.p.mode = NORMAL
+      if c != '\x1b' {
+			  sess.p.command += string(c)
+		    sess.p.showMessage("blocking = %t; mode = %v; command = %v", mode.Blocking, mode.Mode, sess.p.command) //debugging
+		    if cmd, found := e_lookup2[sess.p.command]; found {
+          switch cmd := cmd.(type) {
+          case func(*Editor):
+            cmd(sess.p)
+          case func():
+            cmd()
+       }
+			    //cmd(sess.p) 
+			    _, err := v.Input("\x1b")
+			    if err != nil {
+			  	  fmt.Printf("%v\n", err)
+			    }
+       sess.p.command = ""   
+        return false
+      }
+    } else {
+      sess.p.command = ""
+    }
+    } else {
+		switch mode.Mode {
+		case "v":
+			sess.p.mode = VISUAL
+		case "V":
+			sess.p.mode = VISUAL_LINE
+		//case string('\x16'):
+		case "\x16": //ctrl-v
+			sess.p.mode = VISUAL_BLOCK
+		}
+		sess.p.vb_highlight = highlightInfo(v)
+    }
 
-			sess.p.rows = nil
-			bb, _ := v.BufferLines(sess.p.vbuf, 0, -1, true)
-			for _, b := range bb {
-				sess.p.rows = append(sess.p.rows, string(b))
-			}
-			pos, _ := v.WindowCursor(w) //set screen cx and cy from pos
+    // may or may not be in middle of a command like caw or daw
+		sess.p.rows = nil
+		bb, _ := v.BufferLines(sess.p.vbuf, 0, -1, true)
+		for _, b := range bb {
+			sess.p.rows = append(sess.p.rows, string(b))
+		}
+		pos, _ := v.WindowCursor(w) //set screen cx and cy from pos
 
-			/*
-				if mode.Mode == string('v') || mode.Mode == string('V') || mode.Mode == string('\x16') {
-					sess.showOrgMessage("visual mode %v: %v", mode.Mode, highlightInfo(v))
-				}
-			*/
-
-			//sess.p.showMessage(" => position = %v", pos)
-			sess.p.fr = pos[0] - 1
-			sess.p.fc = pos[1]
-			if c == 'u' && sess.p.mode == NORMAL {
-				showMessage(v, messageBuf)
-			}
-		} else {
-			return false
+			//sess.p.showMessage(" => position = %v", pos) //debug
+		sess.p.fr = pos[0] - 1
+		sess.p.fc = pos[1]
+		if c == 'u' && sess.p.mode == NORMAL {
+			showMessage(v, messageBuf)
 		}
 
 		return true
