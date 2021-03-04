@@ -2,22 +2,14 @@ package main
 
 import "github.com/neovim/go-client/nvim"
 
-/*
-struct orow {  //Entry
-  std::string title;
-  std::string fts_title;
-  int id; //listmanager db id of the row
-  bool star;
-  bool deleted;
-  bool completed;
-  std::string modified;
+var modeMap = map[string]Mode {
+  "n": NORMAL,
+  "i": INSERT,
+  "v": VISUAL,
+  "V": VISUAL_LINE,
+  "\x16": VISUAL_BLOCK,
+}
 
-  // note the members below are temporary editing flags
-  // and don't need to be reflected in database
-  bool dirty;
-  bool mark;
-};
-*/
 const (
 	TZ_OFFSET          = 4
 	BASE_DATE          = "1970-01-01 00:00"

@@ -18,9 +18,11 @@ var e_lookup2 = map[string]interface{} {
   "\x02":(*Editor).decorateWord,
   "\x05":(*Editor).decorateWord,
   string(ctrlKey('i')):(*Editor).decorateWord,
+  "\x17=":(*Editor).resize,
+  "\x17_":(*Editor).resize,
 }
 
-func (e *Editor) resize(flag byte) {
+func (e *Editor) resize(flag int) {
   if e.linked_editor == nil {
     return
   }
@@ -29,9 +31,12 @@ func (e *Editor) resize(flag byte) {
   var subnote_height int
   if flag == '=' {
     subnote_height = sess.textLines/2
-  } else {
+  } else if flag == '_' {
     subnote_height = LINKED_NOTE_HEIGHT
+  } else {
+    return
   }
+
   if !e.is_subeditor {
     e.screenlines = sess.textLines - subnote_height - 1
     le.screenlines = subnote_height

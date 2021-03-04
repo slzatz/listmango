@@ -463,121 +463,39 @@ func organizerProcessKey(c int) {
 
 func editorProcessKey(c int, messageBuf nvim.Buffer) bool {
 
-	switch sess.p.mode {
 
-	case INSERT:
-		switch c {
-
-		case '\r':
-			sess.p.insertReturn()
-			sess.p.last_typed += string(c)
-			return true
-
-		case HOME_KEY:
-			sess.p.moveCursorBOL()
+	/*
+		if c == '+' {
+			showMessage(v, messageBuf)
 			return false
-
-		case END_KEY:
-			sess.p.moveCursorEOL()
-			sess.p.moveCursor(ARROW_RIGHT)
-			return false
-
-		case BACKSPACE:
-			sess.p.backspace()
-
-			//not handling backspace correctly
-			//when backspacing deletes more than currently entered text
-			//A common case would be to enter insert mode  and then just start backspacing
-			//because then dotting would actually delete characters
-			//I could record a \b and then handle similar to handling \r
-			length := len(sess.p.last_typed)
-			if length > 0 {
-				sess.p.last_typed = sess.p.last_typed[:length-1]
-			}
-			return true
-
-		case DEL_KEY:
-			sess.p.delChar()
-			return true
-
-		case ARROW_UP, ARROW_DOWN, ARROW_LEFT, ARROW_RIGHT:
-			sess.p.moveCursor(c)
-			return false
-
-		case ctrlKey('b'), ctrlKey('e'):
-			//sess.p.push_current() //p.editorCreateSnapshot()
-			//sess.p.editorDecorateWord(c)
-			return true
-
-		case '\x1b':
-
-			/*Escape whatever else happens falls through to here*/
-			sess.p.mode = NORMAL
-			sess.p.repeat = 0
-
-			if sess.p.fc > 0 {
-				sess.p.fc--
-			}
-
-			sess.p.showMessage("")
-			return false //end case x1b:
-
-		// deal with tab in insert mode - was causing segfault
-		case '\t':
-			for i := 0; i < 4; i++ {
-				sess.p.insertChar(' ')
-			}
-			return true
-
-		default:
-			sess.p.insertChar(c)
-			sess.p.last_typed += string(c)
-			return true
-
-		} //end inner switch for outer case INSERT
-
-		return true // end of case INSERT: - should not be executed
-
-	case NORMAL, VISUAL, VISUAL_LINE, VISUAL_BLOCK: //actually handling NORMAL and INSERT
-
-		if c == ':' {
-			sess.p.mode = COMMAND_LINE
-			sess.p.command_line = ""
-			sess.p.command = ""
-			sess.p.showMessage(":")
-			return false
-   }
-
-		/*
-			if c == '+' {
-				showMessage(v, messageBuf)
-				return false
-			}
-		*/
-
-		sess.showOrgMessage("char = %d", c) //debugging
-
-		// below are vim-specific maps
-		/*****************************/
-		switch c {
-		case ARROW_UP:
-			v.FeedKeys("\x80ku", "t", true)
-		case ARROW_DOWN:
-			v.FeedKeys("\x80kd", "t", true)
-		case ARROW_RIGHT:
-			v.FeedKeys("\x80kr", "t", true)
-		case ARROW_LEFT:
-			v.FeedKeys("\x80kl", "t", true)
-		case BACKSPACE:
-			v.FeedKeys("\x08", "t", true)
-		default:
-			_, err := v.Input(string(c))
-			if err != nil {
-				fmt.Printf("%v\n", err)
-			}
 		}
+	*/
 
-		mode, _ := v.Mode()
+	sess.showOrgMessage("char = %d", c) //debugging
+  var mode *nvim.Mode
+	// below are vim-specific maps
+	/*****************************/
+  if sess.p.mode != COMMAND_LINE {
+
+		switch c {
+  		case ARROW_UP:
+  			v.FeedKeys("\x80ku", "t", true)
+  		case ARROW_DOWN:
+  			v.FeedKeys("\x80kd", "t", true)
+  		case ARROW_RIGHT:
+  			v.FeedKeys("\x80kr", "t", true)
+  		case ARROW_LEFT:
+  			v.FeedKeys("\x80kl", "t", true)
+  		case BACKSPACE:
+  			v.FeedKeys("\x08", "t", true)
+  		default:
+  			_, err := v.Input(string(c))
+  			if err != nil {
+  				fmt.Printf("%v\n", err)
+  			}
+  	}
+
+		mode, _ = v.Mode()
 		sess.p.showMessage("blocking = %t; mode = %v", mode.Blocking, mode.Mode) //debugging
 
 		if mode.Blocking == true {
@@ -590,7 +508,56 @@ func editorProcessKey(c int, messageBuf nvim.Buffer) bool {
 			sess.showOrgMessage("mode: %v -> h0=%v; h1= %v", mode.Mode, highlightInfo(v)[0], highlightInfo(v)[1])
 		}
 
+    sess.p.mode = modeMap[mode.Mode]
+ } 
+    //sess.p.mode = modeMap[mode.Mode]
+    switch sess.p.mode {
+    case INSERT:
+      sess.p.showMessage("--INSERT__")
+    case NORMAL:
+		  if c == ':' {
+			  sess.p.mode = COMMAND_LINE
+			  sess.p.command_line = ""
+			  sess.p.command = ""
+			  sess.p.showMessage(":")
+ 	      _, err := v.Input("\x1b")
+ 	      if err != nil {
+ 		      fmt.Printf("%v\n", err)
+ 	      }
+			  return false
+      }
+      if c == '\x1b' {
+        sess.p.command = ""
+      return false
+      }
+ 	    sess.p.command += string(c)
+      if strings.IndexAny(sess.p.command[0:1], "\x17\x08\x0c\x02\x05\x09") == -1 {
+        sess.p.command = ""
+      }
+      sess.p.showMessage("blocking = %t; mode = %v; command = %v", mode.Blocking, mode.Mode, sess.p.command) //debugging
+      if cmd, found := e_lookup2[sess.p.command]; found {
+        switch cmd := cmd.(type) {
+        case func(*Editor):
+          cmd(sess.p)
+        case func():
+          cmd()
+        case func (*Editor, int):
+         cmd(sess.p, c)
+        }
+
+ 	      _, err := v.Input("\x1b")
+ 	      if err != nil {
+ 		      fmt.Printf("%v\n", err)
+ 	      }
+        sess.p.command = ""
+        return true
+      }
+		case VISUAL, VISUAL_LINE, VISUAL_BLOCK:
+		  sess.p.vb_highlight = highlightInfo(v)
+
+    /*
     if mode.Mode == "i" {
+      //do nothing
     } else if mode.Mode == "n" {
       sess.p.mode = NORMAL
       if c != '\x1b' {
@@ -607,14 +574,14 @@ func editorProcessKey(c int, messageBuf nvim.Buffer) bool {
             cmd()
           case func (*Editor, int):
            cmd(sess.p, c)
-       }
+          }
 			    _, err := v.Input("\x1b")
 			    if err != nil {
-			  	  fmt.Printf("%v\n", err)
+				    fmt.Printf("%v\n", err)
 			    }
-        sess.p.command = ""   
-        return true
-      }
+          sess.p.command = ""
+          return true
+        }
     } else {
       sess.p.command = ""
     }
@@ -646,232 +613,8 @@ func editorProcessKey(c int, messageBuf nvim.Buffer) bool {
 			showMessage(v, messageBuf)
 		}
 
-		return true
-
-		switch c {
-
-		case '\x1b':
-			sess.p.command = ""
-			sess.p.repeat = 0
-			return false
-
-		case ':':
-			sess.p.mode = COMMAND_LINE
-			sess.p.command_line = ""
-			sess.p.command = ""
-			sess.p.showMessage(":")
-			return false
-
-		case '/':
-			sess.p.mode = SEARCH
-			sess.p.command_line = ""
-			sess.p.command = ""
-			sess.p.showMessage("/")
-			return false
-
-		case ctrlKey('h'):
-			sess.p.command = ""
-			if len(sess.editors) == 1 {
-
-				if sess.divider < 10 {
-					sess.cfg.ed_pct = 80
-					sess.moveDivider(80)
-				}
-
-				sess.editorMode = false //needs to be here
-
-				sess.drawPreviewWindow(org.rows[org.fr].id)
-				org.mode = NORMAL
-				sess.returnCursor()
-				return false
-			}
-
-			if sess.p.is_below {
-				sess.p = sess.p.linked_editor
-			}
-
-			temp := []*Editor{}
-			for _, e := range sess.editors {
-				if !e.is_below {
-					temp = append(temp, e)
-				}
-			}
-
-			index := 0
-			for i, e := range temp {
-				if e == sess.p {
-					index = i
-					break
-				}
-			}
-
-			sess.p.showMessage("index: %d; length: %d", index, len(temp))
-
-			if index > 0 {
-				sess.p = temp[index-1]
-				if len(sess.p.rows) == 0 {
-					sess.p.mode = NO_ROWS
-				} else {
-					sess.p.mode = NORMAL
-				}
-				return false
-			} else {
-
-				if sess.divider < 10 {
-					sess.cfg.ed_pct = 80
-					sess.moveDivider(80)
-				}
-
-				sess.editorMode = false //needs to be here
-
-				sess.drawPreviewWindow(org.rows[org.fr].id)
-				org.mode = NORMAL
-				sess.returnCursor()
-				return false
-			}
-
-		case ctrlKey('l'):
-			sess.p.command = ""
-
-			if sess.p.is_below {
-				sess.p = sess.p.linked_editor
-			}
-
-			temp := []*Editor{}
-			for _, e := range sess.editors {
-				if !e.is_below {
-					temp = append(temp, e)
-				}
-			}
-
-			index := 0
-			for i, e := range temp {
-				if e == sess.p {
-					index = i
-					break
-				}
-			}
-
-			sess.p.showMessage("index: %d; length: %d", index, len(temp))
-
-			if index < len(temp)-1 {
-				sess.p = temp[index+1]
-				if len(sess.p.rows) == 0 {
-					sess.p.mode = NO_ROWS
-				} else {
-					sess.p.mode = NORMAL
-				}
-			}
-
-			return false
-
-		case ctrlKey('j'):
-			if sess.p.linked_editor.is_below {
-				sess.p = sess.p.linked_editor
-			}
-			if len(sess.p.rows) == 0 {
-				sess.p.mode = NO_ROWS
-			} else {
-				sess.p.mode = NORMAL
-			}
-			sess.p.command = ""
-			return false
-
-		case ctrlKey('k'):
-			if sess.p.is_below {
-				sess.p = sess.p.linked_editor
-			}
-			if len(sess.p.rows) == 0 {
-				sess.p.mode = NO_ROWS
-			} else {
-				sess.p.mode = NORMAL
-			}
-			sess.p.command = ""
-			return false
-
-		} //end switch in NORMAL
-
-		/*leading digit is a multiplier*/
-
-		if (c > 47 && c < 58) && sess.p.command == "" {
-
-			if sess.p.repeat == 0 && c == 48 {
-
-			} else if sess.p.repeat == 0 {
-				sess.p.repeat = c - 48
-				// return false because command not complete
-				return false
-			} else {
-				sess.p.repeat = sess.p.repeat*10 + c - 48
-				// return false because command not complete
-				return false
-			}
-		}
-
-		if sess.p.repeat == 0 {
-			sess.p.repeat = 1
-		}
-		sess.p.command += string(c)
-
-		if sess.p.command == "\x17=" { //ctrl-w =
-			sess.p.resize('=')
-			sess.p.command = ""
-			sess.p.repeat = 0
-			return false
-		}
-
-		if sess.p.command == "\x17_" { //ctrl-w _
-			sess.p.resize('_')
-			sess.p.command = ""
-			sess.p.repeat = 0
-			return false
-		}
-
-		if cmd, found := e_lookup[sess.p.command]; found {
-
-			sess.p.prev_fr = sess.p.fr
-			sess.p.prev_fc = sess.p.fc
-
-			//sess.p.snapshot = sess.p.rows ////////////////////////////////////////////09182020
-
-			cmd(sess.p, sess.p.repeat) //money shot
-
-			if _, found := insert_cmds[sess.p.command]; found {
-				sess.p.mode = INSERT
-				sess.p.showMessage("\x1b[1m-- INSERT --\x1b[0m")
-				sess.p.last_repeat = sess.p.repeat
-				sess.p.last_command = sess.p.command //p->last_command must be a string
-				sess.p.command = ""
-				sess.p.repeat = 0
-				return true
-			} else if _, found := move_only[sess.p.command]; found {
-				sess.p.command = ""
-				sess.p.repeat = 0
-				return false //note text did not change
-			} else if sess.p.command != "." {
-				sess.p.last_repeat = sess.p.repeat
-				sess.p.last_command = sess.p.command
-				//sess.p.push_current();
-				sess.p.command = ""
-				sess.p.repeat = 0
-			} else { //if dot
-				//if dot then just repeast last command at new location
-				//sess.p->push_previous();
-			}
-		}
-
-		// needs to be here because needs to pick up repeat
-		//Arrows + h,j,k,l
-		if _, found := navigation[c]; found {
-			for i := 0; i < sess.p.repeat; i++ {
-				sess.p.moveCursor(c)
-			}
-			sess.p.command = ""
-			sess.p.repeat = 0
-			return false
-		}
-
-		return true // end of case NORMAL - there are breaks that can get to code above
+		return true //end case default
+    */
 
 	case COMMAND_LINE:
 
@@ -925,20 +668,6 @@ func editorProcessKey(c int, messageBuf nvim.Buffer) bool {
 					if err != nil {
 						sess.showOrgMessage("SetBufferLines to []  error %v", err)
 					}
-
-					/*
-						}
-						deleteBufferOpts := map[string]bool{
-							"force":  true,
-							"unload": false,
-						}
-
-						//err = v.DeleteBuffer(sess.p.vbuf, deleteBufferOpts)
-						err = v.DeleteBuffer(0, deleteBufferOpts)
-						if err != nil {
-							sess.showOrgMessage("DeleteBuffer error %v", err)
-						}
-					*/
 
 				} else if cmd == "q!" || cmd == "quit!" {
 
@@ -1050,7 +779,7 @@ func editorProcessKey(c int, messageBuf nvim.Buffer) bool {
 			sess.p.mode = NORMAL
 			sess.p.command_line = ""
 			return false
-		}
+		} //end 'r'
 
 		if c == DEL_KEY || c == BACKSPACE {
 			if len(sess.p.command_line) > 0 {
@@ -1064,6 +793,21 @@ func editorProcessKey(c int, messageBuf nvim.Buffer) bool {
 		//sess.p.showMessage(":%s", "hello")
 		//sess.showOrgMessage(":%s", sess.p.command_line)
 		return false //end of case COMMAND_LINE
-	}
-	return false
+	} //end switch
+
+    // may or may not be in middle of a command like caw or daw
+		sess.p.rows = nil
+		bb, _ := v.BufferLines(sess.p.vbuf, 0, -1, true)
+		for _, b := range bb {
+			sess.p.rows = append(sess.p.rows, string(b))
+		}
+		pos, _ := v.WindowCursor(w) //set screen cx and cy from pos
+
+			//sess.p.showMessage(" => position = %v", pos) //debug
+		sess.p.fr = pos[0] - 1
+		sess.p.fc = pos[1]
+		if c == 'u' && sess.p.mode == NORMAL {
+			showMessage(v, messageBuf)
+		}
+	return true
 }
