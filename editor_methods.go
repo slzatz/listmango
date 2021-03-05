@@ -189,11 +189,12 @@ func (e *Editor) find_match_for_left_brace(left_brace byte, back bool) bool {
 	}
 
 	x := e.getScreenXFromRowColWW(r, c) + e.left_margin + e.left_margin_offset + 1
-	fmt.Printf("\x1b[%d;%dH\x1b[48;5;244m%d", y+e.top_margin, x, right_brace)
+	//fmt.Printf("\x1b[%d;%dH\x1b[48;5;244m%d", y+e.top_margin, x, right_brace)
+	fmt.Printf("\x1b[%d;%dH\x1b[48;5;244m%s", y+e.top_margin, x, string(right_brace))
 
 	x = e.getScreenXFromRowColWW(e.fr, e.fc-b) + e.left_margin + e.left_margin_offset + 1
 	y = e.getScreenYFromRowColWW(e.fr, e.fc-b) + e.top_margin - e.line_offset // added line offset 12-25-2019
-	fmt.Printf("\x1b[%d;%dH\x1b[48;5;244m%d\x1b[0m", y, x, left_brace)
+	fmt.Printf("\x1b[%d;%dH\x1b[48;5;244m%s\x1b[0m", y, x, string(left_brace))
 	e.showMessage("r = %d   c = %d", r, c)
 	return true
 }
@@ -244,11 +245,11 @@ func (e *Editor) find_match_for_right_brace(right_brace byte, back bool) bool {
 	}
 
 	x := e.getScreenXFromRowColWW(r, c) + e.left_margin + e.left_margin_offset + 1
-	fmt.Printf("\x1b[%d;%dH\x1b[48;5;244m%d", y+e.top_margin, x, right_brace)
+	fmt.Printf("\x1b[%d;%dH\x1b[48;5;244m%s", y+e.top_margin, x, string(left_brace))
 
 	x = e.getScreenXFromRowColWW(e.fr, e.fc-b) + e.left_margin + e.left_margin_offset + 1
 	y = e.getScreenYFromRowColWW(e.fr, e.fc-b) + e.top_margin - e.line_offset // added line offset 12-25-2019
-	fmt.Printf("\x1b[%d;%dH\x1b[48;5;244m%d\x1b[0m", y, x, right_brace)
+	fmt.Printf("\x1b[%d;%dH\x1b[48;5;244m%s\x1b[0m", y, x, string(right_brace))
 	e.showMessage("r = %d   c = %d", r, c)
 	return true
 }
@@ -256,7 +257,7 @@ func (e *Editor) find_match_for_right_brace(right_brace byte, back bool) bool {
 func (e *Editor) draw_highlighted_braces() {
 
 	// below is code to automatically find matching brace - should be in separate member function
-	braces := "{}()"
+	braces := "{}()" //? intentionally exclusing [] from auto drawing
 	var c byte
 	var back bool
 	//if below handles case when in insert mode and brace is last char
@@ -331,7 +332,7 @@ func (e *Editor) setLinesMargins() { //also sets top margin
 }
 
 // normal mode 'e'
-func (e *Editor) moveEndWord() {
+func (e *Editor) moveEndWord_() {
 
 	if len(e.rows) == 0 {
 		return
@@ -409,7 +410,7 @@ func (e *Editor) moveEndWord() {
 	}
 }
 
-func (e *Editor) moveCursor(key int) {
+func (e *Editor) moveCursor_(key int) {
 
 	switch key {
 	case ARROW_LEFT, 'h':
@@ -432,18 +433,19 @@ func (e *Editor) moveCursor(key int) {
 	}
 }
 
-func (e *Editor) moveCursorEOL() {
+func (e *Editor) moveCursorEOL_() {
 	if len(e.rows[e.fr]) > 0 {
 		e.fc = len(e.rows[e.fr]) - 1
 	}
 }
 
-func (e *Editor) moveCursorBOL() {
+func (e *Editor) moveCursorBOL_() {
 	e.fc = 0
 }
 
-func (e *Editor) insertNewLine(direction int) {
-	/* note this func does position fc and fr*/
+/*
+func (e *Editor) insertNewLine_(direction int) {
+	//* note this func does position fc and fr
 	if len(e.rows) == 0 { // creation of NO_ROWS may make this unnecessary
 		e.insertRow(0, "")
 		return
@@ -463,6 +465,7 @@ func (e *Editor) insertNewLine(direction int) {
 	e.insertRow(e.fr, spaces)
 	e.fc = indent
 }
+*/
 
 func (e *Editor) insertRow(r int, s string) {
 	e.rows = append(e.rows, "")
@@ -627,7 +630,7 @@ func (e *Editor) getLineInRowWW(r, c int) int {
 	return lines
 }
 
-func (e *Editor) indentAmount(r int) int {
+func (e *Editor) indentAmount_(r int) int {
 	if len(e.rows) == 0 {
 		return 0
 	}
@@ -643,7 +646,8 @@ func (e *Editor) indentAmount(r int) int {
 	return i
 }
 
-func (e *Editor) insertReturn() { // right now only used for editor->INSERT mode->'\r'
+/*
+func (e *Editor) insertReturn_() { // right now only used for editor->INSERT mode->'\r'
 	r := &e.rows[e.fr]
 	r1 := (*r)[:e.fc] //(current_row.begin(), current_row.begin() + fc);
 	r2 := (*r)[e.fc:] //(current_row.begin() + fc, current_row.end());
@@ -671,8 +675,9 @@ func (e *Editor) insertReturn() { // right now only used for editor->INSERT mode
 		e.insertChar(' ')
 	}
 }
+*/
 
-func (e *Editor) insertChar(chr int) {
+func (e *Editor) insertChar_(chr int) {
 	// does not handle returns which must be intercepted before calling this function
 	// necessary even with NO_ROWS because putting new entries into insert mode
 	if len(e.rows) == 0 {
@@ -685,7 +690,8 @@ func (e *Editor) insertChar(chr int) {
 	e.fc++
 }
 
-func (e *Editor) backspace() {
+/*
+func (e *Editor) backspace_() {
 
 	if e.fc == 0 && e.fr == 0 {
 		return
@@ -708,8 +714,9 @@ func (e *Editor) backspace() {
 	}
 	e.dirty++
 }
-
-func (e *Editor) delRow(r int) {
+*/
+/*
+func (e *Editor) delRow_(r int) {
 	if len(e.rows) == 0 {
 		return // creation of NO_ROWS may make this unnecessary
 	}
@@ -725,7 +732,7 @@ func (e *Editor) delRow(r int) {
 	//numrows, cx, row[fr].size);
 }
 
-func (e *Editor) delChar() {
+func (e *Editor) delChar_() {
 	if len(e.rows) == 0 {
 		return // creation of NO_ROWS may make this unnecessary
 	}
@@ -736,16 +743,15 @@ func (e *Editor) delChar() {
 	*r = (*r)[:e.fc] + (*r)[e.fc+1:]
 	e.dirty++
 }
+*/
 
 // if draw is false this only draws cursor
 func (e *Editor) refreshScreen(draw bool) {
 	var ab strings.Builder
 	var tid int
 
-	//ab.WriteString("\x1b[?25l") //hides the cursor
-	//fmt.Fprintf(&ab, "\x1b[%d;%dH", e.top_margin, e.left_margin+1)
-
-	if draw { //draw
+	if draw { 
+    // \x1b[?25l hides cursor
 		fmt.Fprintf(&ab, "\x1b[?25l\x1b[%d;%dH", e.top_margin, e.left_margin+1)
 		// \x1b[NC moves cursor forward by N columns
 		lf_ret := fmt.Sprintf("\r\n\x1b[%dC", e.left_margin)
@@ -756,7 +762,7 @@ func (e *Editor) refreshScreen(draw bool) {
 		}
 
 		tid = getFolderTid(e.id)
-		if (tid == 18 || tid == 14) && !e.is_subeditor {
+		if (tid == 18 || tid == 14) { //&& !e.is_subeditor {
 			e.drawCodeRows(&ab) //uaing pointer so drawing is smoother
 		} else {
 			e.drawRows(&ab)
@@ -771,6 +777,14 @@ func (e *Editor) refreshScreen(draw bool) {
 	if true {
 		fmt.Fprintf(&ab, "\x1b[%d;%dH", e.cy+e.top_margin, e.cx+e.left_margin+e.left_margin_offset+1)
 	}
+
+	if len(e.rows) == 0 || len(e.rows[e.fr]) == 0 {
+    return
+  }
+
+ if (tid == 18 || tid == 14) { //&& !e.is_subeditor {
+   e.draw_highlighted_braces()
+ }
 	//fmt.Print(ab.String())
 	//if draw {
 	//	e.drawStatusBar()
@@ -1025,6 +1039,7 @@ func (e *Editor) getLineCharCountWW(r, line int) int {
 	return pos - prev_pos
 }
 
+// not in use -- was attempt to draw rows without e.rows just nvim buffer
 func (e *Editor) drawRows2(pab *strings.Builder) {
 	/*
 		bufs, err := v.Buffers()

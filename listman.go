@@ -510,7 +510,6 @@ func editorProcessKey(c int, messageBuf nvim.Buffer) bool {
 
     sess.p.mode = modeMap[mode.Mode]
  } 
-    //sess.p.mode = modeMap[mode.Mode]
     switch sess.p.mode {
     case INSERT:
       sess.p.showMessage("--INSERT__")
@@ -554,67 +553,6 @@ func editorProcessKey(c int, messageBuf nvim.Buffer) bool {
       }
 		case VISUAL, VISUAL_LINE, VISUAL_BLOCK:
 		  sess.p.vb_highlight = highlightInfo(v)
-
-    /*
-    if mode.Mode == "i" {
-      //do nothing
-    } else if mode.Mode == "n" {
-      sess.p.mode = NORMAL
-      if c != '\x1b' {
-			  sess.p.command += string(c)
-        if strings.IndexAny(sess.p.command[0:1], "\x17\x08\x0c\x02\x05\x09") == -1{
-          sess.p.command = ""
-        }
-		    sess.p.showMessage("blocking = %t; mode = %v; command = %v", mode.Blocking, mode.Mode, sess.p.command) //debugging
-		    if cmd, found := e_lookup2[sess.p.command]; found {
-          switch cmd := cmd.(type) {
-          case func(*Editor):
-            cmd(sess.p)
-          case func():
-            cmd()
-          case func (*Editor, int):
-           cmd(sess.p, c)
-          }
-			    _, err := v.Input("\x1b")
-			    if err != nil {
-				    fmt.Printf("%v\n", err)
-			    }
-          sess.p.command = ""
-          return true
-        }
-    } else {
-      sess.p.command = ""
-    }
-    } else {
-		switch mode.Mode {
-		case "v":
-			sess.p.mode = VISUAL
-		case "V":
-			sess.p.mode = VISUAL_LINE
-		//case string('\x16'):
-		case "\x16": //ctrl-v
-			sess.p.mode = VISUAL_BLOCK
-		}
-		sess.p.vb_highlight = highlightInfo(v)
-    }
-
-    // may or may not be in middle of a command like caw or daw
-		sess.p.rows = nil
-		bb, _ := v.BufferLines(sess.p.vbuf, 0, -1, true)
-		for _, b := range bb {
-			sess.p.rows = append(sess.p.rows, string(b))
-		}
-		pos, _ := v.WindowCursor(w) //set screen cx and cy from pos
-
-			//sess.p.showMessage(" => position = %v", pos) //debug
-		sess.p.fr = pos[0] - 1
-		sess.p.fc = pos[1]
-		if c == 'u' && sess.p.mode == NORMAL {
-			showMessage(v, messageBuf)
-		}
-
-		return true //end case default
-    */
 
 	case COMMAND_LINE:
 
@@ -790,8 +728,6 @@ func editorProcessKey(c int, messageBuf nvim.Buffer) bool {
 		}
 
 		sess.p.showMessage(":%s", sess.p.command_line)
-		//sess.p.showMessage(":%s", "hello")
-		//sess.showOrgMessage(":%s", sess.p.command_line)
 		return false //end of case COMMAND_LINE
 	} //end switch
 
