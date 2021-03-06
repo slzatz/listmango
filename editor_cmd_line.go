@@ -3,10 +3,10 @@ package main
 import "strings"
 
 var e_lookup_C = map[string]func(*Editor){
-	"write":    (*Editor).E_write_C,
-	"w":        (*Editor).E_write_C,
-	"read":     (*Editor).E_readfile_C,
-	"readfile": (*Editor).E_readfile_C,
+	"write":    (*Editor).writeNote,
+	"w":        (*Editor).writeNote,
+	"read":     (*Editor).readFile,
+	"readfile": (*Editor).readFile,
 }
 
 /* EDITOR cpp COMMAND_LINE mode lookup
@@ -45,7 +45,7 @@ const std::unordered_map<std::string, efunc> E_lookup_C {
 };
 */
 
-func (e *Editor) E_write_C() {
+func (e *Editor) writeNote() {
 	if e.is_subeditor {
 		e.showMessage("You can't save the contents of the Output Window")
 		return
@@ -68,7 +68,7 @@ func (e *Editor) E_write_C() {
 	e.showMessage("")
 }
 
-func (e *Editor) E_readfile_C() {
+func (e *Editor) readFile() {
 	pos := strings.Index(e.command_line, " ")
 	if pos == -1 {
 		e.showMessage("You need to provide a filename")

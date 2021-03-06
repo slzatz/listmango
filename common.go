@@ -2,6 +2,8 @@ package main
 
 import "github.com/neovim/go-client/nvim"
 
+var z0 = struct{}{}
+
 var modeMap = map[string]Mode{
 	"n":    NORMAL,
 	"i":    INSERT,

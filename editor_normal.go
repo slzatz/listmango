@@ -14,6 +14,7 @@ var e_lookup2 = map[string]interface{}{
 	"\x17=":              (*Editor).resize,
 	"\x17_":              (*Editor).resize,
 	"\x06":               (*Editor).findMatchForBrace,
+	leader + "+":         showVimMessage,
 }
 
 func (e *Editor) resize(flag int) {
@@ -292,4 +293,26 @@ func (e *Editor) decorateWord(c int) {
 	v.SetBufferLines(e.vbuf, e.fr, e.fr+1, false, [][]byte{})          //true - out of bounds indexes are not clamped
 	v.SetBufferLines(e.vbuf, e.fr, e.fr, false, [][]byte{[]byte(row)}) //true - out of bounds indexes are not clamped
 	v.SetWindowCursor(w, [2]int{e.fr + 1, e.fc})                       //set screen cx and cy from pos
+}
+
+func showVimMessage() {
+	_ = v.SetCurrentBuffer(messageBuf)
+	_ = v.SetBufferLines(messageBuf, 0, -1, true, [][]byte{})
+	_ = v.FeedKeys("\x1b\"apqaq", "t", false)
+	bb, _ := v.BufferLines(messageBuf, 0, -1, true)
+	var message string
+	var i int
+	for i = len(bb) - 1; i >= 0; i-- {
+		message = string(bb[i])
+		if message != "" {
+			break
+		}
+	}
+	v.SetCurrentBuffer(sess.p.vbuf)
+	currentBuf, _ := v.CurrentBuffer()
+	if message != "" {
+		sess.showEdMessage("len bb: %v; i: %v; message: %v", len(bb), i, message)
+	} else {
+		sess.showEdMessage("No message: len bb %v; Current Buf %v", len(bb), currentBuf)
+	}
 }
