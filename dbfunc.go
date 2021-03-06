@@ -453,6 +453,41 @@ func getItems(max int) {
 	}
 }
 
+func updateTitle() {
+
+	row := org.rows[org.fr]
+
+	if !row.dirty {
+		sess.showOrgMessage("Row has not been changed")
+		return
+	}
+
+	if row.id == -1 {
+		insertRow(row)
+		return
+	}
+
+	res, err := db.Exec("UPDATE task SET title=?, modified=datetime('now') WHERE id=?", row.title, row.id)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	_, err = res.RowsAffected()
+	if err != nil {
+		log.Fatal(err)
+		return
+	}
+
+	//row.dirty = false // done in caller
+	/***************fts virtual table update*********************/
+	_, err = fts_db.Exec("INSERT INTO fts (title, lm_id) VALUES (?, ?);", row.title, row.id)
+	if err != nil {
+		log.Fatal(err)
+		return
+	}
+	sess.showOrgMessage("Successfully inserted new row with id {} and indexed it (new vesrsion)", row.id)
+}
+
 func updateRows() {
 	var updated_rows []int
 

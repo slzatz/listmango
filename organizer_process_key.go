@@ -37,9 +37,10 @@ func organizerProcessKey(c int) {
 
 	case INSERT:
 		switch c {
+		case '\r': //also does in effect an escape into NORMAL mode
+			org.writeTitle()
 		case ARROW_UP, ARROW_DOWN, ARROW_LEFT, ARROW_RIGHT:
 			org.moveCursor(c)
-			return
 		case '\x1b':
 			org.command = ""
 			org.mode = NORMAL
@@ -47,11 +48,20 @@ func organizerProcessKey(c int) {
 				org.fc--
 			}
 			sess.showOrgMessage("")
-			return
+		case HOME_KEY:
+			org.fc = 0
+		case END_KEY:
+			org.fc = len(org.rows[org.fr].title)
+		case BACKSPACE:
+			org.backspace()
+		case DEL_KEY:
+			org.delChar()
+		case '\t':
+			//do nothing
 		default:
 			org.insertChar(c)
-			return
 		}
+		return // ? necessary
 
 	case NORMAL:
 
@@ -62,6 +72,11 @@ func organizerProcessKey(c int) {
 			sess.showOrgMessage("")
 			org.command = ""
 			org.repeat = 0
+			return
+		}
+
+		if c == '\r' { //also does escape into NORMAL mode
+			org.writeTitle()
 			return
 		}
 
