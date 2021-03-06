@@ -467,7 +467,7 @@ func organizerProcessKey(c int) {
 	} // end switch o.mode
 } // end func organizerProcessKey(c int)
 
-func editorProcessKey(c int, messageBuf nvim.Buffer) bool {
+func editorProcessKey_(c int, messageBuf nvim.Buffer) bool {
 
 	sess.p.command += string(c)
 	if strings.IndexAny(sess.p.command[0:1], "\x17\x08\x0c\x02\x05\x09\x06") == -1 {

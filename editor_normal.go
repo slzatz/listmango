@@ -8,6 +8,7 @@ var e_lookup2 = map[string]interface{}{
 	"\x08":               controlH,
 	"\x0c":               controlL,
 	"\x02":               (*Editor).decorateWord,
+	leader + "b":         (*Editor).decorateWord,
 	"\x05":               (*Editor).decorateWord,
 	string(ctrlKey('i')): (*Editor).decorateWord,
 	"\x17=":              (*Editor).resize,
@@ -242,7 +243,7 @@ func (e *Editor) decorateWord(c int) {
 		end -= 4
 		row = row[:end+1] + row[end+3:]
 		e.fc -= 2
-		if c == ctrlKey('b') {
+		if c == ctrlKey('b') || c == 'b' {
 			undo = true
 		}
 	} else if row[beg] == '*' {
@@ -276,7 +277,7 @@ func (e *Editor) decorateWord(c int) {
 	}
 
 	switch c {
-	case ctrlKey('b'):
+	case ctrlKey('b'), 'b':
 		row = row[:beg] + "**" + row[beg:end+1] + "**" + row[1+end:]
 		e.fc += 2
 	case ctrlKey('i'):

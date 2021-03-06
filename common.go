@@ -174,6 +174,8 @@ type BufLinesEvent struct {
 	IsMultipart bool
 }
 
+var leader = " "
+
 /*
 struct Lsp {
   std::jthread thred;
