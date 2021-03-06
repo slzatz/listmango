@@ -10,6 +10,7 @@ import (
 	"strings"
 )
 
+/*
 //var z0 = struct{}{}// in listmango
 var line_commands = map[string]struct{}{
 	"I":   z0,
@@ -26,6 +27,7 @@ var line_commands = map[string]struct{}{
 	"r":   z0,
 	"~":   z0,
 }
+*/
 
 func find_first_not_of(row *string, delimiters string, pos int) int {
 	pos++
@@ -39,6 +41,7 @@ func find_first_not_of(row *string, delimiters string, pos int) int {
 	return -1
 }
 
+// want to transition to Session showEdMessage
 func (e *Editor) showMessage(format string, a ...interface{}) {
 	//fmt.Printf("\x1b[%d;%dH\x1b[0K\x1b[%d;%dH", sess.textLines + e.top_margin + 1, sess.divider, sess.textLines + e.top_margin + 1, sess.divider)
 	fmt.Printf("\x1b[%d;%dH\x1b[K", sess.textLines+e.top_margin+1, sess.divider+1)
@@ -49,6 +52,7 @@ func (e *Editor) showMessage(format string, a ...interface{}) {
 	fmt.Print(str)
 }
 
+/*
 // a string is a sequence of uint8 == byte
 func (e *Editor) move_to_right_brace(left_brace byte) (int, int) {
 	r := e.fr
@@ -138,6 +142,7 @@ func (e *Editor) E_move_to_matching_brace(repeat int) {
 		}
 	}
 }
+*/
 
 //'automatically' happens in NORMAL and INSERT mode
 //return true -> redraw; false -> don't redraw
@@ -196,6 +201,41 @@ func (e *Editor) find_match_for_left_brace(left_brace byte, back bool) bool {
 	y = e.getScreenYFromRowColWW(e.fr, e.fc-b) + e.top_margin - e.line_offset // added line offset 12-25-2019
 	fmt.Printf("\x1b[%d;%dH\x1b[48;5;244m%s\x1b[0m", y, x, string(left_brace))
 	e.showMessage("r = %d   c = %d", r, c)
+	return true
+}
+
+//leaving this for the time being as another way to highlight braces
+//would be tricky to do in INSERT mode since would have to leave
+//INSERT to use % - but interesting
+func (e *Editor) findMatchForBrace() bool {
+
+	v.FeedKeys("%", "t", true)
+
+	pos, _ := v.WindowCursor(w) //set screen cx and cy from pos
+	r := pos[0] - 1
+	c := pos[1]
+
+	//m := map[byte]byte{'{': '}', '(': ')', '[': ']'}
+	//right_brace := m[left_brace]
+
+	//e.showMessage("left brace: {}", left_brace);
+	y := e.getScreenYFromRowColWW(r, c) - e.line_offset
+	if y >= e.screenlines {
+		return false
+	}
+
+	x := e.getScreenXFromRowColWW(r, c) + e.left_margin + e.left_margin_offset + 1
+	//fmt.Printf("\x1b[%d;%dH\x1b[48;5;244m%s", y+e.top_margin, x, string(right_brace))
+	fmt.Printf("\x1b[%d;%dH\x1b[48;5;244m%s", y+e.top_margin, x, "]")
+
+	//x = e.getScreenXFromRowColWW(e.fr, e.fc-b) + e.left_margin + e.left_margin_offset + 1
+	x = e.getScreenXFromRowColWW(e.fr, e.fc) + e.left_margin + e.left_margin_offset + 1
+	//y = e.getScreenYFromRowColWW(e.fr, e.fc-b) + e.top_margin - e.line_offset // added line offset 12-25-2019
+	y = e.getScreenYFromRowColWW(e.fr, e.fc) + e.top_margin - e.line_offset // added line offset 12-25-2019
+	//fmt.Printf("\x1b[%d;%dH\x1b[48;5;244m%s\x1b[0m", y, x, string(left_brace))
+	fmt.Printf("\x1b[%d;%dH\x1b[48;5;244m%s\x1b[0m", y, x, "[")
+	v.SetWindowCursor(w, [2]int{e.fr + 1, e.fc}) //set screen cx and cy from pos
+	sess.showEdMessage("r = %d   c = %d; e.fr = %d e.fc = %d", r, c, e.fr, e.fc)
 	return true
 }
 
@@ -750,8 +790,8 @@ func (e *Editor) refreshScreen(draw bool) {
 	var ab strings.Builder
 	var tid int
 
-	if draw { 
-    // \x1b[?25l hides cursor
+	if draw {
+		// \x1b[?25l hides cursor
 		fmt.Fprintf(&ab, "\x1b[?25l\x1b[%d;%dH", e.top_margin, e.left_margin+1)
 		// \x1b[NC moves cursor forward by N columns
 		lf_ret := fmt.Sprintf("\r\n\x1b[%dC", e.left_margin)
@@ -762,10 +802,10 @@ func (e *Editor) refreshScreen(draw bool) {
 		}
 
 		tid = getFolderTid(e.id)
-		if (tid == 18 || tid == 14) { //&& !e.is_subeditor {
+		if tid == 18 || tid == 14 { //&& !e.is_subeditor {
 			e.drawCodeRows(&ab) //uaing pointer so drawing is smoother
 		} else {
-			e.drawRows(&ab)
+			e.drawRows2(&ab) //2 -> uses nvim buffer
 		}
 		fmt.Print(ab.String())
 		e.drawStatusBar()
@@ -779,12 +819,12 @@ func (e *Editor) refreshScreen(draw bool) {
 	}
 
 	if len(e.rows) == 0 || len(e.rows[e.fr]) == 0 {
-    return
-  }
+		return
+	}
 
- if (tid == 18 || tid == 14) { //&& !e.is_subeditor {
-   e.draw_highlighted_braces()
- }
+	if tid == 18 || tid == 14 { //&& !e.is_subeditor {
+		e.draw_highlighted_braces()
+	}
 	//fmt.Print(ab.String())
 	//if draw {
 	//	e.drawStatusBar()
@@ -996,8 +1036,10 @@ func (e *Editor) draw_visual(pab *strings.Builder) {
 }
 
 func (e *Editor) getLineCharCountWW(r, line int) int {
-	//This should be a string view and use substring like lines in row
-	row := e.rows[r]
+	b, _ := v.BufferLines(0, r, r+1, true)
+	row := string(b[0])
+	//row := e.rows[r]
+
 	if len(row) == 0 {
 		return 0
 	}
@@ -1125,7 +1167,7 @@ func (e *Editor) drawRows2(pab *strings.Builder) {
 	// ? only used so spellcheck stops at end of visible note
 	e.last_visible_row = filerow - 1 // note that this is not exactly true - could be the whole last row is visible
 
-	//draw_visual(ab)
+	e.draw_visual(pab)
 }
 
 func (e *Editor) drawCodeRows(pab *strings.Builder) {

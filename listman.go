@@ -181,6 +181,7 @@ func main() {
 		bufLinesChan <- ev
 	})
 
+	// records changes that do not involve actual text changes
 	changedtickChan := make(chan *ChangedtickEvent)
 	v.RegisterHandler("nvim_buf_changedtick_event", func(changedtickEvent ...interface{}) {
 		ev := &ChangedtickEvent{
@@ -189,18 +190,23 @@ func main() {
 		}
 		changedtickChan <- ev
 	})
+
 	quit := make(chan struct{})
 
 	go func() {
 		for {
 			select {
-			case c := <-changedtickChan:
+			case <-changedtickChan:
+			//case c := <-changedtickChan:
+			//do nothing - these are not text changes
+			/*
 				for _, e := range sess.editors {
 					if c.Buffer == e.vbuf {
 						e.dirty++
 						break
 					}
 				}
+			*/
 			case b := <-bufLinesChan:
 				for _, e := range sess.editors {
 					if b.Buffer == e.vbuf {
@@ -463,6 +469,12 @@ func organizerProcessKey(c int) {
 
 func editorProcessKey(c int, messageBuf nvim.Buffer) bool {
 
+	sess.p.command += string(c)
+	if strings.IndexAny(sess.p.command[0:1], "\x17\x08\x0c\x02\x05\x09\x06") == -1 {
+		sess.p.command = ""
+	} else {
+		c = NOP
+	}
 
 	/*
 		if c == '+' {
@@ -472,87 +484,112 @@ func editorProcessKey(c int, messageBuf nvim.Buffer) bool {
 	*/
 
 	sess.showOrgMessage("char = %d", c) //debugging
-  var mode *nvim.Mode
+	var mode *nvim.Mode                 //may not be needed if not debugging
 	// below are vim-specific maps
 	/*****************************/
-  if sess.p.mode != COMMAND_LINE {
+	if sess.p.mode != COMMAND_LINE {
 
 		switch c {
-  		case ARROW_UP:
-  			v.FeedKeys("\x80ku", "t", true)
-  		case ARROW_DOWN:
-  			v.FeedKeys("\x80kd", "t", true)
-  		case ARROW_RIGHT:
-  			v.FeedKeys("\x80kr", "t", true)
-  		case ARROW_LEFT:
-  			v.FeedKeys("\x80kl", "t", true)
-  		case BACKSPACE:
-  			v.FeedKeys("\x08", "t", true)
-  		default:
-  			_, err := v.Input(string(c))
-  			if err != nil {
-  				fmt.Printf("%v\n", err)
-  			}
-  	}
+		case ARROW_UP:
+			v.FeedKeys("\x80ku", "t", true)
+		case ARROW_DOWN:
+			v.FeedKeys("\x80kd", "t", true)
+		case ARROW_RIGHT:
+			v.FeedKeys("\x80kr", "t", true)
+		case ARROW_LEFT:
+			v.FeedKeys("\x80kl", "t", true)
+		case BACKSPACE:
+			//v.FeedKeys("\x08", "t", true)
+			v.FeedKeys("\x80kb", "t", true)
+		case HOME_KEY:
+			v.FeedKeys("\x80kh", "t", true)
+		case DEL_KEY:
+			v.FeedKeys("\x80kD", "t", true)
+		case PAGE_UP:
+			v.FeedKeys("\x80kP", "t", true)
+		case PAGE_DOWN:
+			v.FeedKeys("\x80kN", "t", true)
+		case NOP:
+			// this means we are intercepting
+			// the key to run our own command
+			// do nothing
+		default:
+			_, err := v.Input(string(c))
+			if err != nil {
+				fmt.Printf("%v\n", err)
+			}
+		}
 
 		mode, _ = v.Mode()
 		sess.p.showMessage("blocking = %t; mode = %v", mode.Blocking, mode.Mode) //debugging
 
 		if mode.Blocking == true {
-      // note that ctrl w blocks
+			// note that ctrl w blocks
 			sess.p.command += string(c)
-      return false
-    }
+			return false
+		}
 
 		if mode.Mode == "v" || mode.Mode == "V" || mode.Mode == string('\x16') {
 			sess.showOrgMessage("mode: %v -> h0=%v; h1= %v", mode.Mode, highlightInfo(v)[0], highlightInfo(v)[1])
 		}
 
-    sess.p.mode = modeMap[mode.Mode]
- } 
-    switch sess.p.mode {
-    case INSERT:
-      sess.p.showMessage("--INSERT__")
-    case NORMAL:
-		  if c == ':' {
-			  sess.p.mode = COMMAND_LINE
-			  sess.p.command_line = ""
-			  sess.p.command = ""
-			  sess.p.showMessage(":")
- 	      _, err := v.Input("\x1b")
- 	      if err != nil {
- 		      fmt.Printf("%v\n", err)
- 	      }
-			  return false
-      }
-      if c == '\x1b' {
-        sess.p.command = ""
-      return false
-      }
- 	    sess.p.command += string(c)
-      if strings.IndexAny(sess.p.command[0:1], "\x17\x08\x0c\x02\x05\x09") == -1 {
-        sess.p.command = ""
-      }
-      sess.p.showMessage("blocking = %t; mode = %v; command = %v", mode.Blocking, mode.Mode, sess.p.command) //debugging
-      if cmd, found := e_lookup2[sess.p.command]; found {
-        switch cmd := cmd.(type) {
-        case func(*Editor):
-          cmd(sess.p)
-        case func():
-          cmd()
-        case func (*Editor, int):
-         cmd(sess.p, c)
-        }
+		sess.p.mode = modeMap[mode.Mode]
+	}
+	switch sess.p.mode {
+	case INSERT:
+		sess.p.showMessage("--INSERT--")
+	case NORMAL:
+		if c == ':' {
+			sess.p.mode = COMMAND_LINE
+			sess.p.command_line = ""
+			sess.p.command = ""
+			sess.p.showMessage(":")
+			_, err := v.Input("\x1b")
+			if err != nil {
+				fmt.Printf("%v\n", err)
+			}
+			return false
+		}
+		if c == '\x1b' {
+			sess.p.command = ""
+			//if previously in visual mode some text may be highlighted so need to return true
+			// also need the cursor position because for example going from INSERT -> NORMAL causes cursor to move back
+			// note you could fall through to getting pos but that recalcs rows which is unnecessary
+			pos, _ := v.WindowCursor(w) //set screen cx and cy from pos
+			sess.p.fr = pos[0] - 1
+			sess.p.fc = pos[1]
+			return true
+		}
 
- 	      _, err := v.Input("\x1b")
- 	      if err != nil {
- 		      fmt.Printf("%v\n", err)
- 	      }
-        sess.p.command = ""
-        return true
-      }
-		case VISUAL, VISUAL_LINE, VISUAL_BLOCK:
-		  sess.p.vb_highlight = highlightInfo(v)
+		/*
+			sess.p.command += string(c)
+			if strings.IndexAny(sess.p.command[0:1], "\x17\x08\x0c\x02\x05\x09\x06") == -1 {
+				sess.p.command = ""
+			}
+		*/
+
+		sess.p.showMessage("blocking = %t; mode = %v; command = %v", mode.Blocking, mode.Mode, sess.p.command) //debugging
+		if cmd, found := e_lookup2[sess.p.command]; found {
+			switch cmd := cmd.(type) {
+			case func(*Editor):
+				cmd(sess.p)
+			case func():
+				cmd()
+			case func(*Editor, int):
+				cmd(sess.p, c)
+			case func(*Editor) bool:
+				cmd(sess.p)
+			}
+
+			_, err := v.Input("\x1b")
+			if err != nil {
+				fmt.Printf("%v\n", err)
+			}
+			sess.p.command = ""
+			return true
+		}
+	case VISUAL, VISUAL_LINE, VISUAL_BLOCK:
+		sess.p.vb_highlight = highlightInfo(v)
 
 	case COMMAND_LINE:
 
@@ -627,7 +664,7 @@ func editorProcessKey(c int, messageBuf nvim.Buffer) bool {
 					*/
 
 					// do nothing = allow editor to be closed
-				} else if sess.p.dirty > 1 {
+				} else if sess.p.dirty > 0 {
 					sess.p.mode = NORMAL
 					sess.p.command = ""
 					sess.p.command_line = ""
@@ -731,19 +768,17 @@ func editorProcessKey(c int, messageBuf nvim.Buffer) bool {
 		return false //end of case COMMAND_LINE
 	} //end switch
 
-    // may or may not be in middle of a command like caw or daw
-		sess.p.rows = nil
-		bb, _ := v.BufferLines(sess.p.vbuf, 0, -1, true)
-		for _, b := range bb {
-			sess.p.rows = append(sess.p.rows, string(b))
-		}
-		pos, _ := v.WindowCursor(w) //set screen cx and cy from pos
-
-			//sess.p.showMessage(" => position = %v", pos) //debug
-		sess.p.fr = pos[0] - 1
-		sess.p.fc = pos[1]
-		if c == 'u' && sess.p.mode == NORMAL {
-			showMessage(v, messageBuf)
-		}
+	// may or may not be in middle of a command like caw or daw
+	sess.p.rows = nil
+	bb, _ := v.BufferLines(sess.p.vbuf, 0, -1, true)
+	for _, b := range bb {
+		sess.p.rows = append(sess.p.rows, string(b))
+	}
+	pos, _ := v.WindowCursor(w) //set screen cx and cy from pos
+	sess.p.fr = pos[0] - 1
+	sess.p.fc = pos[1]
+	if c == 'u' && sess.p.mode == NORMAL {
+		showMessage(v, messageBuf)
+	}
 	return true
 }

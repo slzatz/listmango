@@ -2,12 +2,12 @@ package main
 
 import "github.com/neovim/go-client/nvim"
 
-var modeMap = map[string]Mode {
-  "n": NORMAL,
-  "i": INSERT,
-  "v": VISUAL,
-  "V": VISUAL_LINE,
-  "\x16": VISUAL_BLOCK,
+var modeMap = map[string]Mode{
+	"n":    NORMAL,
+	"i":    INSERT,
+	"v":    VISUAL,
+	"V":    VISUAL_LINE,
+	"\x16": VISUAL_BLOCK,
 }
 
 const (
@@ -68,6 +68,7 @@ const (
 	END_KEY
 	PAGE_UP
 	PAGE_DOWN
+	NOP
 	SHIFT_TAB
 )
 
