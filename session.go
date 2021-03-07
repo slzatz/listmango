@@ -519,7 +519,8 @@ func (s *Session) drawOrgStatusBar() {
 	}
 
 	if length < s.divider {
-		// below is odd but escapes seemed to require padding separately
+		// need to do the below because the escapes make string
+		// longer than it actually prints so pad separately
 		fmt.Fprintf(&ab, "%s%-*s", status, s.divider-length, " ")
 	} else {
 		ab.WriteString(status[:s.divider])

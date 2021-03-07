@@ -1327,9 +1327,7 @@ func (e *Editor) drawStatusBar() {
 	if len(status) > e.screencols-1 {
 		status = status[:e.screencols-1]
 	}
-	ab.WriteString(status)
-	spaces := strings.Repeat(" ", e.screencols-len(status))
-	ab.WriteString(spaces)
+	fmt.Fprintf(&ab, "%-*s", e.screencols, status)
 	ab.WriteString("\x1b[0m") //switches back to normal formatting
 	fmt.Print(ab.String())
 }
