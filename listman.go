@@ -276,11 +276,9 @@ func main() {
 
 	for sess.run {
 
-		// read key
 		key, err := terminal.ReadKey()
 		if err != nil {
-			//SafeExit(fmt.Errorf("Error reading from terminal: %s", err))
-			os.Exit(1)
+			sess.showOrgMessage("Readkey problem %w", err)
 		}
 
 		var k int
@@ -296,6 +294,7 @@ func main() {
 			if !sess.editorMode {
 				continue
 			}
+
 			scroll := sess.p.scroll()
 			redraw := textChange || scroll || sess.p.redraw
 			sess.p.refreshScreen(redraw)
@@ -303,12 +302,17 @@ func main() {
 			organizerProcessKey(k)
 			org.scroll()
 			sess.refreshOrgScreen()
-			sess.drawOrgStatusBar()
+			if sess.divider > 10 {
+				sess.drawOrgStatusBar()
+			}
 		}
 
-		if sess.divider > 10 {
-			sess.drawOrgStatusBar()
-		}
+		/*
+			if sess.divider > 10 {
+				sess.drawOrgStatusBar()
+			}
+		*/
+
 		sess.returnCursor()
 
 		// if it's been 5 secs since the last status message, reset

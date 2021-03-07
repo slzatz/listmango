@@ -450,15 +450,9 @@ func (s *Session) showEdMessage(format string, a ...interface{}) {
 
 func (s *Session) drawOrgStatusBar() {
 
-	/*
-	  so the below should 1) position the cursor on the status
-	  bar row and midscreen and 2) erase previous statusbar
-	  r -> l and then put the cursor back where it should be
-	  at LEFT_MARGIN
-	*/
-
 	var ab strings.Builder
-	ab.WriteString(fmt.Sprintf("\x1b[%d;%dH\x1b[1K\x1b[%d;1H", s.textLines+TOP_MARGIN+1, s.divider, s.textLines+TOP_MARGIN+1))
+	//position cursor and erase - and yes you do have to reposition cursor after erase
+	fmt.Fprintf(&ab, "\x1b[%d;%dH\x1b[1K\x1b[%d;1H", s.textLines+TOP_MARGIN+1, s.divider, s.textLines+TOP_MARGIN+1)
 	ab.WriteString("\x1b[7m") //switches to inverted colors
 
 	var str string
@@ -492,7 +486,7 @@ func (s *Session) drawOrgStatusBar() {
 	if len(org.rows) > 0 {
 
 		r := &org.rows[org.fr]
-		// note the format is for 15 chars - 12 from substring below and "[+]" when needed
+
 		var title string
 		if len((*r).title) > 12 {
 			title = (*r).title[:12]
@@ -525,7 +519,8 @@ func (s *Session) drawOrgStatusBar() {
 	}
 
 	if length < s.divider {
-		ab.WriteString(status)
+		// below is odd but escapes seemed to require padding separately
+		fmt.Fprintf(&ab, "%s%-*s", status, s.divider-length, " ")
 	} else {
 		ab.WriteString(status[:s.divider])
 	}

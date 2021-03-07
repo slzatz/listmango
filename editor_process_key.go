@@ -47,11 +47,12 @@ func editorProcessKey(c int, messageBuf nvim.Buffer) bool {
 
 	nop := false
 	sess.p.command += string(c)
-	if strings.IndexAny(sess.p.command[0:1], "\x17\x08\x0c\x02\x05\x09\x06 ") == -1 {
+	if strings.IndexAny(sess.p.command[0:1], "\x17\x08\x0c\x02\x05\x09\x06") == -1 {
 		sess.p.command = ""
 	} else {
 		nop = true
 	}
+
 	if sess.p.mode == NORMAL && c == int(leader[0]) {
 		sess.p.command = leader
 		nop = true
@@ -64,8 +65,8 @@ func editorProcessKey(c int, messageBuf nvim.Buffer) bool {
 		}
 	*/
 
-	sess.showOrgMessage("char = %d", c) //debugging
-	var mode *nvim.Mode                 //may not be needed if not debugging
+	sess.showOrgMessage("char = %d; nop = %t", c, nop) //debugging
+	var mode *nvim.Mode                                //may not be needed if not debugging
 
 	if nop || sess.p.mode == COMMAND_LINE {
 		//do nothing
