@@ -141,7 +141,7 @@ func organizerProcessKey(c int) {
 				s = org.command_line
 			}
 			if cmd, found := cmd_lookup[s]; found {
-				cmd(pos)
+				cmd(&org, pos)
 				return
 			}
 

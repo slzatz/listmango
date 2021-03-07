@@ -3,19 +3,21 @@ package main
 import (
 	"fmt"
 	"log"
+	"strconv"
 	"strings"
 )
 
-var cmd_lookup = map[string]func(int){
-	"open":        F_open, //open_O
-	"o":           F_open,
-	"openfolder":  F_openfolder,
-	"of":          F_openfolder,
-	"openkeyword": F_openkeyword,
-	"ok":          F_openkeyword,
-	"quit":        F_quit_app,
-	"q":           F_quit_app,
-	"e":           F_edit,
+var cmd_lookup = map[string]func(*Organizer, int){
+	"open":        (*Organizer).openContext,
+	"o":           (*Organizer).openContext,
+	"openfolder":  (*Organizer).openFolder,
+	"of":          (*Organizer).openFolder,
+	"openkeyword": (*Organizer).openKeyword,
+	"ok":          (*Organizer).openKeyword,
+	"quit":        (*Organizer).quitApp,
+	"q":           (*Organizer).quitApp,
+	"e":           (*Organizer).editNote,
+	"resize":      (*Organizer).resize,
 	/*
 	  "deletekeywords": F_deletekeywords,
 	  "delkw": F_deletekeywords,
@@ -27,8 +29,8 @@ var cmd_lookup = map[string]func(int){
 	  "keyword": F_keywords,
 	  "keywords": F_keywords,
 	*/
-	"write": F_write,
-	"w":     F_write,
+	"write": (*Organizer).write,
+	"w":     (*Organizer).write,
 	/*
 	  "x": F_x,
 	  "refresh": F_refresh,
@@ -91,19 +93,19 @@ var cmd_lookup = map[string]func(int){
 	*/
 }
 
-func F_open(pos int) { //C_open - by context
+func (o *Organizer) openContext(pos int) {
 	if pos == 0 {
 		sess.showOrgMessage("You did not provide a context!")
-		org.mode = NORMAL
+		o.mode = NORMAL
 		return
 	}
 
-	cl := org.command_line
+	cl := o.command_line
 	var success bool
 	success = false
-	for k, _ := range org.context_map {
+	for k, _ := range o.context_map {
 		if strings.HasPrefix(k, cl[pos+1:]) {
-			org.context = k
+			o.context = k
 			success = true
 			break
 		}
@@ -111,33 +113,33 @@ func F_open(pos int) { //C_open - by context
 
 	if !success {
 		sess.showOrgMessage(fmt.Sprintf("%s is not a valid  context!", cl[:pos]))
-		org.mode = NORMAL
+		o.mode = NORMAL
 		return
 	}
 
-	sess.showOrgMessage("'%s' will be opened", org.context)
+	sess.showOrgMessage("'%s' will be opened", o.context)
 
-	org.marked_entries = nil
-	org.folder = ""
-	org.taskview = BY_CONTEXT
+	o.marked_entries = nil
+	o.folder = ""
+	o.taskview = BY_CONTEXT
 	getItems(MAX)
-	org.mode = NORMAL
+	o.mode = NORMAL
 	return
 }
 
-func F_openfolder(pos int) { //C_open - by context
+func (o *Organizer) openFolder(pos int) {
 	if pos == 0 {
 		sess.showOrgMessage("You did not provide a folder!")
-		org.mode = NORMAL
+		o.mode = NORMAL
 		return
 	}
 
-	cl := &org.command_line
+	cl := &o.command_line
 	var success bool
 	success = false
-	for k, _ := range org.folder_map {
+	for k, _ := range o.folder_map {
 		if strings.HasPrefix(k, (*cl)[pos+1:]) {
-			org.folder = k
+			o.folder = k
 			success = true
 			break
 		}
@@ -145,63 +147,63 @@ func F_openfolder(pos int) { //C_open - by context
 
 	if !success {
 		sess.showOrgMessage("%s is not a valid  folder!", (*cl)[:pos])
-		org.mode = NORMAL
+		o.mode = NORMAL
 		return
 	}
 
-	sess.showOrgMessage("'%s' will be opened", org.folder)
+	sess.showOrgMessage("'%s' will be opened", o.folder)
 
-	org.marked_entries = nil
-	org.context = ""
-	org.taskview = BY_FOLDER
+	o.marked_entries = nil
+	o.context = ""
+	o.taskview = BY_FOLDER
 	getItems(MAX)
-	org.mode = NORMAL
+	o.mode = NORMAL
 	return
 }
 
-func F_openkeyword(pos int) {
+func (o *Organizer) openKeyword(pos int) {
 	if pos == 0 {
 		sess.showOrgMessage("You did not provide a keyword!")
-		org.mode = NORMAL
+		o.mode = NORMAL
 		return
 	}
 	//O.keyword = O.command_line.substr(pos+1);
-	keyword := org.command_line[pos+1:]
+	keyword := o.command_line[pos+1:]
 	if keywordExists(keyword) == -1 {
-		org.mode = org.last_mode
+		o.mode = o.last_mode
 		sess.showOrgMessage("keyword '%s' does not exist!", keyword)
 		return
 	}
 
-	org.keyword = keyword
-	sess.showOrgMessage("'%s' will be opened", org.keyword)
-	org.marked_entries = nil
-	org.context = ""
-	org.folder = ""
-	org.taskview = BY_KEYWORD
+	o.keyword = keyword
+	sess.showOrgMessage("'%s' will be opened", o.keyword)
+	o.marked_entries = nil
+	o.context = ""
+	o.folder = ""
+	o.taskview = BY_KEYWORD
 	getItems(MAX)
-	org.mode = NORMAL
+	o.mode = NORMAL
 	return
 }
 
-func F_write(pos int) {
-	if org.view == TASK {
+func (o *Organizer) write(pos int) {
+	if o.view == TASK {
 		updateRows()
 	}
-	org.mode = org.last_mode
-	org.command_line = ""
+	o.mode = o.last_mode
+	o.command_line = ""
 }
 
-func F_quit_app(pos int) {
+func (o *Organizer) quitApp(pos int) {
 	unsaved_changes := false
-	for _, r := range org.rows {
+	for _, r := range o.rows {
 		if r.dirty {
 			unsaved_changes = true
 			break
 		}
 	}
 	if unsaved_changes {
-		org.mode = NORMAL
+		o.mode = NORMAL
 		sess.showOrgMessage("No db write since last change")
 	} else {
 		sess.run = false
@@ -215,11 +217,11 @@ func F_quit_app(pos int) {
 		*/
 	}
 }
-func F_edit(id int) {
+func (o *Organizer) editNote(id int) {
 
-	if org.view != TASK {
-		org.command = ""
-		org.mode = NORMAL
+	if o.view != TASK {
+		o.command = ""
+		o.mode = NORMAL
 		sess.showOrgMessage("Only tasks have notes to edit!")
 		return
 	}
@@ -230,8 +232,8 @@ func F_edit(id int) {
 	}
 	if id == -1 {
 		sess.showOrgMessage("You need to save item before you can create a note")
-		org.command = ""
-		org.mode = NORMAL
+		o.command = ""
+		o.mode = NORMAL
 		return
 	}
 
@@ -253,7 +255,7 @@ func F_edit(id int) {
 		sess.p.id = id
 		sess.p.top_margin = TOP_MARGIN + 1
 
-		folder_tid := getFolderTid(org.rows[org.fr].id)
+		folder_tid := getFolderTid(o.rows[o.fr].id)
 		if folder_tid == 18 || folder_tid == 14 {
 			sess.p.linked_editor = &Editor{}
 			sess.editors = append(sess.editors, sess.p.linked_editor)
@@ -280,6 +282,21 @@ func F_edit(id int) {
 	sess.drawEditors()
 	sess.p.mode = NORMAL
 
-	org.command = ""
-	org.mode = NORMAL
+	o.command = ""
+	o.mode = NORMAL
+}
+
+func (o *Organizer) resize(pos int) {
+	if pos == 0 {
+		sess.showOrgMessage("You need to provide a number")
+		return
+	}
+	pct, err := strconv.Atoi(o.command_line[pos+1:])
+	if err != nil {
+		sess.showOrgMessage("You need to provide a number 0 - 100")
+		o.mode = NORMAL
+		return
+	}
+	sess.moveDivider(pct)
+	o.mode = NORMAL
 }

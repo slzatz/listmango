@@ -1,12 +1,17 @@
 package main
 
-import "strings"
+import (
+	"strconv"
+	"strings"
+)
 
+//var e_lookup_C = map[string]interface{}{
 var e_lookup_C = map[string]func(*Editor){
 	"write":    (*Editor).writeNote,
 	"w":        (*Editor).writeNote,
 	"read":     (*Editor).readFile,
 	"readfile": (*Editor).readFile,
+	"resize":   (*Editor).resize,
 }
 
 /* EDITOR cpp COMMAND_LINE mode lookup
@@ -82,4 +87,18 @@ func (e *Editor) readFile() {
 		return
 	}
 	e.showMessage("Note generated from file: %s", filename)
+}
+
+func (e *Editor) resize() {
+	pos := strings.Index(e.command_line, " ")
+	if pos == -1 {
+		sess.showEdMessage("You need to provide a filename")
+		return
+	}
+	pct, err := strconv.Atoi(e.command_line[pos+1:])
+	if err != nil {
+		sess.showEdMessage("You need to provide a number 0 - 100")
+		return
+	}
+	sess.moveDivider(pct)
 }

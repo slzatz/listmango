@@ -450,6 +450,7 @@ func (e *Editor) moveEndWord_() {
 	}
 }
 
+/*
 func (e *Editor) moveCursor_(key int) {
 
 	switch key {
@@ -472,7 +473,6 @@ func (e *Editor) moveCursor_(key int) {
 		}
 	}
 }
-
 func (e *Editor) moveCursorEOL_() {
 	if len(e.rows[e.fr]) > 0 {
 		e.fc = len(e.rows[e.fr]) - 1
@@ -483,7 +483,6 @@ func (e *Editor) moveCursorBOL_() {
 	e.fc = 0
 }
 
-/*
 func (e *Editor) insertNewLine_(direction int) {
 	//* note this func does position fc and fr
 	if len(e.rows) == 0 { // creation of NO_ROWS may make this unnecessary
@@ -505,14 +504,14 @@ func (e *Editor) insertNewLine_(direction int) {
 	e.insertRow(e.fr, spaces)
 	e.fc = indent
 }
-*/
 
-func (e *Editor) insertRow(r int, s string) {
+func (e *Editor) insertRow_(r int, s string) {
 	e.rows = append(e.rows, "")
 	copy(e.rows[r:], e.rows[r+1:])
 	e.rows[r] = s
 	e.dirty++
 }
+*/
 
 func (e *Editor) rowsToString() string {
 
@@ -670,6 +669,7 @@ func (e *Editor) getLineInRowWW(r, c int) int {
 	return lines
 }
 
+/*
 func (e *Editor) indentAmount_(r int) int {
 	if len(e.rows) == 0 {
 		return 0
@@ -686,7 +686,6 @@ func (e *Editor) indentAmount_(r int) int {
 	return i
 }
 
-/*
 func (e *Editor) insertReturn_() { // right now only used for editor->INSERT mode->'\r'
 	r := &e.rows[e.fr]
 	r1 := (*r)[:e.fc] //(current_row.begin(), current_row.begin() + fc);
@@ -715,7 +714,6 @@ func (e *Editor) insertReturn_() { // right now only used for editor->INSERT mod
 		e.insertChar(' ')
 	}
 }
-*/
 
 func (e *Editor) insertChar_(chr int) {
 	// does not handle returns which must be intercepted before calling this function
@@ -730,7 +728,6 @@ func (e *Editor) insertChar_(chr int) {
 	e.fc++
 }
 
-/*
 func (e *Editor) backspace_() {
 
 	if e.fc == 0 && e.fr == 0 {
@@ -1083,25 +1080,17 @@ func (e *Editor) getLineCharCountWW(r, line int) int {
 
 // not in use -- was attempt to draw rows without e.rows just nvim buffer
 func (e *Editor) drawRows2(pab *strings.Builder) {
-	/*
-		bufs, err := v.Buffers()
-		if err != nil {
-			log.Fatal(err)
-		}
-		vbuf := bufs[0]
-		bb, _ := v.BufferLines(vbuf, 0, -1, true)
-	*/
 	bb, _ := v.BufferLines(0, 0, -1, true)
 
 	if len(bb) == 0 {
 		return
 	}
-	//var ab strings.Builder
 
 	lf_ret := fmt.Sprintf("\r\n\x1b[%dC", e.left_margin)
+	// hides the cursor
 	(*pab).WriteString("\x1b[?25l") //hides the cursor
 
-	// format for positioning cursor is "\x1b[%d;%dH"
+	// position the cursor"
 	fmt.Fprintf(pab, "\x1b[%d;%dH", e.top_margin, e.left_margin+1)
 
 	y := 0
@@ -1135,7 +1124,7 @@ func (e *Editor) drawRows2(pab *strings.Builder) {
 		prev_pos := 0 //except for start -> pos + 1
 		for {
 			/* this is needed because it deals where the end of the line doesn't have a space*/
-			if prev_pos+e.screencols-e.left_margin_offset > len(row)-1 { //? if need -1;cpp generateWWString had it
+			if prev_pos+e.screencols-e.left_margin_offset > len(row)-1 { //? if need -1;cpp
 				(*pab).WriteString(row[prev_pos:])
 				if y == e.screenlines-1 {
 					flag = true
@@ -1149,7 +1138,6 @@ func (e *Editor) drawRows2(pab *strings.Builder) {
 
 			pos = strings.LastIndex(row[:prev_pos+e.screencols-e.left_margin_offset], " ")
 
-			//note npos when signed = -1 and order of if/else may matter
 			if pos == -1 || pos == prev_pos-1 {
 				pos = prev_pos + e.screencols - e.left_margin_offset - 1
 			}

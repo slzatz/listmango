@@ -770,6 +770,7 @@ func (s *Session) moveDivider(pct int) {
 
 	s.returnCursor()
 }
+
 func (s *Session) signalHandler() {
 	//s.GetWindowSize()
 	var err error

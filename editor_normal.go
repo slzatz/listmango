@@ -11,13 +11,13 @@ var e_lookup2 = map[string]interface{}{
 	leader + "b":         (*Editor).decorateWord,
 	"\x05":               (*Editor).decorateWord,
 	string(ctrlKey('i')): (*Editor).decorateWord,
-	"\x17=":              (*Editor).resize,
-	"\x17_":              (*Editor).resize,
+	"\x17=":              (*Editor).changeSplit,
+	"\x17_":              (*Editor).changeSplit,
 	"\x06":               (*Editor).findMatchForBrace,
 	leader + "+":         showVimMessage,
 }
 
-func (e *Editor) resize(flag int) {
+func (e *Editor) changeSplit(flag int) {
 	if e.linked_editor == nil {
 		return
 	}
