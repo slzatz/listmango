@@ -1,6 +1,10 @@
 package main
 
 import (
+	"bufio"
+	"io"
+	"log"
+	"os/exec"
 	"strconv"
 	"strings"
 )
@@ -12,6 +16,8 @@ var e_lookup_C = map[string]func(*Editor){
 	"read":     (*Editor).readFile,
 	"readfile": (*Editor).readFile,
 	"resize":   (*Editor).resize,
+	"c":        (*Editor).compile,
+	"r":        (*Editor).runLocal,
 }
 
 /* EDITOR cpp COMMAND_LINE mode lookup
@@ -58,17 +64,18 @@ func (e *Editor) writeNote() {
 
 	//update_note(false);
 	updateNote()
-	/*
-	  folder_tid := getFolderTid(id);
-	  if (folder_tid == 18 || folder_tid == 14) {
-	    code = editorRowsToString();
-	    updateCodeFile();
-	  } else if (sess.lm_browser) {
-	    sess.updateHTMLFile("assets/" + CURRENT_NOTE_FILE);
-	  }
-	*/
 
-	e.dirty = 1
+	folder_tid := getFolderTid(e.id)
+	if folder_tid == 18 || folder_tid == 14 {
+		e.code = e.rowsToString()
+		updateCodeFile()
+	}
+	/*
+		} else if sess.lm_browser {
+			sess.updateHTMLFile("assets/" + CURRENT_NOTE_FILE)
+		}
+	*/
+	e.dirty = 0
 	e.drawStatusBar() //need this since now refresh won't do it unless redraw =true
 	e.showMessage("")
 }
@@ -101,4 +108,162 @@ func (e *Editor) resize() {
 		return
 	}
 	sess.moveDivider(pct)
+}
+
+func (e *Editor) compile() {
+
+	//var str string
+	var dir string
+	var cmd *exec.Cmd
+	if getFolderTid(e.id) == 18 {
+		dir = "/home/slzatz/clangd_examples/"
+		//str = "make"
+		cmd = exec.Command("make")
+	} else {
+		dir = "/home/slzatz/go/src/example/"
+		//str = "go build main.go"
+		cmd = exec.Command("go", "build", "main.go")
+	}
+	//cmd := exec.Command(str)
+	cmd.Dir = dir
+
+	stdout, err := cmd.StdoutPipe()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	stderr, err := cmd.StderrPipe()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	err = cmd.Start()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	buffer_out := bufio.NewReader(stdout)
+	buffer_err := bufio.NewReader(stderr)
+
+	rows := &e.linked_editor.rows
+	*rows = nil
+	*rows = append(*rows, "------------------------")
+
+	for {
+		bytes, _, err := buffer_out.ReadLine()
+		if err == io.EOF {
+			break
+		}
+		*rows = append(*rows, string(bytes))
+	}
+
+	for {
+		bytes, _, err := buffer_err.ReadLine()
+		if err == io.EOF {
+			break
+		}
+		*rows = append(*rows, string(bytes))
+	}
+	if len(*rows) == 1 {
+		*rows = append(*rows, "The code compiled successfully")
+	}
+
+	*rows = append(*rows, "------------------------")
+
+	//if (text.str().empty())   text << "Go build successful";
+	//std::vector<std::string> zz = str2vecWW(text.str(), false); //ascii_only = false
+
+	//fr = fc = cy = cx = line_offset = prev_line_offset = first_visible_row = last_visible_row = 0;
+
+	e.linked_editor.fr = 0
+	e.linked_editor.fc = 0
+
+	// added 02092021
+	e.linked_editor.cy = 0
+	e.linked_editor.cx = 0
+	e.linked_editor.line_offset = 0
+	e.linked_editor.prev_line_offset = 0
+	e.linked_editor.first_visible_row = 0
+	e.linked_editor.last_visible_row = 0
+	// added 02092021
+
+	e.linked_editor.refreshScreen(true)
+	//chdir("/home/slzatz/listmango/");
+}
+
+func (e *Editor) runLocal() {
+
+	var args string
+	pos := strings.Index(e.command_line, " ")
+	if pos != -1 {
+		args = e.command_line[pos+1:]
+	}
+
+	var dir string
+	var obj string
+	var cmd *exec.Cmd
+	if getFolderTid(e.id) == 18 {
+		//  cmd = "/home/slzatz/clangd_examples/test_cpp";
+		obj = "./test_cpp"
+		dir = "/home/slzatz/clangd_examples/"
+	} else {
+		//  cmd = "/home/slzatz/go/src/example/main";
+		obj = "./main"
+		dir = "/home/slzatz/go/src/example/"
+	}
+	cmd = exec.Command(obj, args)
+	cmd.Dir = dir
+
+	stdout, err := cmd.StdoutPipe()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	stderr, err := cmd.StderrPipe()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	err = cmd.Start()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	buffer_out := bufio.NewReader(stdout)
+	buffer_err := bufio.NewReader(stderr)
+
+	rows := &e.linked_editor.rows
+	*rows = nil
+	*rows = append(*rows, "------------------------")
+
+	for {
+		bytes, _, err := buffer_out.ReadLine()
+		if err == io.EOF {
+			break
+		}
+		*rows = append(*rows, string(bytes))
+	}
+
+	for {
+		bytes, _, err := buffer_err.ReadLine()
+		if err == io.EOF {
+			break
+		}
+		*rows = append(*rows, string(bytes))
+	}
+
+	*rows = append(*rows, "------------------------")
+
+	e.linked_editor.fr = 0
+	e.linked_editor.fc = 0
+
+	// added 02092021
+	e.linked_editor.cy = 0
+	e.linked_editor.cx = 0
+	e.linked_editor.line_offset = 0
+	e.linked_editor.prev_line_offset = 0
+	e.linked_editor.first_visible_row = 0
+	e.linked_editor.last_visible_row = 0
+
+	e.linked_editor.refreshScreen(true)
 }
