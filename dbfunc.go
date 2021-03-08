@@ -778,7 +778,7 @@ func updateCodeFile() {
 		filePath = "/home/slzatz/clangd_examples/test.cpp"
 		//lsp_name = "clangd";
 	} else {
-		filePath = "/home/slzatz/go/src/example/main.go"
+		filePath = "/home/slzatz/go_fragments/main.go"
 		//lsp_name = "gopls";
 	}
 

@@ -120,7 +120,7 @@ func (e *Editor) compile() {
 		//str = "make"
 		cmd = exec.Command("make")
 	} else {
-		dir = "/home/slzatz/go/src/example/"
+		dir = "/home/slzatz/go_fragments/"
 		//str = "go build main.go"
 		cmd = exec.Command("go", "build", "main.go")
 	}
@@ -209,7 +209,7 @@ func (e *Editor) runLocal() {
 	} else {
 		//  cmd = "/home/slzatz/go/src/example/main";
 		obj = "./main"
-		dir = "/home/slzatz/go/src/example/"
+		dir = "/home/slzatz/go_fragments/"
 	}
 	cmd = exec.Command(obj, args)
 	cmd.Dir = dir
