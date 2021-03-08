@@ -17,6 +17,7 @@ var e_lookup_C = map[string]func(*Editor){
 	"readfile": (*Editor).readFile,
 	"resize":   (*Editor).resize,
 	"c":        (*Editor).compile,
+	"r":        (*Editor).runLocal,
 }
 
 /* EDITOR cpp COMMAND_LINE mode lookup
@@ -190,65 +191,79 @@ func (e *Editor) compile() {
 	//chdir("/home/slzatz/listmango/");
 }
 
-/*
-void Editor::E_runlocal_C(void) {
+func (e *Editor) runLocal() {
 
-  if(is_subeditor) {
-    editorSetMessage("You're in the subeditor!");
-    return;
-  }
-  std::string args, cmd;
-  std::size_t pos = command_line.find(' ');
-  if (pos != std::string::npos) args = command_line.substr(pos); //include the space
-  else args = "";
+	var args string
+	pos := strings.Index(e.command_line, " ")
+	if pos != -1 {
+		args = e.command_line[pos+1:]
+	}
 
-  if (getFolderTid(id) == 18) {
-      cmd = "/home/slzatz/clangd_examples/test_cpp";
-  } else {
-      cmd = "/home/slzatz/go/src/example/main";
-  }
+	var dir string
+	var obj string
+	var cmd *exec.Cmd
+	if getFolderTid(e.id) == 18 {
+		//  cmd = "/home/slzatz/clangd_examples/test_cpp";
+		obj = "./test_cpp"
+		dir = "/home/slzatz/clangd_examples/"
+	} else {
+		//  cmd = "/home/slzatz/go/src/example/main";
+		obj = "./main"
+		dir = "/home/slzatz/go/src/example/"
+	}
+	cmd = exec.Command(obj, args)
+	cmd.Dir = dir
 
-  const pstreams::pmode mode = pstreams::pstdout|pstreams::pstderr; /////
-  ipstream run(cmd + args, mode);
-  char buf[8192];
-  std::streamsize n;
-  bool finished[2] = {false, false};
-  std::string s{}; //for stderr
-  std::string t{}; //for stdout
-  while (!finished[0] || !finished[1]) {
-    if (!finished[0]) {
-      while ((n = run.err().readsome(buf, sizeof(buf))) > 0) {
-        s += std::string{buf, static_cast<size_t>(n)};
-      }
-      if (run.eof()) {
-        finished[0] = true;
-        if (!finished[1]) run.clear();
-      }
-    }
+	stdout, err := cmd.StdoutPipe()
+	if err != nil {
+		log.Fatal(err)
+	}
 
-    if (!finished[1]) {
-      while ((n = run.out().readsome(buf, sizeof(buf))) > 0) {
-          t += std::string{buf, static_cast<size_t>(n)};
-      }
-      if (run.eof()) {
-        finished[1] = true;
-        if (!finished[0]) run.clear();
-      }
-    }
-  }
+	stderr, err := cmd.StderrPipe()
+	if err != nil {
+		log.Fatal(err)
+	}
 
-  if (!s.empty()) s = "Error: " + s;
-  //std::vector<std::string> zz = str2vecWW(s+t);
-  std::vector<std::string> zz = str2vecWW(s+t, false); //ascii_only = false
+	err = cmd.Start()
+	if err != nil {
+		log.Fatal(err)
+	}
 
-  auto & s_rows = linked_editor->rows; //s_rows -> subnote_rows
-  s_rows.clear();
-  s_rows.push_back("----------------");
-  s_rows.insert(s_rows.end(), zz.begin(), zz.end());
-  s_rows.push_back("----------------");
-  linked_editor->fr = 0;
-  linked_editor->fc = 0;
-  linked_editor->editorRefreshScreen(true);
-  linked_editor->dirty++;
+	buffer_out := bufio.NewReader(stdout)
+	buffer_err := bufio.NewReader(stderr)
+
+	rows := &e.linked_editor.rows
+	*rows = nil
+	*rows = append(*rows, "------------------------")
+
+	for {
+		bytes, _, err := buffer_out.ReadLine()
+		if err == io.EOF {
+			break
+		}
+		*rows = append(*rows, string(bytes))
+	}
+
+	for {
+		bytes, _, err := buffer_err.ReadLine()
+		if err == io.EOF {
+			break
+		}
+		*rows = append(*rows, string(bytes))
+	}
+
+	*rows = append(*rows, "------------------------")
+
+	e.linked_editor.fr = 0
+	e.linked_editor.fc = 0
+
+	// added 02092021
+	e.linked_editor.cy = 0
+	e.linked_editor.cx = 0
+	e.linked_editor.line_offset = 0
+	e.linked_editor.prev_line_offset = 0
+	e.linked_editor.first_visible_row = 0
+	e.linked_editor.last_visible_row = 0
+
+	e.linked_editor.refreshScreen(true)
 }
-*/
