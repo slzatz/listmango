@@ -10,25 +10,6 @@ import (
 	"strings"
 )
 
-/*
-//var z0 = struct{}{}// in listmango
-var line_commands = map[string]struct{}{
-	"I":   z0,
-	"i":   z0,
-	"A":   z0,
-	"a":   z0,
-	"s":   z0,
-	"cw":  z0,
-	"caw": z0,
-	"x":   z0,
-	"d$":  z0,
-	"daw": z0,
-	"dw":  z0,
-	"r":   z0,
-	"~":   z0,
-}
-*/
-
 func find_first_not_of(row *string, delimiters string, pos int) int {
 	pos++
 	for i, char := range (*row)[pos:] {
@@ -43,7 +24,6 @@ func find_first_not_of(row *string, delimiters string, pos int) int {
 
 // want to transition to Session showEdMessage
 func (e *Editor) showMessage(format string, a ...interface{}) {
-	//fmt.Printf("\x1b[%d;%dH\x1b[0K\x1b[%d;%dH", sess.textLines + e.top_margin + 1, sess.divider, sess.textLines + e.top_margin + 1, sess.divider)
 	fmt.Printf("\x1b[%d;%dH\x1b[K", sess.textLines+e.top_margin+1, sess.divider+1)
 	str := fmt.Sprintf(format, a...)
 	if len(str) > e.screencols {
@@ -51,98 +31,6 @@ func (e *Editor) showMessage(format string, a ...interface{}) {
 	}
 	fmt.Print(str)
 }
-
-/*
-// a string is a sequence of uint8 == byte
-func (e *Editor) move_to_right_brace(left_brace byte) (int, int) {
-	r := e.fr
-	c := e.fc + 1
-	count := 1
-	max := len(e.rows)
-
-	m := map[byte]byte{'{': '}', '(': ')', '[': ']'}
-	right_brace := m[left_brace]
-
-	for {
-
-		row := e.rows[r]
-
-		// right now this function only called from NORMAL mode by typing '%'
-		// note that function that deals with INSERT needs  c >= row.size() because
-		// brace could be at end of line and fc could be row.size() before doing fc + 1
-		if c == len(row) {
-			r++
-			if r == max {
-				e.showMessage("Couldn't find matching brace")
-				return e.fr, e.fc
-			}
-			c = 0
-			continue
-		}
-
-		if row[c] == right_brace {
-			count -= 1
-			if count == 0 {
-				return r, c
-			}
-		} else if row[c] == left_brace {
-			count += 1
-		}
-		c++
-	}
-}
-
-func (e *Editor) move_to_left_brace(right_brace byte) (int, int) {
-	r := e.fr
-	c := e.fc - 1
-	count := 1
-
-	m := map[byte]byte{'}': '{', ')': '(', ']': '['}
-	left_brace := m[right_brace]
-
-	row := e.rows[r]
-
-	for {
-
-		if c == -1 { //fc + 1 can be greater than row.size on first pass from INSERT if { at end of line
-			r--
-			if r == -1 {
-				e.showMessage("Couldn't find matching brace")
-				return e.fr, e.fc
-			}
-			row = e.rows[r]
-			c = len(row) - 1
-			continue
-		}
-
-		if row[c] == left_brace {
-			count -= 1
-			if count == 0 {
-				return r, c
-			}
-		} else if row[c] == right_brace {
-			count += 1
-		}
-		c--
-	}
-}
-
-//triggered by % in NORMAL mode
-func (e *Editor) E_move_to_matching_brace(repeat int) {
-	c := e.rows[e.fr][e.fc]
-	left := "{(["
-	i := strings.Index(left, string(c))
-	if i != -1 {
-		e.fr, e.fc = e.move_to_right_brace(c)
-	} else {
-		right := "})]"
-		i = strings.Index(right, string(c))
-		if i != -1 {
-			e.fr, e.fc = e.move_to_left_brace(c)
-		}
-	}
-}
-*/
 
 //'automatically' happens in NORMAL and INSERT mode
 //return true -> redraw; false -> don't redraw
@@ -159,7 +47,6 @@ func (e *Editor) find_match_for_left_brace(left_brace byte, back bool) bool {
 	m := map[byte]byte{'{': '}', '(': ')', '[': ']'}
 	right_brace := m[left_brace]
 
-	//e.showMessage("left brace: {}", left_brace);
 	for {
 
 		row := e.rows[r]
@@ -296,7 +183,6 @@ func (e *Editor) find_match_for_right_brace(right_brace byte, back bool) bool {
 
 func (e *Editor) draw_highlighted_braces() {
 
-	// below is code to automatically find matching brace - should be in separate member function
 	braces := "{}()" //? intentionally exclusing [] from auto drawing
 	var c byte
 	var back bool
@@ -449,69 +335,6 @@ func (e *Editor) moveEndWord_() {
 		}
 	}
 }
-
-/*
-func (e *Editor) moveCursor_(key int) {
-
-	switch key {
-	case ARROW_LEFT, 'h':
-		if e.fc > 0 {
-			e.fc--
-		}
-
-	case ARROW_RIGHT, 'l':
-		e.fc++
-
-	case ARROW_UP, 'k':
-		if e.fr > 0 {
-			e.fr--
-		}
-
-	case ARROW_DOWN, 'j':
-		if e.fr < len(e.rows)-1 {
-			e.fr++
-		}
-	}
-}
-func (e *Editor) moveCursorEOL_() {
-	if len(e.rows[e.fr]) > 0 {
-		e.fc = len(e.rows[e.fr]) - 1
-	}
-}
-
-func (e *Editor) moveCursorBOL_() {
-	e.fc = 0
-}
-
-func (e *Editor) insertNewLine_(direction int) {
-	//* note this func does position fc and fr
-	if len(e.rows) == 0 { // creation of NO_ROWS may make this unnecessary
-		e.insertRow(0, "")
-		return
-	}
-
-	if e.fr == 0 && direction == 0 { // this is for 'O'
-		e.insertRow(0, "")
-		e.fc = 0
-		return
-	}
-
-	//int indent = (smartindent) ? editorIndentAmount(fr) : 0;
-	indent := e.indentAmount(e.fr)
-	spaces := strings.Repeat(" ", indent)
-
-	e.fr += direction
-	e.insertRow(e.fr, spaces)
-	e.fc = indent
-}
-
-func (e *Editor) insertRow_(r int, s string) {
-	e.rows = append(e.rows, "")
-	copy(e.rows[r:], e.rows[r+1:])
-	e.rows[r] = s
-	e.dirty++
-}
-*/
 
 func (e *Editor) rowsToString() string {
 
@@ -669,119 +492,6 @@ func (e *Editor) getLineInRowWW(r, c int) int {
 	return lines
 }
 
-/*
-func (e *Editor) indentAmount_(r int) int {
-	if len(e.rows) == 0 {
-		return 0
-	}
-	var i int
-	row := e.rows[r]
-
-	for i = 0; i < len(row); i++ {
-		if row[i] != ' ' {
-			break
-		}
-	}
-
-	return i
-}
-
-func (e *Editor) insertReturn_() { // right now only used for editor->INSERT mode->'\r'
-	r := &e.rows[e.fr]
-	r1 := (*r)[:e.fc] //(current_row.begin(), current_row.begin() + fc);
-	r2 := (*r)[e.fc:] //(current_row.begin() + fc, current_row.end());
-
-	//int indent = (e.smartindent) ? editorIndentAmount(fr) : 0;
-	indent := 0
-	if e.smartindent > 0 {
-		indent = e.indentAmount(e.fr)
-	}
-
-	*r = r1
-
-	e.rows = append(e.rows, "")
-	//copy(e.rows[e.fr+1:], e.rows[e.fr:])
-	copy(e.rows[e.fr+1:], e.rows[e.fr:])
-	e.rows[e.fr+1] = r2
-	e.fr++
-
-	if e.fc == 0 {
-		return
-	}
-
-	e.fc = 0
-	for i := 0; i < indent; i++ {
-		e.insertChar(' ')
-	}
-}
-
-func (e *Editor) insertChar_(chr int) {
-	// does not handle returns which must be intercepted before calling this function
-	// necessary even with NO_ROWS because putting new entries into insert mode
-	if len(e.rows) == 0 {
-		e.insertRow(0, "")
-	}
-	r := &e.rows[e.fr]
-	//row.insert(row.begin() + fc, chr); // works if row is empty
-	*r = (*r)[:e.fc] + string(chr) + (*r)[e.fc:]
-	e.dirty++
-	e.fc++
-}
-
-func (e *Editor) backspace_() {
-
-	if e.fc == 0 && e.fr == 0 {
-		return
-	}
-
-	r := &e.rows[e.fr]
-	if e.fc > 0 {
-		*r = (*r)[:e.fc-1] + (*r)[e.fc:]
-		e.fc--
-	} else if len(*r) > 1 {
-		fc := len(e.rows[e.fr-1])
-		e.rows[e.fr-1] = e.rows[e.fr-1] + *r
-		e.delRow(e.fr)
-		e.fr--
-		e.fc = fc
-	} else {
-		e.delRow(e.fr)
-		e.fr--
-		e.fc = len(e.rows[e.fr])
-	}
-	e.dirty++
-}
-*/
-/*
-func (e *Editor) delRow_(r int) {
-	if len(e.rows) == 0 {
-		return // creation of NO_ROWS may make this unnecessary
-	}
-
-	copy(e.rows[r:], e.rows[r+1:])
-	if len(e.rows) == 0 {
-		e.fr, e.fc, e.cy, e.cx, e.line_offset, e.prev_line_offset, e.first_visible_row, e.last_visible_row = 0, 0, 0, 0, 0, 0, 0, 0
-		e.mode = NO_ROWS
-	}
-
-	e.dirty++
-	//editorSetMessage("Row deleted = %d; numrows after deletion = %d cx = %d row[fr].size = %d", fr,
-	//numrows, cx, row[fr].size);
-}
-
-func (e *Editor) delChar_() {
-	if len(e.rows) == 0 {
-		return // creation of NO_ROWS may make this unnecessary
-	}
-	r := &e.rows[e.fr]
-	if len(*r) == 0 || e.fc > len(*r)-1 {
-		return
-	}
-	*r = (*r)[:e.fc] + (*r)[e.fc+1:]
-	e.dirty++
-}
-*/
-
 // if draw is false this only draws cursor
 func (e *Editor) refreshScreen(draw bool) {
 	var ab strings.Builder
@@ -830,11 +540,6 @@ func (e *Editor) refreshScreen(draw bool) {
 	/*
 	  // can't do the below until ab is written or will just overwite highlights
 	  if (draw && spellcheck) editorSpellCheck();
-
-	  if (rows.empty() || rows.at(fr).empty()) return;
-
-	  if (!tid) tid = getFolderTid(id);
-	  if ((tid == 18 || tid == 14) && !(is_subeditor)) draw_highlighted_braces();;
 	*/
 }
 

@@ -252,7 +252,7 @@ func (e *Editor) decorateWord(c int) {
 		end -= 2
 		e.fc -= 1
 		row = row[:end+1] + row[end+2:]
-		if c == ctrlKey('i') {
+		if c == ctrlKey('i') || c == 'i' {
 			undo = true
 		}
 	} else if row[beg] == '`' {
@@ -260,7 +260,7 @@ func (e *Editor) decorateWord(c int) {
 		end -= 2
 		e.fc -= 1
 		row = row[:end+1] + row[end+2:]
-		if c == ctrlKey('e') {
+		if c == ctrlKey('e') || c == 'e' {
 			undo = true
 		}
 	}
@@ -281,10 +281,10 @@ func (e *Editor) decorateWord(c int) {
 	case ctrlKey('b'), 'b':
 		row = row[:beg] + "**" + row[beg:end+1] + "**" + row[1+end:]
 		e.fc += 2
-	case ctrlKey('i'):
+	case ctrlKey('i'), 'i':
 		row = row[:beg] + "*" + row[beg:end+1] + "*" + row[1+end:]
 		e.fc++
-	case ctrlKey('e'):
+	case ctrlKey('e'), 'e':
 		row = row[:beg] + "`" + row[beg:end+1] + "`" + row[1+end:]
 		e.fc++
 	}
