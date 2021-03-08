@@ -5,6 +5,7 @@ import (
 	"fmt"
 	_ "github.com/mattn/go-sqlite3"
 	"log"
+	"os"
 	"strings"
 	"time"
 )
@@ -767,4 +768,48 @@ func generateWWString(text string, width int, length int, ret string) string {
 		}
 	}
 	return ab.String()
+}
+
+func updateCodeFile() {
+	sess.showOrgMessage("got here")
+
+	var filePath string
+	if tid := getFolderTid(sess.p.id); tid == 18 {
+		filePath = "/home/slzatz/clangd_examples/test.cpp"
+		//lsp_name = "clangd";
+	} else {
+		filePath = "/home/slzatz/go/src/example/main.go"
+		//lsp_name = "gopls";
+	}
+
+	f, err := os.OpenFile(filePath, os.O_RDWR|os.O_CREATE, 0755)
+	if err != nil {
+		sess.showEdMessage("error opening file %s: %w", filePath, err)
+		return
+	}
+	defer f.Close()
+
+	f.Truncate(0)
+
+	//n, err := f.WriteString(sess.p.code)
+	f.WriteString(sess.p.code)
+
+	f.Sync()
+
+	/*
+	  std::string lsp_name;
+
+	  if (tid == 18) {
+	    file_path  = "/home/slzatz/clangd_examples/test.cpp";
+	    lsp_name = "clangd";
+	  } else {
+	    file_path = "/home/slzatz/go/src/example/main.go";
+	    lsp_name = "gopls";
+	  }
+
+	  if (!sess.lsp_v.empty()) {
+	    auto it = std::ranges::find_if(sess.lsp_v, [&lsp_name](auto & lsp){return lsp->name == lsp_name;});
+	    if (it != sess.lsp_v.end()) (*it)->code_changed = true;
+	  }
+	*/
 }

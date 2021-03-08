@@ -1,6 +1,10 @@
 package main
 
 import (
+	"bufio"
+	"io"
+	"log"
+	"os/exec"
 	"strconv"
 	"strings"
 )
@@ -12,6 +16,7 @@ var e_lookup_C = map[string]func(*Editor){
 	"read":     (*Editor).readFile,
 	"readfile": (*Editor).readFile,
 	"resize":   (*Editor).resize,
+	"c":        (*Editor).compile,
 }
 
 /* EDITOR cpp COMMAND_LINE mode lookup
@@ -58,17 +63,18 @@ func (e *Editor) writeNote() {
 
 	//update_note(false);
 	updateNote()
-	/*
-	  folder_tid := getFolderTid(id);
-	  if (folder_tid == 18 || folder_tid == 14) {
-	    code = editorRowsToString();
-	    updateCodeFile();
-	  } else if (sess.lm_browser) {
-	    sess.updateHTMLFile("assets/" + CURRENT_NOTE_FILE);
-	  }
-	*/
 
-	e.dirty = 1
+	folder_tid := getFolderTid(e.id)
+	if folder_tid == 18 || folder_tid == 14 {
+		e.code = e.rowsToString()
+		updateCodeFile()
+	}
+	/*
+		} else if sess.lm_browser {
+			sess.updateHTMLFile("assets/" + CURRENT_NOTE_FILE)
+		}
+	*/
+	e.dirty = 0
 	e.drawStatusBar() //need this since now refresh won't do it unless redraw =true
 	e.showMessage("")
 }
@@ -102,3 +108,147 @@ func (e *Editor) resize() {
 	}
 	sess.moveDivider(pct)
 }
+
+func (e *Editor) compile() {
+
+	//var str string
+	var dir string
+	var cmd *exec.Cmd
+	if getFolderTid(e.id) == 18 {
+		dir = "/home/slzatz/clangd_examples/"
+		//str = "make"
+		cmd = exec.Command("make")
+	} else {
+		dir = "/home/slzatz/go/src/example/"
+		//str = "go build main.go"
+		cmd = exec.Command("go", "build", "main.go")
+	}
+	//cmd := exec.Command(str)
+	cmd.Dir = dir
+
+	stdout, err := cmd.StdoutPipe()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	stderr, err := cmd.StderrPipe()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	err = cmd.Start()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	buffer_out := bufio.NewReader(stdout)
+	buffer_err := bufio.NewReader(stderr)
+
+	rows := &e.linked_editor.rows
+	*rows = nil
+	*rows = append(*rows, "------------------------")
+
+	for {
+		bytes, _, err := buffer_out.ReadLine()
+		if err == io.EOF {
+			break
+		}
+		*rows = append(*rows, string(bytes))
+	}
+
+	for {
+		bytes, _, err := buffer_err.ReadLine()
+		if err == io.EOF {
+			break
+		}
+		*rows = append(*rows, string(bytes))
+	}
+	if len(*rows) == 1 {
+		*rows = append(*rows, "The code compiled successfully")
+	}
+
+	*rows = append(*rows, "------------------------")
+
+	//if (text.str().empty())   text << "Go build successful";
+	//std::vector<std::string> zz = str2vecWW(text.str(), false); //ascii_only = false
+
+	//fr = fc = cy = cx = line_offset = prev_line_offset = first_visible_row = last_visible_row = 0;
+
+	e.linked_editor.fr = 0
+	e.linked_editor.fc = 0
+
+	// added 02092021
+	e.linked_editor.cy = 0
+	e.linked_editor.cx = 0
+	e.linked_editor.line_offset = 0
+	e.linked_editor.prev_line_offset = 0
+	e.linked_editor.first_visible_row = 0
+	e.linked_editor.last_visible_row = 0
+	// added 02092021
+
+	e.linked_editor.refreshScreen(true)
+	//chdir("/home/slzatz/listmango/");
+}
+
+/*
+void Editor::E_runlocal_C(void) {
+
+  if(is_subeditor) {
+    editorSetMessage("You're in the subeditor!");
+    return;
+  }
+  std::string args, cmd;
+  std::size_t pos = command_line.find(' ');
+  if (pos != std::string::npos) args = command_line.substr(pos); //include the space
+  else args = "";
+
+  if (getFolderTid(id) == 18) {
+      cmd = "/home/slzatz/clangd_examples/test_cpp";
+  } else {
+      cmd = "/home/slzatz/go/src/example/main";
+  }
+
+  const pstreams::pmode mode = pstreams::pstdout|pstreams::pstderr; /////
+  ipstream run(cmd + args, mode);
+  char buf[8192];
+  std::streamsize n;
+  bool finished[2] = {false, false};
+  std::string s{}; //for stderr
+  std::string t{}; //for stdout
+  while (!finished[0] || !finished[1]) {
+    if (!finished[0]) {
+      while ((n = run.err().readsome(buf, sizeof(buf))) > 0) {
+        s += std::string{buf, static_cast<size_t>(n)};
+      }
+      if (run.eof()) {
+        finished[0] = true;
+        if (!finished[1]) run.clear();
+      }
+    }
+
+    if (!finished[1]) {
+      while ((n = run.out().readsome(buf, sizeof(buf))) > 0) {
+          t += std::string{buf, static_cast<size_t>(n)};
+      }
+      if (run.eof()) {
+        finished[1] = true;
+        if (!finished[0]) run.clear();
+      }
+    }
+  }
+
+  if (!s.empty()) s = "Error: " + s;
+  //std::vector<std::string> zz = str2vecWW(s+t);
+  std::vector<std::string> zz = str2vecWW(s+t, false); //ascii_only = false
+
+  auto & s_rows = linked_editor->rows; //s_rows -> subnote_rows
+  s_rows.clear();
+  s_rows.push_back("----------------");
+  s_rows.insert(s_rows.end(), zz.begin(), zz.end());
+  s_rows.push_back("----------------");
+  linked_editor->fr = 0;
+  linked_editor->fc = 0;
+  linked_editor->editorRefreshScreen(true);
+  linked_editor->dirty++;
+}
+*/
