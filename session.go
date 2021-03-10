@@ -608,6 +608,40 @@ func (s *Session) drawPreviewText() { //draw_preview
 	}
 	fmt.Print(ab.String())
 }
+
+func (s *Session) drawPreviewText2(text string) { //draw_preview
+
+	var ab strings.Builder
+
+	width := s.totaleditorcols - 10
+	length := s.textLines - 10
+	//hide the cursor
+	ab.WriteString("\x1b[?25l")
+	fmt.Fprintf(&ab, "\x1b[%d;%dH", TOP_MARGIN+6, s.divider+6)
+
+	ab.WriteString(fmt.Sprintf("\x1b[%d;%dH", TOP_MARGIN+6, s.divider+7))
+
+	lf_ret := fmt.Sprintf("\r\n\x1b[%dC", s.divider+6)
+	//erase set number of chars on each line
+	erase_chars := fmt.Sprintf("\x1b[%dX", s.totaleditorcols-10)
+
+	for i := 0; i < length-1; i++ {
+		ab.WriteString(erase_chars)
+		ab.WriteString(lf_ret)
+	}
+
+	ab.WriteString(fmt.Sprintf("\x1b[%d;%dH", TOP_MARGIN+6, s.divider+7))
+
+	ab.WriteString(fmt.Sprintf("\x1b[2*x\x1b[%d;%d;%d;%d;48;5;235$r\x1b[*x",
+		TOP_MARGIN+6, s.divider+7, TOP_MARGIN+4+length, s.divider+7+width))
+
+	ab.WriteString("\x1b[48;5;235m")
+	//note := readNoteIntoString(org.rows[org.fr].id)
+	if text != "" {
+		ab.WriteString(generateWWString(text, width, length, lf_ret))
+	}
+	fmt.Print(ab.String())
+}
 func (s *Session) displayEntryInfo(e *Entry) {
 	var ab strings.Builder
 	width := s.totaleditorcols - 10
