@@ -164,12 +164,15 @@ type Container struct {
 }
 
 type ChangedtickEvent struct {
-	Buffer     nvim.Buffer
-	Changetick int64
+	Buffer nvim.Buffer
+	//Changetick int64
+	Changetick interface{}
 }
+
 type BufLinesEvent struct {
-	Buffer      nvim.Buffer
-	Changetick  int64
+	Buffer nvim.Buffer
+	//Changetick  int64
+	Changetick  interface{}
 	FirstLine   int64
 	LastLine    int64
 	LineData    string

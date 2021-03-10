@@ -18,6 +18,8 @@ var e_lookup_C = map[string]func(*Editor){
 	"resize":   (*Editor).resize,
 	"c":        (*Editor).compile,
 	"r":        (*Editor).runLocal,
+	"test":     (*Editor).sync,
+	"sync":     (*Editor).sync,
 }
 
 /* EDITOR cpp COMMAND_LINE mode lookup
@@ -266,4 +268,12 @@ func (e *Editor) runLocal() {
 	e.linked_editor.last_visible_row = 0
 
 	e.linked_editor.refreshScreen(true)
+}
+
+func (e *Editor) sync() {
+	var reportOnly bool
+	if e.command_line == "test" {
+		reportOnly = true
+	}
+	synchronize(reportOnly)
 }

@@ -18,6 +18,8 @@ var cmd_lookup = map[string]func(*Organizer, int){
 	"q":           (*Organizer).quitApp,
 	"e":           (*Organizer).editNote,
 	"resize":      (*Organizer).resize,
+	"test":        (*Organizer).sync,
+	"sync":        (*Organizer).sync,
 	/*
 	  "deletekeywords": F_deletekeywords,
 	  "delkw": F_deletekeywords,
@@ -299,4 +301,12 @@ func (o *Organizer) resize(pos int) {
 	}
 	sess.moveDivider(pct)
 	o.mode = NORMAL
+}
+
+func (o *Organizer) sync(x int) {
+	var reportOnly bool
+	if o.command_line == "test" {
+		reportOnly = true
+	}
+	synchronize(reportOnly)
 }

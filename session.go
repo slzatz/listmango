@@ -227,14 +227,15 @@ func (s *Session) drawOrgRows() {
 		//note len can't be greater than titlecols so always positive
 		ab.WriteString(strings.Repeat(" ", titlecols-length+1))
 
-		//snprintf(buf, sizeof(buf), "\x1b[%d;%dH", y + 2, org.divider - TIME_COL_WIDTH + 2); // + offset
 		// believe the +2 is just to give some space from the end of long titles
-		ab.WriteString(fmt.Sprintf("\x1b[%d;%dH", y+TOP_MARGIN+1, s.divider-TIME_COL_WIDTH+2))
+		//ab.WriteString(fmt.Sprintf("\x1b[%d;%dH", y+TOP_MARGIN+1, s.divider-TIME_COL_WIDTH+2))
+		fmt.Fprintf(&ab, "\x1b[%d;%dH", y+TOP_MARGIN+1, s.divider-TIME_COL_WIDTH+2)
 		ab.WriteString(org.rows[frr].modified)
 		ab.WriteString("\x1b[0m") // return background to normal ////////////////////////////////
 		ab.WriteString(lf_ret)
 	}
-	fmt.Fprint(os.Stdout, ab.String())
+	//fmt.Fprint(os.Stdout, ab.String())
+	fmt.Print(ab.String())
 }
 
 func (s *Session) drawOrgSearchRows() {
