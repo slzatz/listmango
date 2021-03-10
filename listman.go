@@ -160,8 +160,9 @@ func main() {
 	bufLinesChan := make(chan *BufLinesEvent)
 	v.RegisterHandler("nvim_buf_lines_event", func(bufLinesEvent ...interface{}) {
 		ev := &BufLinesEvent{
-			Buffer:      bufLinesEvent[0].(nvim.Buffer),
-			Changetick:  bufLinesEvent[1].(int64),
+			Buffer: bufLinesEvent[0].(nvim.Buffer),
+			//Changetick:  bufLinesEvent[1].(int64),
+			Changetick:  bufLinesEvent[1],
 			FirstLine:   bufLinesEvent[2].(int64),
 			LastLine:    bufLinesEvent[3].(int64),
 			LineData:    fmt.Sprint(bufLinesEvent[4]),
@@ -174,8 +175,9 @@ func main() {
 	changedtickChan := make(chan *ChangedtickEvent)
 	v.RegisterHandler("nvim_buf_changedtick_event", func(changedtickEvent ...interface{}) {
 		ev := &ChangedtickEvent{
-			Buffer:     changedtickEvent[0].(nvim.Buffer),
-			Changetick: changedtickEvent[1].(int64),
+			Buffer: changedtickEvent[0].(nvim.Buffer),
+			//Changetick: changedtickEvent[1].(int64),
+			Changetick: changedtickEvent[1],
 		}
 		changedtickChan <- ev
 	})
