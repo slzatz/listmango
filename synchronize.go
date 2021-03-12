@@ -18,13 +18,6 @@ type dbConfig struct {
 		Host string `json:"host"`
 		Port string `json:"port"`
 	} `json:"server"`
-	/*
-	  Redis struct {
-	    Host     string `json:"host"`
-	    Password string `json:"password"`
-	    DB       string `json:"db"`
-	  } `json:"redis"`
-	*/
 	Postgres struct {
 		Host     string `json:"host"`
 		Port     string `json:"port"`
@@ -39,10 +32,9 @@ type dbConfig struct {
 	} `json:"options"`
 }
 
-// FromFile returns a configuration parsed from the given file.
+// FromFile returns a dbConfig struct parsed from a file.
 func FromFile(path string) (*dbConfig, error) {
 	b, err := ioutil.ReadFile(path)
-	//fmt.Printf("Result of ioutil.ReadFile is %T\n", b)
 	if err != nil {
 		return nil, err
 	}
@@ -51,7 +43,6 @@ func FromFile(path string) (*dbConfig, error) {
 	if err := json.Unmarshal(b, &cfg); err != nil {
 		return nil, err
 	}
-
 	return &cfg, nil
 }
 
@@ -77,9 +68,10 @@ func synchronize(reportOnly bool) {
 	// Ping to connection
 	err = pdb.Ping()
 	if err != nil {
-		fmt.Printf("ping error: %v", err)
+		sess.showOrgMessage("postgres ping failure!: %w", err)
+		return
 	} else {
-		sess.showOrgMessage("ping success!")
+		sess.showOrgMessage("postgres ping success!")
 	}
 
 	nn := 0
@@ -90,7 +82,8 @@ func synchronize(reportOnly bool) {
 	var client_t string
 	err = row.Scan(&client_t)
 	if err != nil {
-		log.Fatalf("Error retrieving last_client_sync: %w", err)
+		sess.showOrgMessage("Error retrieving last_client_sync: %w", err)
+		return
 	}
 	last_client_sync, _ := time.Parse("2006-01-02T15:04:05Z", client_t)
 
@@ -98,11 +91,11 @@ func synchronize(reportOnly bool) {
 	row = db.QueryRow("SELECT timestamp FROM sync WHERE machine=$1;", "server")
 	err = row.Scan(&server_t)
 	if err != nil {
-		log.Fatalf("Error retrieving last_server_sync: %w", err)
+		sess.showOrgMessage("Error retrieving last_server_sync: %w", err)
+		return
 	}
 	last_server_sync, _ := time.Parse("2006-01-02T15:04:05Z", server_t)
 	sess.showOrgMessage("last_client_sync = %v; last_server_sync = %v\n", last_client_sync, last_server_sync)
-	//sess.showOrgMessage("last_server_sync = %v | %T; server_t = %v | %T", last_server_sync, last_server_sync, server_t, server_t)
 
 	fmt.Fprintf(&lg, "Local time is %v\n", time.Now())
 	fmt.Fprintf(&lg, "UTC time is %v\n", time.Now().UTC())
