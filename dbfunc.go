@@ -481,7 +481,8 @@ func updateTitle() {
 
 	//row.dirty = false // done in caller
 	/***************fts virtual table update*********************/
-	_, err = fts_db.Exec("INSERT INTO fts (title, lm_id) VALUES (?, ?);", row.title, row.id)
+	//_, err = fts_db.Exec("INSERT INTO fts (title, lm_id) VALUES (?, ?);", row.title, row.id)
+	_, err = fts_db.Exec("UPDATE fts SET title=? WHERE lm_id=?;", row.title, row.id)
 	if err != nil {
 		log.Fatal(err)
 		return
