@@ -51,6 +51,7 @@ type Entry struct { //right now only for getEntryInfo
 	folder_tid  int
 	context_tid int
 	star        bool
+	note        string
 	added       string
 	completed   string
 	deleted     bool
@@ -172,9 +173,9 @@ type ChangedtickEvent struct {
 type BufLinesEvent struct {
 	Buffer nvim.Buffer
 	//Changetick  int64
-	Changetick  interface{}
-	FirstLine   int64
-	LastLine    int64
+	Changetick  interface{} //int64
+	FirstLine   interface{} //int64
+	LastLine    interface{} //int64
 	LineData    string
 	IsMultipart bool
 }
