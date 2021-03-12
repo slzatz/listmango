@@ -162,9 +162,9 @@ func main() {
 		ev := &BufLinesEvent{
 			Buffer: bufLinesEvent[0].(nvim.Buffer),
 			//Changetick:  bufLinesEvent[1].(int64),
-			Changetick:  bufLinesEvent[1],
-			FirstLine:   bufLinesEvent[2].(int64),
-			LastLine:    bufLinesEvent[3].(int64),
+			Changetick:  bufLinesEvent[1], // .(int64)
+			FirstLine:   bufLinesEvent[2], // .(int64)
+			LastLine:    bufLinesEvent[3], // .(int64)
 			LineData:    fmt.Sprint(bufLinesEvent[4]),
 			IsMultipart: bufLinesEvent[5].(bool),
 		}
