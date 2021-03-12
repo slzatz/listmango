@@ -58,6 +58,17 @@ type Entry struct { //right now only for getEntryInfo
 	modified    string
 }
 
+type Container struct {
+	id       int
+	tid      int
+	title    string
+	star     bool
+	created  string
+	deleted  bool
+	modified string
+	count    int
+}
+
 //type outlineKey int
 
 const (
@@ -152,17 +163,6 @@ const (
 	BY_RECENT
 	BY_FIND
 )
-
-type Container struct {
-	id       int
-	tid      int
-	title    string
-	star     bool
-	created  string
-	deleted  bool
-	modified string
-	count    int
-}
 
 type ChangedtickEvent struct {
 	Buffer nvim.Buffer

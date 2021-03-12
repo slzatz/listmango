@@ -309,4 +309,5 @@ func (o *Organizer) sync(x int) {
 		reportOnly = true
 	}
 	synchronize(reportOnly)
+	o.mode = NORMAL
 }

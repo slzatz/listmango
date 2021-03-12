@@ -7,7 +7,7 @@ import (
 	_ "github.com/lib/pq"
 	_ "github.com/mattn/go-sqlite3"
 	"io/ioutil"
-	"log"
+	//	"log"
 	//"os"
 	"strings"
 	"time"
@@ -49,7 +49,8 @@ func FromFile(path string) (*dbConfig, error) {
 func synchronize(reportOnly bool) {
 	config, err := FromFile("/home/slzatz/listmango/config.json")
 	if err != nil {
-		log.Fatalf("Problem reading config file: %w", err)
+		sess.showOrgMessage("Problem reading postgres config file: %v", err)
+		return
 	}
 
 	connect := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
@@ -62,7 +63,8 @@ func synchronize(reportOnly bool) {
 
 	pdb, err := sql.Open("postgres", connect)
 	if err != nil {
-		log.Fatalf("Problem opening db: %w", err)
+		sess.showOrgMessage("Problem opening postgres db: %w", err)
+		return
 	}
 
 	// Ping to connection
@@ -70,8 +72,6 @@ func synchronize(reportOnly bool) {
 	if err != nil {
 		sess.showOrgMessage("postgres ping failure!: %w", err)
 		return
-	} else {
-		sess.showOrgMessage("postgres ping success!")
 	}
 
 	nn := 0
@@ -82,24 +82,24 @@ func synchronize(reportOnly bool) {
 	var client_t string
 	err = row.Scan(&client_t)
 	if err != nil {
-		sess.showOrgMessage("Error retrieving last_client_sync: %w", err)
+		sess.showOrgMessage("Error retrieving last client sync: %w", err)
 		return
 	}
-	last_client_sync, _ := time.Parse("2006-01-02T15:04:05Z", client_t)
+	//last_client_sync, _ := time.Parse("2006-01-02T15:04:05Z", client_t)
 
 	var server_t string
 	row = db.QueryRow("SELECT timestamp FROM sync WHERE machine=$1;", "server")
 	err = row.Scan(&server_t)
 	if err != nil {
-		sess.showOrgMessage("Error retrieving last_server_sync: %w", err)
+		sess.showOrgMessage("Error retrieving last server sync: %w", err)
 		return
 	}
-	last_server_sync, _ := time.Parse("2006-01-02T15:04:05Z", server_t)
-	sess.showOrgMessage("last_client_sync = %v; last_server_sync = %v\n", last_client_sync, last_server_sync)
+	//last_server_sync, _ := time.Parse("2006-01-02T15:04:05Z", server_t)
+	//sess.showOrgMessage("last_client_sync = %v; last_server_sync = %v\n", last_client_sync, last_server_sync)
 
 	fmt.Fprintf(&lg, "Local time is %v\n", time.Now())
 	fmt.Fprintf(&lg, "UTC time is %v\n", time.Now().UTC())
-	sess.showEdMessage("local time = %v; UTC time = %v; since last sync = %v", time.Now(), time.Now().UTC(), timeDelta(client_t))
+	//sess.showEdMessage("local time = %v; UTC time = %v; since last sync = %v", time.Now(), time.Now().UTC(), timeDelta(client_t))
 
 	//server updated contexts
 	rows, err := pdb.Query("SELECT id, title, \"default\", created, deleted, modified FROM context WHERE context.modified > $1 AND context.deleted = $2;", server_t, false)
@@ -126,16 +126,17 @@ func synchronize(reportOnly bool) {
 	}
 
 	//server deleted contexts
-	rows, err = pdb.Query("SELECT id, title, \"default\", created, modified FROM context WHERE context.modified > $1 AND context.deleted = $2;", server_t, true)
+	//rows, err = pdb.Query("SELECT id, title, \"default\", created, modified FROM context WHERE context.modified > $1 AND context.deleted = $2;", server_t, true)
+	rows, err = pdb.Query("SELECT id, title FROM context WHERE context.modified > $1 AND context.deleted = $2;", server_t, true)
 	var server_deleted_contexts []Container
 	for rows.Next() {
 		var c Container
 		rows.Scan(
 			&c.id,
 			&c.title,
-			&c.star,
-			&c.created,
-			&c.modified,
+		//	&c.star,
+		//	&c.created,
+		//	&c.modified,
 		)
 		server_deleted_contexts = append(server_deleted_contexts, c)
 	}
@@ -147,9 +148,9 @@ func synchronize(reportOnly bool) {
 	}
 
 	//server updated folders
-	rows, err = pdb.Query("SELECT id, title, private, created, deleted, modified FROM folder WHERE folder.modified > $1 AND folder.deleted = $2;", server_t, false)
+	rows, err = pdb.Query("SELECT id, title, private, created, modified FROM folder WHERE folder.modified > $1 AND folder.deleted = $2;", server_t, false)
 
-	defer rows.Close()
+	//defer rows.Close()
 
 	var server_updated_folders []Container
 	for rows.Next() {
@@ -171,16 +172,17 @@ func synchronize(reportOnly bool) {
 	}
 
 	//server deleted folders
-	rows, err = pdb.Query("SELECT id, title, private, created, modified FROM folder WHERE folder.modified > $1 AND folder.deleted = $2;", server_t, true)
+	//rows, err = pdb.Query("SELECT id, title, private, created, modified FROM folder WHERE folder.modified > $1 AND folder.deleted = $2;", server_t, true)
+	rows, err = pdb.Query("SELECT id, title FROM folder WHERE folder.modified > $1 AND folder.deleted = $2;", server_t, true)
 	var server_deleted_folders []Container
 	for rows.Next() {
 		var c Container
 		rows.Scan(
 			&c.id,
 			&c.title,
-			&c.star,
-			&c.created,
-			&c.modified,
+			//&c.star,
+			//&c.created,
+			//&c.modified,
 		)
 		server_deleted_folders = append(server_deleted_folders, c)
 	}
@@ -194,7 +196,7 @@ func synchronize(reportOnly bool) {
 	//server updated keywords
 	rows, err = pdb.Query("SELECT id, name, star, modified FROM keyword WHERE keyword.modified > $1 AND keyword.deleted = $2;", server_t, false)
 
-	defer rows.Close()
+	//defer rows.Close()
 
 	var server_updated_keywords []Container
 	for rows.Next() {
@@ -215,15 +217,16 @@ func synchronize(reportOnly bool) {
 	}
 
 	//server deleted keywords
-	rows, err = pdb.Query("SELECT id, name, star, modified FROM keyword WHERE keyword.modified > $1 AND keyword.deleted = $2;", server_t, true)
+	//rows, err = pdb.Query("SELECT id, name, star, modified FROM keyword WHERE keyword.modified > $1 AND keyword.deleted = $2;", server_t, true)
+	rows, err = pdb.Query("SELECT id, name FROM keyword WHERE keyword.modified > $1 AND keyword.deleted = $2;", server_t, true)
 	var server_deleted_keywords []Container
 	for rows.Next() {
 		var c Container
 		rows.Scan(
 			&c.id,
 			&c.title,
-			&c.star,
-			&c.modified,
+			//&c.star,
+			//&c.modified,
 		)
 		server_deleted_keywords = append(server_deleted_keywords, c)
 	}
@@ -251,7 +254,6 @@ func synchronize(reportOnly bool) {
 			&e.folder_tid,
 			&e.note,
 		)
-		//fmt.Printf("%v\n", e)
 		server_updated_entries = append(server_updated_entries, e)
 	}
 	if len(server_updated_entries) > 0 {
@@ -260,14 +262,11 @@ func synchronize(reportOnly bool) {
 	} else {
 		lg.WriteString("No updated (new and modified) server Entries since last sync.\n")
 	}
-	sess.showEdMessage("Number of changes that server needs to transmit to client: %v", len(server_updated_entries))
+	//sess.showEdMessage("Number of changes that server needs to transmit to client: %v", len(server_updated_entries))
 	for _, e := range server_updated_entries {
 		fmt.Fprintf(&lg, "id: %v; title: %v; star: %v, created: %v; modified; %v\n", e.id, e.title, e.star, e.created, e.modified)
 	}
-	//for _, et := range entries {
-	// fmt.Printf("id = %v, title = %v, star = %v, created = %v, modified = %v\n", et.id, et.title, et.star, et.created, et.modified)
 
-	// }
 	//server deleted entries
 	//rows, err = pdb.Query("SELECT id,title,star,created,modified FROM task WHERE task.modified > $1 AND task.deleted = $2;", server_t, true)
 	rows, err = pdb.Query("SELECT id, title FROM task WHERE task.modified > $1 AND task.deleted = $2;", server_t, true)
@@ -293,9 +292,9 @@ func synchronize(reportOnly bool) {
 	//Client changes
 
 	//client updated contexts
-	rows, err = db.Query("SELECT id, title, \"default\", created, deleted, modified FROM context WHERE context.modified > $1 AND context.deleted = $2;", client_t, false)
+	rows, err = db.Query("SELECT id, title, \"default\", created, modified FROM context WHERE context.modified > $1 AND context.deleted = $2;", client_t, false)
 
-	defer rows.Close()
+	//defer rows.Close()
 
 	var client_updated_contexts []Container
 	for rows.Next() {
@@ -317,16 +316,18 @@ func synchronize(reportOnly bool) {
 	}
 
 	//client deleted contexts
-	rows, err = db.Query("SELECT id, title, \"default\", created, modified FROM context WHERE context.modified > $1 AND context.deleted = $2;", client_t, true)
+	//rows, err = db.Query("SELECT id, title, \"default\", created, modified FROM context WHERE context.modified > $1 AND context.deleted = $2;", client_t, true)
+	rows, err = db.Query("SELECT id, tid, title FROM context WHERE context.modified > $1 AND context.deleted = $2;", client_t, true)
 	var client_deleted_contexts []Container
 	for rows.Next() {
 		var c Container
 		rows.Scan(
 			&c.id,
+			&c.tid,
 			&c.title,
-			&c.star,
-			&c.created,
-			&c.modified,
+			//&c.star,
+			//&c.created,
+			//&c.modified,
 		)
 		client_deleted_contexts = append(client_deleted_contexts, c)
 	}
@@ -338,7 +339,7 @@ func synchronize(reportOnly bool) {
 	}
 
 	//client updated folders
-	rows, err = db.Query("SELECT id, tid, title, private, created, deleted, modified FROM folder WHERE folder.modified > $1 AND folder.deleted = $2;", client_t, false)
+	rows, err = db.Query("SELECT id, tid, title, private, created, modified FROM folder WHERE folder.modified > $1 AND folder.deleted = $2;", client_t, false)
 
 	defer rows.Close()
 
@@ -363,7 +364,8 @@ func synchronize(reportOnly bool) {
 	}
 
 	//client deleted folders
-	rows, err = db.Query("SELECT id, tid, title, private, created, modified FROM folder WHERE folder.modified > $1 AND folder.deleted = $2;", client_t, true)
+	//rows, err = db.Query("SELECT id, tid, title, private, created, modified FROM folder WHERE folder.modified > $1 AND folder.deleted = $2;", client_t, true)
+	rows, err = db.Query("SELECT id, tid, title FROM folder WHERE folder.modified > $1 AND folder.deleted = $2;", client_t, true)
 	var client_deleted_folders []Container
 	for rows.Next() {
 		var c Container
@@ -371,9 +373,9 @@ func synchronize(reportOnly bool) {
 			&c.id,
 			&c.tid,
 			&c.title,
-			&c.star,
-			&c.created,
-			&c.modified,
+			//&c.star,
+			//&c.created,
+			//&c.modified,
 		)
 		client_deleted_folders = append(client_deleted_folders, c)
 	}
@@ -409,7 +411,8 @@ func synchronize(reportOnly bool) {
 	}
 
 	//client deleted keywords
-	rows, err = db.Query("SELECT id, tid, name, star, modified FROM keyword WHERE keyword.modified > $1 AND keyword.deleted = $2;", client_t, true)
+	//rows, err = db.Query("SELECT id, tid, name, star, modified FROM keyword WHERE keyword.modified > $1 AND keyword.deleted = $2;", client_t, true)
+	rows, err = db.Query("SELECT id, tid, name FROM keyword WHERE keyword.modified > $1 AND keyword.deleted = $2;", client_t, true)
 	var client_deleted_keywords []Container
 	for rows.Next() {
 		var c Container
@@ -417,8 +420,8 @@ func synchronize(reportOnly bool) {
 			&c.id,
 			&c.tid,
 			&c.title,
-			&c.star,
-			&c.modified,
+			//&c.star,
+			//&c.modified,
 		)
 		client_deleted_keywords = append(client_deleted_keywords, c)
 	}
@@ -428,7 +431,7 @@ func synchronize(reportOnly bool) {
 	} else {
 		lg.WriteString("No client Keywords deleted since last sync.\n")
 	}
-	//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 	//client updated entries
 	rows, err = db.Query("SELECT id, tid, title, star, created, modified, added, completed, context_tid, folder_tid FROM task WHERE task.modified > $1 AND task.deleted = $2;", client_t, false)
 	var client_updated_entries []Entry
@@ -446,7 +449,6 @@ func synchronize(reportOnly bool) {
 			&e.context_tid,
 			&e.folder_tid,
 		)
-		//fmt.Printf("%v\n", e)
 		client_updated_entries = append(client_updated_entries, e)
 	}
 	if len(client_updated_entries) > 0 {
@@ -455,13 +457,17 @@ func synchronize(reportOnly bool) {
 	} else {
 		lg.WriteString("No updated (new and modified) client Entries since last sync.\n")
 	}
-	sess.showEdMessage("Number of changes that client needs to transmit to client: %v", len(client_updated_entries))
+	//sess.showEdMessage("Number of changes that client needs to transmit to client: %v", len(client_updated_entries))
 	for _, e := range client_updated_entries {
 		fmt.Fprintf(&lg, "id: %v; tid: %v; title: %v; star: %v, created: %v; modified; %v\n", e.id, e.tid, e.title, e.star, e.created, e.modified)
 	}
 
 	//client deleted entries
-	rows, err = db.Query("SELECT id, tid, title WHERE task.modified > $1 AND task.deleted = $2;", client_t, true) //not sure need task.modified??
+	rows, err = db.Query("SELECT id, tid, title FROM task WHERE task.modified > $1 AND task.deleted = $2;", client_t, true) //not sure need task.modified??
+	if err != nil {
+		sess.showOrgMessage("Problem with retrieving client deleted entries: %v", err)
+		return
+	}
 	var client_deleted_entries []Entry
 	for rows.Next() {
 		var e Entry
@@ -480,168 +486,190 @@ func synchronize(reportOnly bool) {
 		lg.WriteString("No client Entries deleted since last sync.\n")
 	}
 
-	sess.showEdMessage("Number of changes = %d", nn)
-	sess.drawPreviewText2(lg.String())
-	sess.drawPreviewBox()
+	if reportOnly {
+		//sess.showEdMessage("Number of changes = %d", nn)
+		fmt.Fprintf(&lg, "Number of changes (before accounting for server/client conflicts) is: %d", nn)
+		sess.drawPreviewText2(lg.String())
+		sess.drawPreviewBox()
+		return
+	}
+
+	/****************below is where changes start***********************************/
 
 	//updated server contexts -> client
 
-	if len(server_updated_contexts) > 0 {
-		for _, c := range server_updated_contexts {
-			row := db.QueryRow("SELECT id from context WHERE tid=?", c.id)
-			var id int
-			err = row.Scan(&id)
-			switch {
-			case err == sql.ErrNoRows:
-				//res, err := db.Exec("INSERT INTO context (tid, title, star, created, modified) VALUES (?,?,?,?, datetime('now'));",
-				res, err := db.Exec("INSERT INTO context (tid, title, \"default\", created, modified, deleted) VALUES (?,?,?,?, datetime('now'), false);",
-					c.id, c.title, c.star, c.created)
-				if err != nil {
-					log.Fatal(err)
-				}
-				lastId, _ := res.LastInsertId()
-				fmt.Fprintf(&lg, "Created new local context: %v with local id: %v and tid: %v\n", c.title, lastId, c.id)
-			case err != nil:
-				log.Fatal(err)
-			default:
-				//res, err := db.Exec("UPDATE context SET title=?, star=?, created=?, modified=datetime('now') WHERE tid=?;", c.title, c.star, c.created, c.id)
-				_, err := db.Exec("UPDATE context SET title=?, \"default\"=?, modified=datetime('now') WHERE tid=?;", c.title, c.star, c.id)
-				if err != nil {
-					log.Fatal(err)
-				}
+	for _, c := range server_updated_contexts {
+		row := db.QueryRow("SELECT id from context WHERE tid=?", c.id)
+		var id int
+		err = row.Scan(&id)
+		switch {
+		case err == sql.ErrNoRows:
+			res, err1 := db.Exec("INSERT INTO context (tid, title, \"default\", created, modified, deleted) VALUES (?,?,?,?, datetime('now'), false);",
+				c.id, c.title, c.star, c.created)
+			if err1 != nil {
+				fmt.Fprintf(&lg, "Problem inserting new context into sqlite: %w", err1)
+				break
+			}
+			lastId, _ := res.LastInsertId()
+			fmt.Fprintf(&lg, "Created new local context: %v with local id: %v and tid: %v\n", c.title, lastId, c.id)
+		case err != nil:
+			fmt.Fprintf(&lg, "Problem querying sqlite for a context with tid: %v: %w\n", c.id, err)
+		default:
+			_, err2 := db.Exec("UPDATE context SET title=?, \"default\"=?, modified=datetime('now') WHERE tid=?;", c.title, c.star, c.id)
+			if err2 != nil {
+				fmt.Fprintf(&lg, "Problem updating sqlite for a context with tid: %v: %w\n", c.id, err2)
+			} else {
 				fmt.Fprintf(&lg, "Updated local context: %v with tid: %v\n", c.title, c.id)
 			}
 		}
 	}
 
-	if len(server_updated_folders) > 0 {
-		for _, c := range server_updated_folders {
-			row := db.QueryRow("SELECT id from folder WHERE tid=?", c.id)
-			var id int
-			err = row.Scan(&id)
-			switch {
-			case err == sql.ErrNoRows:
-				//res, err := db.Exec("INSERT INTO folder (tid, title, star, created, modified) VALUES (?,?,?,?, datetime('now'));",
-				res, err := db.Exec("INSERT INTO folder (tid, title, private, created, modified, deleted) VALUES (?,?,?,?, datetime('now'), false);",
-					c.id, c.title, c.star, c.created)
-				if err != nil {
-					log.Fatal(err)
-				}
-				lastId, _ := res.LastInsertId()
-				fmt.Fprintf(&lg, "Created new local folder: %v with local id: %v and tid: %v\n", c.title, lastId, c.id)
-			case err != nil:
-				log.Fatal(err)
-			default:
-				//res, err := db.Exec("UPDATE folder SET title=?, star=?, modified=datetime('now') WHERE tid=?;", c.title, c.star, c.id)
-				_, err := db.Exec("UPDATE folder SET title=?, private=?, modified=datetime('now') WHERE tid=?;", c.title, c.star, c.id)
-				if err != nil {
-					log.Fatal(err)
-				}
+	for _, c := range server_updated_folders {
+		row := db.QueryRow("SELECT id from folder WHERE tid=?", c.id)
+		var id int
+		err = row.Scan(&id)
+		switch {
+		case err == sql.ErrNoRows:
+			res, err1 := db.Exec("INSERT INTO folder (tid, title, private, created, modified, deleted) VALUES (?,?,?,?, datetime('now'), false);",
+				c.id, c.title, c.star, c.created)
+			if err1 != nil {
+				fmt.Fprintf(&lg, "Problem inserting new folder into sqlite: %w", err1)
+				break
+			}
+			lastId, _ := res.LastInsertId()
+			fmt.Fprintf(&lg, "Created new local folder: %v with local id: %v and tid: %v\n", c.title, lastId, c.id)
+		case err != nil:
+			fmt.Fprintf(&lg, "Problem querying sqlite for a folder with tid: %v: %w\n", c.id, err)
+		default:
+			_, err2 := db.Exec("UPDATE folder SET title=?, private=?, modified=datetime('now') WHERE tid=?;", c.title, c.star, c.id)
+			if err2 != nil {
+				fmt.Fprintf(&lg, "Problem updating sqlite for a folder with tid: %v: %w\n", c.id, err2)
+			} else {
 				fmt.Fprintf(&lg, "Updated local folder: %v with tid: %v\n", c.title, c.id)
 			}
 		}
 	}
 
-	if len(server_updated_keywords) > 0 {
-		for _, c := range server_updated_keywords {
-			row := db.QueryRow("SELECT id from keyword WHERE tid=?", c.id)
-			var id int
-			err = row.Scan(&id)
-			switch {
-			case err == sql.ErrNoRows:
-				//res, err := db.Exec("INSERT INTO keyword (tid, title, star, created, modified) VALUES (?,?,?,?, datetime('now'));",
-				res, err := db.Exec("INSERT INTO keyword (tid, name, star, created, modified, deleted) VALUES (?,?,?,?, datetime('now'), false);",
-					c.id, c.title, c.star, c.created)
-				if err != nil {
-					log.Fatal(err)
-				}
-				lastId, _ := res.LastInsertId()
-				fmt.Fprintf(&lg, "Created new local keyword: %v with local id: %v and tid: %v\n", c.title, lastId, c.id)
-			case err != nil:
-				log.Fatal(err)
-			default:
-				//res, err := db.Exec("UPDATE keyword SET title=?, star=?, created=?, modified=datetime('now') WHERE tid=?;", c.title, c.star, c.created, c.id)
-				_, err := db.Exec("UPDATE keyword SET name=?, star=?, modified=datetime('now') WHERE tid=?;", c.title, c.star, c.id)
-				if err != nil {
-					log.Fatal(err)
-				}
+	for _, c := range server_updated_keywords {
+		row := db.QueryRow("SELECT id from keyword WHERE tid=?", c.id)
+		var id int
+		err = row.Scan(&id)
+		switch {
+		case err == sql.ErrNoRows:
+			res, err1 := db.Exec("INSERT INTO keyword (tid, name, star, created, modified, deleted) VALUES (?,?,?,?, datetime('now'), false);",
+				c.id, c.title, c.star, c.created)
+			if err1 != nil {
+				fmt.Fprintf(&lg, "Problem inserting new keyword into sqlite: %w", err1)
+				break
+			}
+			lastId, _ := res.LastInsertId()
+			fmt.Fprintf(&lg, "Created new local keyword: %v with local id: %v and tid: %v\n", c.title, lastId, c.id)
+		case err != nil:
+			fmt.Fprintf(&lg, "Problem querying sqlite for a keyword with tid: %v: %w\n", c.id, err)
+		default:
+			_, err2 := db.Exec("UPDATE keyword SET name=?, star=?, modified=datetime('now') WHERE tid=?;", c.title, c.star, c.id)
+			if err2 != nil {
+				fmt.Fprintf(&lg, "Problem updating sqlite for a keyword with tid: %v: %w\n", c.id, err2)
+			} else {
 				fmt.Fprintf(&lg, "Updated local keyword: %v with tid: %v\n", c.title, c.id)
 			}
 		}
 	}
+
 	var server_updated_entries_ids map[int]struct{}
 	for _, e := range server_updated_entries {
+		// below is for server always wins
 		server_updated_entries_ids[e.id] = struct{}{}
 		row := db.QueryRow("SELECT id from task WHERE tid=?", e.id)
 		var id int
 		err = row.Scan(&id)
 		switch {
 		case err == sql.ErrNoRows:
-			res, err := db.Exec("INSERT INTO task (tid, title, star, created, added, completed, context_tid, folder_tid, note, modified, deleted) "+
+			res, err1 := db.Exec("INSERT INTO task (tid, title, star, created, added, completed, context_tid, folder_tid, note, modified, deleted) "+
 				"VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), false);",
 				e.id, e.title, e.star, e.created, e.added, e.completed, e.context_tid, e.folder_tid, e.note)
-			if err != nil {
-				log.Fatal(err)
+			if err1 != nil {
+				fmt.Fprintf(&lg, "Problem inserting new entry into sqlite: %w", err1)
+				break
 			}
 			lastId, _ := res.LastInsertId()
-			_, err = fts_db.Exec("INSERT INTO fts (title, note, lm_id) VALUES (?, ?, ?);", e.title, e.note, lastId)
-			if err != nil {
-				log.Fatal(err)
+			_, err2 := fts_db.Exec("INSERT INTO fts (title, note, lm_id) VALUES (?, ?, ?);", e.title, e.note, lastId)
+			if err2 != nil {
+				fmt.Fprintf(&lg, "Problem inserting into fts_db for entry with id: %v: %w\n", lastId, err2)
+				break
 			}
 			fmt.Fprintf(&lg, "Created new local entry: %v with local id: %v and tid: %v\n", e.title, lastId, e.id)
 		case err != nil:
-			log.Fatal(err)
+			fmt.Fprintf(&lg, "Problem querying sqlite for a entry with tid: %v: %w\n", e.id, err)
 		default:
-			//res, err := db.Exec("UPDATE context SET title=?, star=?, created=?, modified=datetime('now') WHERE tid=?;", c.title, c.star, c.created, c.id)
-			_, err := db.Exec("UPDATE task SET title=?, star=?, context_tid=?, folder_tid=?, note=?, modified=datetime('now') WHERE tid=?;",
+			_, err3 := db.Exec("UPDATE task SET title=?, star=?, context_tid=?, folder_tid=?, note=?, modified=datetime('now') WHERE tid=?;",
 				e.title, e.star, e.context_tid, e.folder_tid, e.note, e.id)
-			if err != nil {
-				log.Fatal(err)
+			if err3 != nil {
+				fmt.Fprintf(&lg, "Problem updating sqlite for a entry with tid: %v: %w\n", e.id, err3)
+			} else {
+				row = db.QueryRow("SELECT id FROM task WHERE task.tid=?;", e.id)
+				var lm_id int
+				err4 := row.Scan(&lm_id)
+				if err4 != nil {
+					fmt.Fprintf(&lg, "Error trying to retrieve entry id to update fts_db: %w", err4)
+				} else {
+					_, err5 := fts_db.Exec("UPDATE fts SET title=?, note=? WHERE lm_id=?;", e.title, e.note, lm_id)
+					if err5 != nil {
+						fmt.Fprintf(&lg, "Problem updating fts_db for entry with id: %v: %w\n", lm_id, err5)
+					} else {
+						fmt.Fprintf(&lg, "fts_db updated for entry with id: %v", lm_id)
+					}
+				}
+				fmt.Fprintf(&lg, "Updated local entry: %v with tid: %v\n", e.title, e.id)
 			}
-			row = db.QueryRow("SELECT id FROM task WHERE task.tid=?;", e.id)
-			var lm_id int
-			row.Scan(&lm_id)
-			if err != nil {
-				log.Fatalf("Error retrieving last_client_sync: %w", err)
-			}
-			_, err = fts_db.Exec("UPDATE fts SET title=?, note=? WHERE lm_id=?;", e.title, e.note, lm_id)
-			if err != nil {
-				log.Fatal(err)
-			}
-			fmt.Fprintf(&lg, "Updated local entry: %v with tid: %v\n", e.title, e.id)
 		}
 	}
 
 	for _, e := range client_updated_entries {
 		// server wins
-		if _, found := server_updated_entries_ids[e.tid]; found {
+		if server_id, found := server_updated_entries_ids[e.tid]; found {
+			fmt.Fprintf(&lg, "Server won updating server id/client tid: %v", server_id)
 			continue
 		}
+		// See whether server task exists - ? use INSERT of Update
 		row := pdb.QueryRow("SELECT id from task WHERE id=?", e.tid)
 		var id int
 		err = row.Scan(&id)
 		switch {
+		// server entry doesn't exist
 		case err == sql.ErrNoRows:
-			res, err := pdb.Exec("INSERT INTO task (title, star, created, added, completed, context_tid, folder_tid, note, modified, deleted) "+
+			res, err1 := pdb.Exec("INSERT INTO task (title, star, created, added, completed, context_tid, folder_tid, note, modified, deleted) "+
 				"VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), false);",
 				e.title, e.star, e.created, e.added, e.completed, e.context_tid, e.folder_tid, e.note)
-			if err != nil {
-				log.Fatal(err)
+			if err1 != nil {
+				fmt.Fprintf(&lg, "Problem inserting new entry into postgres: %w", err1)
+				break
 			}
-			lastId, _ := res.LastInsertId()
-			db.Exec("UPDATE task SET task.tid=$1 WHERE task.id=$2;", lastId, e.id)
+			// getting server id to set sqlite entry tid
+			lastId, err4 := res.LastInsertId()
+			if err4 != nil {
+				fmt.Fprintf(&lg, "Problem retrieving id/lastId from new server task to set client tid: %v\n", err4)
+				break
+			}
 			fmt.Fprintf(&lg, "Created new server entry: %v with server id: %v\n", e.title, lastId)
+			// need to update the new client task with the id/tid we got from the server
+			res, err2 := db.Exec("UPDATE task SET task.tid=$1 WHERE task.id=$2;", lastId, e.id)
+			if err2 != nil {
+				fmt.Fprintf(&lg, "Problem setting new client entry's tid: %v; id: %v\n", lastId, e.id, err2)
+				break
+			}
 			fmt.Fprintf(&lg, "Set value of tid for client task with id: %v to tid = %v\n", e.id, lastId)
 		case err != nil:
-			log.Fatal(err)
+			fmt.Fprintf(&lg, "Problem querying postgres for a entry with id: %v: %w\n", e.tid, err)
+		// server entry already exists
 		default:
-			//res, err := db.Exec("UPDATE context SET title=?, star=?, created=?, modified=datetime('now') WHERE tid=?;", c.title, c.star, c.created, c.id)
-			_, err := pdb.Exec("UPDATE task SET title=?, star=?, context_tid=?, folder_tid=?, note=?, modified=datetime('now') WHERE id=?;",
+			_, err3 := pdb.Exec("UPDATE task SET title=?, star=?, context_tid=?, folder_tid=?, note=?, modified=datetime('now') WHERE id=?;",
 				e.title, e.star, e.context_tid, e.folder_tid, e.note, e.tid)
-			if err != nil {
-				log.Fatal(err)
+			if err3 != nil {
+				fmt.Fprintf(&lg, "Problem updating server entry: %v with id: %v; %w", e.title, e.tid, err3)
+			} else {
+				fmt.Fprintf(&lg, "Updated server entry: %v with id: %v\n", e.title, e.tid)
 			}
-			fmt.Fprintf(&lg, "Updated server entry: %v with id: %v\n", e.title, e.tid)
 		}
 	}
 	// server deleted entries
@@ -654,24 +682,30 @@ func synchronize(reportOnly bool) {
 		rowsAffected, _ := res.RowsAffected()
 		if rowsAffected != 1 {
 			fmt.Fprintf(&lg, "Problem deleting local task with tid = %v", e.id)
-		}
-	}
-
-	// client deleted entries
-	for _, e := range client_deleted_entries {
-		res, err := pdb.Exec("UPDATE task SET deleted=true WHERE task.tid=?", e.id)
-		if err != nil {
-			fmt.Fprintf(&lg, "Problem (pdb.Exec) setting server task with tid = %v to deleted\n", e.id)
-			continue
-		}
-		rowsAffected, _ := res.RowsAffected()
-		if rowsAffected != 1 {
-			fmt.Fprintf(&lg, "Problem setting server task with tid = %v to deleted; rowsAffected = %v\n", e.id, rowsAffected)
 			continue
 		}
 		fmt.Fprintf(&lg, "Updated server task with tid %v to deleted = true", e.id)
 	}
-	////////////////////////////////////////////////////
+
+	// client deleted entries
+	for _, e := range client_deleted_entries {
+		// since on server, we just set deleted to true
+		// since may have to sync with other clients
+		res, err := pdb.Exec("UPDATE task SET deleted=true WHERE task.id=?", e.tid)
+		if err != nil {
+			fmt.Fprintf(&lg, "Problem (pdb.Exec) setting server task with id = %v to deleted\n", e.tid)
+			continue
+		}
+		rowsAffected, _ := res.RowsAffected()
+		if rowsAffected != 1 {
+			fmt.Fprintf(&lg, "Problem setting server task with id = %v to deleted; rowsAffected = %v\n", e.tid, rowsAffected)
+			continue
+		}
+		fmt.Fprintf(&lg, "Updated server task with id %v to deleted = true", e.tid)
+	}
+
+	/*********************end of sync changes*************************/
+
 	var server_ts string
 	row = pdb.QueryRow("SELECT now();")
 	err = row.Scan(&server_ts)
