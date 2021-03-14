@@ -10,8 +10,8 @@ import (
 	"time"
 )
 
-var db, _ = sql.Open("sqlite3", "/home/slzatz/mylistmanager3/lmdb_s/mylistmanager_s.db")
-var fts_db, _ = sql.Open("sqlite3", "/home/slzatz/listmanager_cpp/fts5.db")
+var db, _ = sql.Open("sqlite3", "/home/slzatz/listmango/mylistmanager_s.db")
+var fts_db, _ = sql.Open("sqlite3", "/home/slzatz/listmango/fts5.db")
 
 func getId() int {
 	return org.rows[org.fr].id
@@ -656,7 +656,6 @@ func getEntryInfo(id int) Entry {
 		&e.context_tid,
 		&e.star,
 		&e.added,
-		&e.deleted,
 		&e.completed,
 		&e.deleted,
 		&e.modified,

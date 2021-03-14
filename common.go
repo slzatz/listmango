@@ -1,6 +1,9 @@
 package main
 
-import "github.com/neovim/go-client/nvim"
+import (
+	"database/sql"
+	"github.com/neovim/go-client/nvim"
+)
 
 var z0 = struct{}{}
 
@@ -53,7 +56,7 @@ type Entry struct { //right now only for getEntryInfo
 	star        bool
 	note        string
 	added       string
-	completed   string
+	completed   sql.NullString
 	deleted     bool
 	modified    string
 }

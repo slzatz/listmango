@@ -668,7 +668,7 @@ func (s *Session) displayEntryInfo(e *Entry) {
 	ab.WriteString("\x1b[48;5;235m") //draws the box lines with same background as above rectangle
 
 	ab.WriteString(fmt.Sprintf("id: %d%s", e.id, lf_ret))
-	ab.WriteString(fmt.Sprintf("id: %d%s", e.tid, lf_ret))
+	ab.WriteString(fmt.Sprintf("tid: %d%s", e.tid, lf_ret))
 
 	title := fmt.Sprintf("title: %s", e.title)
 	if len(title) > width {
@@ -700,11 +700,13 @@ func (s *Session) displayEntryInfo(e *Entry) {
 	ab.WriteString(fmt.Sprintf("deleted: %t%s", e.deleted, lf_ret))
 
 	var completed bool
-	if e.completed != "" {
+	// may be NULL
+	if e.completed.Valid {
 		completed = true
 	} else {
 		completed = false
 	}
+
 	ab.WriteString(fmt.Sprintf("completed: %t%s", completed, lf_ret))
 	ab.WriteString(fmt.Sprintf("modified: %s%s", e.modified, lf_ret))
 	ab.WriteString(fmt.Sprintf("added: %s%s", e.added, lf_ret))
