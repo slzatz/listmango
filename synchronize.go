@@ -731,7 +731,7 @@ func synchronize(reportOnly bool) {
 	}
 
 	/**********should come before container deletes to change tasks here*****************/
-	var server_updated_entries_ids map[int]struct{}
+	server_updated_entries_ids := make(map[int]struct{})
 	for _, e := range server_updated_entries {
 		// below is for server always wins
 		server_updated_entries_ids[e.id] = struct{}{}
@@ -760,7 +760,7 @@ func synchronize(reportOnly bool) {
 			_, err3 := db.Exec("UPDATE task SET title=?, star=?, context_tid=?, folder_tid=?, note=?, modified=datetime('now') WHERE tid=?;",
 				e.title, e.star, e.context_tid, e.folder_tid, e.note, e.id)
 			if err3 != nil {
-				fmt.Fprintf(&lg, "Problem updating sqlite for a entry with tid: %v: %w\n", e.id, err3)
+				fmt.Fprintf(&lg, "Problem updating sqlite for an entry with tid: %v: %w\n", e.id, err3)
 			} else {
 				row = db.QueryRow("SELECT id FROM task WHERE tid=?;", e.id)
 				var lm_id int
@@ -772,7 +772,7 @@ func synchronize(reportOnly bool) {
 					if err5 != nil {
 						fmt.Fprintf(&lg, "Problem updating fts_db for entry with id: %v: %w\n", lm_id, err5)
 					} else {
-						fmt.Fprintf(&lg, "fts_db updated for entry with id: %v", lm_id)
+						fmt.Fprintf(&lg, "fts_db updated for entry with id: %v\n", lm_id)
 					}
 				}
 				fmt.Fprintf(&lg, "Updated local entry: %v with tid: %v\n", e.title, e.id)
@@ -781,17 +781,18 @@ func synchronize(reportOnly bool) {
 	}
 
 	for _, e := range client_updated_entries {
-		// server wins
+		// server wins if both client and server have updated an item
 		if server_id, found := server_updated_entries_ids[e.tid]; found {
 			fmt.Fprintf(&lg, "Server won updating server id/client tid: %v", server_id)
 			continue
 		}
+
 		var exists bool
 		err := pdb.QueryRow("SELECT EXISTS(SELECT 1 FROM task WHERE id=$1);", e.tid).Scan(&exists)
 		switch {
 
 		case err != nil:
-			fmt.Fprintf(&lg, "Problem querying postgres for a entry with id: %v: %v\n", e.tid, err)
+			fmt.Fprintf(&lg, "Problem checking if postgres has an entry for '%s' with client tid/pg id: %d: %v\n", e.title[:15], e.tid, err)
 
 		case exists:
 			_, err3 := pdb.Exec("UPDATE task SET title=$1, star=$2, context_tid=$3, folder_tid=$4, note=$5, modified=now() WHERE id=$6;",
@@ -808,7 +809,7 @@ func synchronize(reportOnly bool) {
 				"VALUES ($1, $2, $3, $4, $5, $6, $7, $8, now(), false) RETURNING id;",
 				e.title, e.star, e.created, e.added, e.completed, e.context_tid, e.folder_tid, e.note).Scan(&id)
 			if err1 != nil {
-				fmt.Fprintf(&lg, "Problem inserting new entry into postgres: %v", err1)
+				fmt.Fprintf(&lg, "Problem inserting new entry %d: %s into postgres: %v\n", e.id, e.title[:15], err1)
 				break
 			}
 			_, err2 := db.Exec("UPDATE task SET tid=? WHERE id=?;", id, e.id)
