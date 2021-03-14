@@ -5,6 +5,7 @@ import (
 	"log"
 	"strconv"
 	"strings"
+	"time"
 )
 
 var cmd_lookup = map[string]func(*Organizer, int){
@@ -20,6 +21,8 @@ var cmd_lookup = map[string]func(*Organizer, int){
 	"resize":      (*Organizer).resize,
 	"test":        (*Organizer).sync,
 	"sync":        (*Organizer).sync,
+	"new":         (*Organizer).newEntry,
+	"n":           (*Organizer).newEntry,
 	/*
 	  "deletekeywords": F_deletekeywords,
 	  "delkw": F_deletekeywords,
@@ -302,8 +305,60 @@ func (o *Organizer) resize(pos int) {
 	sess.moveDivider(pct)
 	o.mode = NORMAL
 }
+func (o *Organizer) newEntry(unused int) {
+	//org.outlineInsertRow(0, "", true, false, false, now());
 
-func (o *Organizer) sync(x int) {
+	/*
+		type Row struct {
+			id        int
+			title     string
+			fts_title string
+			star      bool
+			deleted   bool
+			completed bool
+			modified  string
+
+			// below not in db
+			dirty  bool
+			marked bool
+		}
+	*/
+
+	row := Row{
+		id:       -1,
+		star:     true,
+		dirty:    true,
+		modified: time.Now().Format("3:04:05 pm"),
+	}
+
+	//fmt.Fprintf(&lg, "UTC time is %v\n", time.Now().UTC())
+
+	o.rows = append(o.rows, Row{})
+	copy(o.rows[1:], o.rows[0:])
+	o.rows[0] = row
+
+	o.fc, o.fr, o.rowoff = 0, 0, 0
+	o.command = ""
+	o.repeat = 0
+	sess.showOrgMessage("\x1b[1m-- INSERT --\x1b[0m")
+	sess.eraseRightScreen() //erases the note area
+	o.mode = INSERT
+
+	/*
+	  int fd;
+	  std::string fn = "assets/" + CURRENT_NOTE_FILE;
+	  if ((fd = open(fn.c_str(), O_WRONLY|O_CREAT|O_TRUNC, 0666)) != -1) {
+	    sess.lock.l_type = F_WRLCK;
+	    if (fcntl(fd, F_SETLK, &sess.lock) != -1) {
+	    write(fd, " ", 1);
+	    sess.lock.l_type = F_UNLCK;
+	    fcntl(fd, F_SETLK, &sess.lock);
+	    } else sess.showOrgMessage("Couldn't lock file");
+	  } else sess.showOrgMessage("Couldn't open file");
+	*/
+}
+
+func (o *Organizer) sync(unused int) {
 	var reportOnly bool
 	if o.command_line == "test" {
 		reportOnly = true
