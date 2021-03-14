@@ -546,8 +546,8 @@ func insertRow(row Row) int {
 	res, err := db.Exec("INSERT INTO task (priority, title, folder_tid, context_tid, "+
 		"star, added, note, deleted, created, modified) "+
 		"VALUES (3, ?, ?, ?, True, date(), '', False, "+
-		fmt.Sprintf("datetime('now', '-%s hours'), ", TZ_OFFSET)+
-		"datetime('now'));",
+		//fmt.Sprintf("datetime('now', '-%s hours'), ", TZ_OFFSET)+
+		"date(), datetime('now'));",
 		row.title, folder_tid, context_tid)
 
 	/*
@@ -641,15 +641,16 @@ func readNoteIntoEditor(id int) {
 }
 
 func getEntryInfo(id int) Entry {
-	var e Entry
 	if id == -1 {
-		return e
+		return Entry{}
 	}
 	row := db.QueryRow("SELECT id, tid, title, created, folder_tid, context_tid, star, added, completed, deleted, modified FROM task WHERE id=?;", id)
 
+	var e Entry
+	var tid sql.NullInt64
 	err := row.Scan(
 		&e.id,
-		&e.tid,
+		&tid,
 		&e.title,
 		&e.created,
 		&e.folder_tid,
@@ -660,10 +661,14 @@ func getEntryInfo(id int) Entry {
 		&e.deleted,
 		&e.modified,
 	)
-
 	if err != nil {
 		log.Fatal(err)
-		return e
+		return Entry{}
+	}
+	if tid.Valid {
+		e.tid = int(tid.Int64)
+	} else {
+		e.tid = 0
 	}
 	return e
 }
