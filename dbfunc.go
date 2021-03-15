@@ -249,79 +249,27 @@ func toggleCompleted() {
 }
 
 func updateTaskContext(new_context string, id int) {
-	//id := getId()
 	context_tid := org.context_map[new_context]
 
-	res, err := db.Exec("UPDATE task SET context_tid=?, modified=datetime('now') "+
-		"WHERE id=?;", context_tid, id)
-
-	//stmt, err := db.Prepare("UPDATE task SET context_tid=?, modified=datetime('now') WHERE id=?;")
+	_, err := db.Exec("UPDATE task SET context_tid=?, modified=datetime('now') WHERE id=?;",
+		context_tid, id)
 
 	if err != nil {
-		log.Fatal(err)
+		sess.showOrgMessage("Error updating context for entry %d to %s: %v", id, new_context, err)
+		return
 	}
-
-	//defer stmt.Close()
-
-	/*
-		res, err := stmt.Exec(context_tid, id)
-		if err != nil {
-			log.Fatal(err)
-		}
-	*/
-
-	numRows, err := res.RowsAffected()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	if numRows != 1 {
-		log.Fatal("updateTaskContext: numRows != 1")
-	}
-	//LastInsertId() (int64, error)
-
-	org.rows[org.fr].completed = !org.rows[org.fr].completed
-	sess.showOrgMessage("Update task context succeeded")
-	// doesn't get called
-	//sess.showOrgMessage3("Update task context succeeded (new version)");
 }
 
 func updateTaskFolder(new_folder string, id int) {
-	//id := getId()
-	folder_tid := org.context_map[new_folder]
+	folder_tid := org.folder_map[new_folder]
 
-	//stmt, err := db.Prepare("UPDATE task SET folder_tid=?, modified=datetime('now') WHERE id=?;")
-
-	res, err := db.Exec("UPDATE task SET folder_tid=?, modified=datetime('now') "+
-		"WHERE id=?;", folder_tid, id)
+	_, err := db.Exec("UPDATE task SET folder_tid=?, modified=datetime('now') WHERE id=?;",
+		folder_tid, id)
 
 	if err != nil {
-		log.Fatal(err)
+		sess.showOrgMessage("Error updating folder for entry %d to %s: %v", id, new_folder, err)
+		return
 	}
-
-	//defer stmt.Close()
-
-	/*
-		res, err := stmt.Exec(context_tid, id)
-		if err != nil {
-			log.Fatal(err)
-		}
-	*/
-
-	numRows, err := res.RowsAffected()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	if numRows != 1 {
-		log.Fatal("updateTaskFolder: numRows != 1")
-	}
-	//LastInsertId() (int64, error)
-
-	org.rows[org.fr].completed = !org.rows[org.fr].completed
-	sess.showOrgMessage("Update task folder succeeded")
-	// doesn't get called
-	//sess.showOrgMessage3("Update task context succeeded (new version)");
 }
 
 func updateNote() {
@@ -831,6 +779,62 @@ func (o *Organizer) searchDB(st string, help bool) {
 	}
 }
 
+func getContainers() {
+	org.rows = nil
+
+	var table string
+	var columns string
+	var orderBy string //only needs to be change for keyword
+
+	switch org.view {
+	case CONTEXT:
+		table = "context"
+		columns = "id, title, \"default\", deleted, modified"
+		orderBy = "title"
+	case FOLDER:
+		table = "folder"
+		columns = "id, title, private, deleted, modified"
+		orderBy = "title"
+	case KEYWORD:
+		table = "keyword"
+		columns = "id, name, star, deleted, modified"
+		orderBy = "name"
+	default:
+		sess.showOrgMessage("Somehow you are in a view I can't handle")
+		return
+	}
+
+	stmt := fmt.Sprintf("SELECT %s FROM %s ORDER BY %s COLLATE NOCASE ASC;", columns, table, orderBy)
+	rows, err := db.Query(stmt)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var r Row
+		var modified string
+		rows.Scan(
+			&r.id,
+			&r.title,
+			&r.star,
+			&r.deleted,
+			&modified,
+		)
+
+		r.modified = timeDelta(modified)
+		org.rows = append(org.rows, r)
+	}
+	if len(org.rows) == 0 {
+		sess.showOrgMessage("No results were returned")
+		org.mode = NO_ROWS
+	}
+
+	// below should be somewhere else
+	org.fc, org.fr, org.rowoff = 0, 0, 0
+	org.context, org.folder, org.keyword = "", "", "" // this makes sense if you are not in an O.view == TASK
+
+}
+
 func getNoteSearchPositions(id int) [][]int {
 	row := fts_db.QueryRow("SELECT rowid FROM fts WHERE lm_id=?;", id)
 	var rowid int
@@ -861,7 +865,6 @@ func getNoteSearchPositions(id int) [][]int {
 
 func highlight_terms_string(text string, word_positions [][]int) string {
 
-	//delimiters := " |,.;?:()[]{}&#/`-'\"—_<>$~@=&*^%+!\t\f\\" //must have \f if using it as placeholder
 	delimiters := " |,.;?:()[]{}&#/`-'\"—_<>$~@=&*^%+!\t\n\\" //must have \f if using it as placeholder
 
 	for _, v := range word_positions {
