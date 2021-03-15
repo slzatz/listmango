@@ -26,6 +26,12 @@ var cmd_lookup = map[string]func(*Organizer, int){
 	"refresh":     (*Organizer).refresh,
 	"r":           (*Organizer).refresh,
 	"find":        (*Organizer).find,
+	"contexts":    (*Organizer).contexts,
+	"context":     (*Organizer).contexts,
+	"c":           (*Organizer).contexts,
+	"folders":     (*Organizer).folders,
+	"folder":      (*Organizer).folders,
+	"f":           (*Organizer).folders,
 	/*
 	  "deletekeywords": F_deletekeywords,
 	  "delkw": F_deletekeywords,
@@ -416,4 +422,114 @@ func (o *Organizer) sync(unused int) {
 	}
 	synchronize(reportOnly)
 	o.mode = NORMAL
+}
+
+func (o *Organizer) contexts(pos int) {
+	o.mode = NORMAL
+
+	if pos == 0 {
+		sess.eraseRightScreen()
+		o.view = CONTEXT
+		getContainers()
+		if o.mode != NO_ROWS {
+			// two lines below show first context's info
+			//Container c = getContainerInfo(org.rows.at(org.fr).id);
+			//sess.displayContainerInfo(c);
+			sess.showOrgMessage("Retrieved contexts")
+		}
+		return
+	}
+
+	var new_context string //new context for the entry
+	success := false
+
+	cntx := o.command_line[pos+1:]
+	if len(cntx) < 3 {
+		sess.showOrgMessage("You need to provide at least 3 characters to match existing context")
+		return
+	}
+
+	for k, _ := range o.context_map {
+		if strings.HasPrefix(k, cntx) {
+			new_context = k
+			success = true
+			break
+		}
+	}
+
+	if !success {
+		sess.showOrgMessage("What you typed did not match any context")
+		return
+	}
+
+	marked := false
+	for _, row := range o.rows {
+		if row.marked {
+			updateTaskContext(new_context, row.id)
+			marked = true
+		}
+	}
+
+	if marked {
+		sess.showOrgMessage("Marked tasks moved into context %s", new_context)
+		return
+	}
+
+	updateTaskContext(new_context, o.rows[o.fr].id)
+	sess.showOrgMessage("Moved current entry (since none were marked) into context %s", new_context)
+}
+
+func (o *Organizer) folders(pos int) {
+	o.mode = NORMAL
+
+	if pos == 0 {
+		sess.eraseRightScreen()
+		o.view = FOLDER
+		getContainers()
+		if o.mode != NO_ROWS {
+			// two lines below show first folder's info
+			//Container c = getContainerInfo(org.rows.at(org.fr).id);
+			//sess.displayContainerInfo(c);
+			sess.showOrgMessage("Retrieved folders")
+		}
+		return
+	}
+
+	var new_folder string //new folder for the entry
+	success := false
+
+	cntx := o.command_line[pos+1:]
+	if len(cntx) < 3 {
+		sess.showOrgMessage("You need to provide at least 3 characters to match existing folder")
+		return
+	}
+
+	for k, _ := range o.folder_map {
+		if strings.HasPrefix(k, cntx) {
+			new_folder = k
+			success = true
+			break
+		}
+	}
+
+	if !success {
+		sess.showOrgMessage("What you typed did not match any folder")
+		return
+	}
+
+	marked := false
+	for _, row := range o.rows {
+		if row.marked {
+			updateTaskFolder(new_folder, row.id)
+			marked = true
+		}
+	}
+
+	if marked {
+		sess.showOrgMessage("Marked tasks moved into folder %s", new_folder)
+		return
+	}
+
+	updateTaskFolder(new_folder, o.rows[o.fr].id)
+	sess.showOrgMessage("Moved current entry (since none were marked) into folder %s", new_folder)
 }
