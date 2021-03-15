@@ -6,6 +6,7 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 	"log"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -407,7 +408,8 @@ func getItems(max int) {
 		rows, err = db.Query(s, arg)
 	}
 	if err != nil {
-		log.Fatal(err)
+		sess.showOrgMessage("Error in getItems()")
+		return
 	}
 
 	defer rows.Close()
@@ -450,7 +452,7 @@ func getItems(max int) {
 		sess.eraseRightScreen() // in case there was a note displayed in previous view
 	} else {
 		org.mode = org.last_mode
-		sess.drawPreviewWindow(org.rows[org.fr].id) //if id == -1 does not try to retrieve note
+		sess.drawPreviewWindow(org.rows[0].id) //if id == -1 does not try to retrieve note
 	}
 }
 
@@ -715,6 +717,189 @@ func getTaskKeywords(id int) string {
 		return ""
 	}
 	return strings.Join(kk, ",")
+}
+
+func (o *Organizer) searchDB(st string, help bool) {
+
+	o.rows = nil
+	o.fc, o.fr, o.rowoff = 0, 0, 0
+
+	rows, err := fts_db.Query("SELECT lm_id, highlight(fts, 0, '\x1b[48;5;31m', '\x1b[49m') "+
+		"FROM fts WHERE fts MATCH ? ORDER BY bm25(fts, 2.0, 1.0, 5.0);",
+		st)
+
+	defer rows.Close()
+
+	o.fts_ids = nil
+
+	for k := range o.fts_titles {
+		delete(o.fts_titles, k)
+	}
+
+	for rows.Next() {
+		var fts_id int
+		var fts_title string
+
+		err = rows.Scan(
+			&fts_id,
+			&fts_title,
+		)
+
+		if err != nil {
+			sess.showOrgMessage("Error trying to retrieve search info from fts_db - term: %s; %v", st, err)
+			return
+		}
+		o.fts_ids = append(o.fts_ids, fts_id)
+		o.fts_titles[fts_id] = fts_title
+	}
+
+	if len(o.fts_ids) == 0 {
+		sess.showOrgMessage("No results were returned")
+		sess.eraseRightScreen() //note can still return no rows from get_items_by_id if we found rows above that were deleted
+		org.mode = NO_ROWS
+		return
+	}
+
+	var stmt string
+
+	// As noted above, if the item is deleted (gone) from the db it's id will not be found if it's still in fts
+	if help {
+		stmt = "SELECT task.id, task.title, task.star, task.deleted, task.completed, task.modified FROM task WHERE task.context_tid = 16 and task.id IN ("
+	} else {
+		stmt = "SELECT task.id, task.title, task.star, task.deleted, task.completed, task.modified FROM task WHERE task.id IN ("
+	}
+
+	max := len(o.fts_ids) - 1
+	for i := 0; i < max; i++ {
+		stmt += strconv.Itoa(o.fts_ids[i]) + ", "
+	}
+
+	stmt += strconv.Itoa(o.fts_ids[max]) + ")"
+	//stmt +=      << ((!org.show_deleted) ? " AND task.completed IS NULL AND task.deleted = False" : "")
+	stmt += " AND task.completed IS NULL AND task.deleted = False ORDER BY "
+
+	for i := 0; i < max; i++ {
+		stmt += "task.id = " + strconv.Itoa(o.fts_ids[i]) + " DESC, "
+	}
+	stmt += "task.id = " + strconv.Itoa(o.fts_ids[max]) + " DESC"
+
+	rows, err = db.Query(stmt)
+	for rows.Next() {
+		var row Row
+		var completed sql.NullString
+		var modified string
+
+		err = rows.Scan(
+			&row.id,
+			&row.title,
+			&row.star,
+			&row.deleted,
+			&completed,
+			&modified,
+		)
+
+		if err != nil {
+			sess.showOrgMessage("Error in searchDB()")
+			return
+		}
+
+		if completed.Valid {
+			row.completed = true
+		} else {
+			row.completed = false
+		}
+
+		row.modified = timeDelta(modified)
+		row.fts_title = o.fts_titles[row.id]
+
+		o.rows = append(o.rows, row)
+	}
+
+	// think these are the initialized values
+	//row.dirty = false;
+	//row.mark = false;
+
+	if len(o.rows) == 0 {
+		sess.showOrgMessage("No results were returned")
+		o.mode = NO_ROWS
+		sess.eraseRightScreen() // in case there was a note displayed in previous view
+	} else {
+		o.mode = FIND
+		sess.drawPreviewWindow(o.rows[0].id) //if id == -1 does not try to retrieve note
+	}
+}
+
+func getNoteSearchPositions(id int) [][]int {
+	row := fts_db.QueryRow("SELECT rowid FROM fts WHERE lm_id=?;", id)
+	var rowid int
+	err := row.Scan(&rowid)
+	if err != nil {
+		return [][]int{}
+	}
+	var word_positions [][]int
+	for i, term := range strings.Split(sess.fts_search_terms, " ") {
+		word_positions = append(word_positions, []int{})
+		rows, err := fts_db.Query("SELECT offset FROM fts_v WHERE doc=? AND term=? AND col='note';", rowid, term)
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer rows.Close()
+
+		for rows.Next() {
+			var offset int
+			err = rows.Scan(&offset)
+			if err != nil {
+				log.Fatal(err)
+			}
+			word_positions[i] = append(word_positions[i], offset)
+		}
+	}
+	return word_positions
+}
+
+func highlight_terms_string(text string, word_positions [][]int) string {
+
+	delimiters := " |,.;?:()[]{}&#/`-'\"—_<>$~@=&*^%+!\t\f\\" //must have \f if using it as placeholder
+
+	for _, v := range word_positions {
+		sess.showEdMessage("%v", word_positions)
+
+		// start and end are positions in the text
+		// word_num is what word number we are at in the text
+		//wp is the position that we are currently looking for to highlight
+
+		word_num := -1 //word position in text
+		end := -1
+		var start int
+
+		for _, wp := range v {
+
+			for {
+				// I don't think the check below is necessary but we'll see
+				if end >= len(text)-1 {
+					break
+				}
+
+				start = start + end + 1
+				end = strings.IndexAny(text[start:], delimiters)
+				if end == -1 {
+					end = len(text) - 1
+				}
+
+				if end != 0 { //if end = 0 we were sitting on a delimiter like a space
+					word_num++
+				}
+
+				if wp == word_num {
+					text = text[:start+end] + "\x1b[48;5;235m" + text[start+end:]
+					text = text[:start] + "\x1b[48;5;31m" + text[start:]
+					end += 21
+					break // this breaks out of loop that was looking for the current highlighted word position
+				}
+			}
+		}
+	}
+	return text
 }
 
 func generateWWString(text string, width int, length int, ret string) string {
