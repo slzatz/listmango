@@ -110,7 +110,7 @@ func synchronize(reportOnly bool) {
 	//sess.showEdMessage("local time = %v; UTC time = %v; since last sync = %v", time.Now(), time.Now().UTC(), timeDelta(client_t))
 
 	//server updated contexts
-	rows, err := pdb.Query("SELECT id, title, \"default\", created, deleted, modified FROM context WHERE context.modified > $1 AND context.deleted = $2;", server_t, false)
+	rows, err := pdb.Query("SELECT id, title, \"default\", created, modified FROM context WHERE context.modified > $1 AND context.deleted = $2;", server_t, false)
 
 	defer rows.Close()
 
