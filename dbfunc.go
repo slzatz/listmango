@@ -458,7 +458,8 @@ func getItems(max int) {
 
 func updateTitle() {
 
-	row := org.rows[org.fr]
+	// needs to be a pointer because may send to insertRow
+	row := &org.rows[org.fr]
 
 	if !row.dirty {
 		sess.showOrgMessage("Row has not been changed")
@@ -466,6 +467,7 @@ func updateTitle() {
 	}
 
 	if row.id == -1 {
+		// want to send pointer to insertRow
 		insertRow(row)
 		return
 	}
@@ -489,7 +491,7 @@ func updateTitle() {
 		log.Fatal(err)
 		return
 	}
-	sess.showOrgMessage("Successfully inserted new row with id {} and indexed it (new vesrsion)", row.id)
+	//sess.showOrgMessage("Updated title for %v and indexed it", row.id)
 }
 
 func updateRows() {
@@ -501,7 +503,7 @@ func updateRows() {
 		}
 
 		if row.id == -1 {
-			id := insertRow(row)
+			id := insertRow(&row)
 			updated_rows = append(updated_rows, id)
 			row.dirty = false
 			continue
@@ -529,7 +531,7 @@ func updateRows() {
 	sess.showOrgMessage("These ids were updated: %v", updated_rows)
 }
 
-func insertRow(row Row) int {
+func insertRow(row *Row) int {
 
 	var folder_tid int
 	var context_tid int
@@ -859,7 +861,8 @@ func getNoteSearchPositions(id int) [][]int {
 
 func highlight_terms_string(text string, word_positions [][]int) string {
 
-	delimiters := " |,.;?:()[]{}&#/`-'\"—_<>$~@=&*^%+!\t\f\\" //must have \f if using it as placeholder
+	//delimiters := " |,.;?:()[]{}&#/`-'\"—_<>$~@=&*^%+!\t\f\\" //must have \f if using it as placeholder
+	delimiters := " |,.;?:()[]{}&#/`-'\"—_<>$~@=&*^%+!\t\n\\" //must have \f if using it as placeholder
 
 	for _, v := range word_positions {
 		sess.showEdMessage("%v", word_positions)
