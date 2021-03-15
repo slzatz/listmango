@@ -11,19 +11,19 @@ import (
 )
 
 type Session struct {
-	screenCols      int
-	screenLines     int
-	textLines       int
-	divider         int
-	totaleditorcols int
-	initialFileRow  int
-	temporaryTID    int
-	lmBrowser       bool
-	run             bool
-	editors         []*Editor
-	p               *Editor
-	editorMode      bool
-	ftsSearchTerms  string
+	screenCols       int
+	screenLines      int
+	textLines        int
+	divider          int
+	totaleditorcols  int
+	initialFileRow   int
+	temporaryTID     int
+	lmBrowser        bool
+	run              bool
+	editors          []*Editor
+	p                *Editor
+	editorMode       bool
+	fts_search_terms string
 	//cfg config
 	origTermCfg []byte //from GoKilo
 	cfg         Config
@@ -295,7 +295,7 @@ func (s *Session) drawOrgSearchRows() {
 		ab.WriteString(org.rows[frr].modified)
 		ab.WriteString(lf_ret)
 	}
-	fmt.Fprint(os.Stdout, ab.String())
+	fmt.Print(ab.String())
 }
 
 func (s *Session) drawEditors() {
@@ -462,7 +462,7 @@ func (s *Session) drawOrgStatusBar() {
 	case TASK:
 		switch org.taskview {
 		case BY_FIND:
-			str = "search - " + s.ftsSearchTerms
+			str = "search - " + s.fts_search_terms
 		case BY_FOLDER:
 			str = org.folder + "[f]"
 		case BY_CONTEXT:
@@ -562,8 +562,8 @@ func (s *Session) drawPreviewWindow(id int) { //get_preview
 
 	if org.taskview != BY_FIND {
 		s.drawPreviewText()
-		//} else {
-		//  drawSearchPreview()
+	} else {
+		s.drawSearchPreview()
 	}
 	s.drawPreviewBox()
 
@@ -575,6 +575,38 @@ func (s *Session) drawPreviewWindow(id int) { //get_preview
 	  }
 	*/
 }
+func (s *Session) drawSearchPreview() {
+	var ab strings.Builder
+	width := s.totaleditorcols - 10
+	length := s.textLines - 10
+	//hide the cursor
+	ab.WriteString("\x1b[?25l")
+	fmt.Fprintf(&ab, "\x1b[%d;%dH", TOP_MARGIN+6, s.divider+6)
+	lf_ret := fmt.Sprintf("\r\n\x1b[%dC", s.divider+6)
+
+	erase_chars := fmt.Sprintf("\x1b[%dX", s.totaleditorcols-10)
+
+	for i := 0; i < length-1; i++ {
+		ab.WriteString(erase_chars)
+		ab.WriteString(lf_ret)
+	}
+
+	fmt.Fprintf(&ab, "\x1b[%d;%dH", TOP_MARGIN+6, s.divider+7)
+	fmt.Fprintf(&ab, "\x1b[2*x\x1b[%d;%d;%d;%d;48;5;235$r\x1b[*x",
+		TOP_MARGIN+6, s.divider+7, TOP_MARGIN+4+length, s.divider+7+width)
+	ab.WriteString("\x1b[48;5;235m")
+	note := readNoteIntoString(org.rows[org.fr].id)
+	var t string
+	if note != "" {
+		t = generateWWString(note, width, length, "\f")
+		wp := getNoteSearchPositions(org.rows[org.fr].id)
+		t = highlight_terms_string(t, wp)
+	}
+	t = strings.ReplaceAll(t, "\f", lf_ret)
+	ab.WriteString(t)
+	fmt.Print(ab.String())
+}
+
 func (s *Session) drawPreviewText() { //draw_preview
 
 	var ab strings.Builder
@@ -585,7 +617,7 @@ func (s *Session) drawPreviewText() { //draw_preview
 	ab.WriteString("\x1b[?25l")
 	fmt.Fprintf(&ab, "\x1b[%d;%dH", TOP_MARGIN+6, s.divider+6)
 
-	ab.WriteString(fmt.Sprintf("\x1b[%d;%dH", TOP_MARGIN+6, s.divider+7))
+	//ab.WriteString(fmt.Sprintf("\x1b[%d;%dH", TOP_MARGIN+6, s.divider+7))
 
 	lf_ret := fmt.Sprintf("\r\n\x1b[%dC", s.divider+6)
 	//erase set number of chars on each line
@@ -596,10 +628,9 @@ func (s *Session) drawPreviewText() { //draw_preview
 		ab.WriteString(lf_ret)
 	}
 
-	ab.WriteString(fmt.Sprintf("\x1b[%d;%dH", TOP_MARGIN+6, s.divider+7))
-
-	ab.WriteString(fmt.Sprintf("\x1b[2*x\x1b[%d;%d;%d;%d;48;5;235$r\x1b[*x",
-		TOP_MARGIN+6, s.divider+7, TOP_MARGIN+4+length, s.divider+7+width))
+	fmt.Fprintf(&ab, "\x1b[%d;%dH", TOP_MARGIN+6, s.divider+7)
+	fmt.Fprintf(&ab, "\x1b[2*x\x1b[%d;%d;%d;%d;48;5;235$r\x1b[*x",
+		TOP_MARGIN+6, s.divider+7, TOP_MARGIN+4+length, s.divider+7+width)
 
 	ab.WriteString("\x1b[48;5;235m")
 	note := readNoteIntoString(org.rows[org.fr].id)
@@ -609,6 +640,7 @@ func (s *Session) drawPreviewText() { //draw_preview
 	fmt.Print(ab.String())
 }
 
+// being used for synchronize right now
 func (s *Session) drawPreviewText2(text string) { //draw_preview
 
 	var ab strings.Builder
