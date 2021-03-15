@@ -35,6 +35,19 @@ func organizerProcessKey(c int) {
 		}
 		return
 
+	case FIND:
+		switch c {
+		case ARROW_UP, ARROW_DOWN, ARROW_LEFT, ARROW_RIGHT:
+			org.moveCursor(c)
+			return
+
+		default:
+			org.mode = NORMAL
+			org.command = ""
+			organizerProcessKey(c)
+			return
+		}
+
 	case INSERT:
 		switch c {
 		case '\r': //also does in effect an escape into NORMAL mode
