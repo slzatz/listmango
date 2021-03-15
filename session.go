@@ -606,11 +606,11 @@ func (s *Session) drawSearchPreview() {
 	note := readNoteIntoString(org.rows[org.fr].id)
 	var t string
 	if note != "" {
-		t = generateWWString(note, width, length, "\f")
+		t = generateWWString(note, width, length, "\n")
 		wp := getNoteSearchPositions(org.rows[org.fr].id)
 		t = highlight_terms_string(t, wp)
 	}
-	t = strings.ReplaceAll(t, "\f", lf_ret)
+	t = strings.ReplaceAll(t, "\n", lf_ret)
 	ab.WriteString(t)
 	fmt.Print(ab.String())
 }
