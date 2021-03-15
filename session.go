@@ -257,7 +257,6 @@ func (s *Session) drawOrgSearchRows() {
 		//orow& row = org.rows[frr];
 		var length int
 
-		//if (row.star) ab.append("\x1b[1m"); //bold
 		if org.rows[frr].star {
 			ab.WriteString("\x1b[1m") //bold
 			ab.WriteString("\x1b[1;36m")
@@ -273,10 +272,14 @@ func (s *Session) drawOrgSearchRows() {
 
 		if len(org.rows[frr].title) <= titlecols { // we know it fits
 			ab.WriteString(org.rows[frr].fts_title)
+			// note below doesn't handle two highlighted terms in same line
+			// and it might cause display issues if second highlight isn't fully escaped
+			// need to come back and deal with this
+			// coud check if LastIndex"\x1b[49m" or Index(fts_title[pos+1:titlecols+15] contained another escape
 		} else {
-			pos := strings.Index(org.rows[frr].fts_title, "\x1b[49m")
-			if pos < titlecols+10 { //length of highlight escape
-				ab.WriteString(org.rows[frr].fts_title) //titlecols + 15); // length of highlight escape + remove formatting escape
+			pos := strings.Index(org.rows[frr].fts_title, "\x1b[49m") //\x1b[48;5;31m', '\x1b[49m'
+			if pos > 0 && pos < titlecols+11 {                        //length of highlight escape
+				ab.WriteString(org.rows[frr].fts_title[:titlecols+15]) //titlecols + 15); // length of highlight escape + remove formatting escape
 			} else {
 				ab.WriteString(org.rows[frr].title[:titlecols])
 			}
@@ -403,8 +406,6 @@ func (s *Session) refreshOrgScreen() {
 	titlecols := s.divider - TIME_COL_WIDTH - LEFT_MARGIN
 
 	ab.WriteString("\x1b[?25l") //hides the cursor
-
-	//char buf[20];
 
 	//Below erase screen from middle to left - `1K` below is cursor to left erasing
 	//Now erases time/sort column (+ 17 in line below)
@@ -535,22 +536,29 @@ func (s *Session) returnCursor() {
 	if s.editorMode {
 		// the lines below position the cursor where it should go
 		if s.p.mode != COMMAND_LINE {
-			ab.WriteString(fmt.Sprintf("\x1b[%d;%dH", s.p.cy+s.p.top_margin, s.p.cx+s.p.left_margin+s.p.left_margin_offset+1))
+			//ab.WriteString(fmt.Sprintf("\x1b[%d;%dH", s.p.cy+s.p.top_margin, s.p.cx+s.p.left_margin+s.p.left_margin_offset+1))
+			fmt.Fprintf(&ab, "\x1b[%d;%dH", s.p.cy+s.p.top_margin, s.p.cx+s.p.left_margin+s.p.left_margin_offset+1)
 		} else { //E.mode == COMMAND_LINE
-			ab.WriteString(fmt.Sprintf("\x1b[%d;%dH", s.textLines+TOP_MARGIN+2, len(s.p.command_line)+s.divider+2))
+			//ab.WriteString(fmt.Sprintf("\x1b[%d;%dH", s.textLines+TOP_MARGIN+2, len(s.p.command_line)+s.divider+2))
+			fmt.Fprintf(&ab, "\x1b[%d;%dH", s.textLines+TOP_MARGIN+2, len(s.p.command_line)+s.divider+2)
 			ab.WriteString("\x1b[?25h") // show cursor
 		}
 	} else {
 		if org.mode == ADD_CHANGE_FILTER {
-			ab.WriteString(fmt.Sprintf("\x1b[%d;%dH", org.cy+TOP_MARGIN+1, s.divider+1))
+			//ab.WriteString(fmt.Sprintf("\x1b[%d;%dH", org.cy+TOP_MARGIN+1, s.divider+1))
+			fmt.Fprintf(&ab, "\x1b[%d;%dH", org.cy+TOP_MARGIN+1, s.divider+1)
 		} else if org.mode == FIND {
-			ab.WriteString(fmt.Sprintf("\x1b[%d;%dH\x1b[1;34m>", org.cy+TOP_MARGIN+1, LEFT_MARGIN)) //blue
+			//ab.WriteString(fmt.Sprintf("\x1b[%d;%dH\x1b[1;34m>", org.cy+TOP_MARGIN+1, LEFT_MARGIN)) //blue
+			fmt.Fprintf(&ab, "\x1b[%d;%dH\x1b[1;34m>", org.cy+TOP_MARGIN+1, LEFT_MARGIN) //blue
 		} else if org.mode != COMMAND_LINE {
-			ab.WriteString(fmt.Sprintf("\x1b[%d;%dH\x1b[1;31m>", org.cy+TOP_MARGIN+1, LEFT_MARGIN))
+			//ab.WriteString(fmt.Sprintf("\x1b[%d;%dH\x1b[1;31m>", org.cy+TOP_MARGIN+1, LEFT_MARGIN))
+			fmt.Fprintf(&ab, "\x1b[%d;%dH\x1b[1;31m>", org.cy+TOP_MARGIN+1, LEFT_MARGIN)
 			// below restores the cursor position based on org.cx and org.cy + margin
-			ab.WriteString(fmt.Sprintf("\x1b[%d;%dH", org.cy+TOP_MARGIN+1, org.cx+LEFT_MARGIN+1))
+			//ab.WriteString(fmt.Sprintf("\x1b[%d;%dH", org.cy+TOP_MARGIN+1, org.cx+LEFT_MARGIN+1))
+			fmt.Fprintf(&ab, "\x1b[%d;%dH", org.cy+TOP_MARGIN+1, org.cx+LEFT_MARGIN+1)
 		} else { //org.mode == COMMAND_LINE
-			ab.WriteString(fmt.Sprintf("\x1b[%d;%dH", s.textLines+2+TOP_MARGIN, len(org.command_line)+LEFT_MARGIN+1))
+			//ab.WriteString(fmt.Sprintf("\x1b[%d;%dH", s.textLines+2+TOP_MARGIN, len(org.command_line)+LEFT_MARGIN+1))
+			fmt.Fprintf(&ab, "\x1b[%d;%dH", s.textLines+2+TOP_MARGIN, len(org.command_line)+LEFT_MARGIN+1)
 		}
 	}
 	ab.WriteString("\x1b[0m")   //return background to normal
