@@ -23,6 +23,9 @@ var cmd_lookup = map[string]func(*Organizer, int){
 	"sync":        (*Organizer).sync,
 	"new":         (*Organizer).newEntry,
 	"n":           (*Organizer).newEntry,
+	"refresh":     (*Organizer).refresh,
+	"r":           (*Organizer).refresh,
+	"find":        (*Organizer).find,
 	/*
 	  "deletekeywords": F_deletekeywords,
 	  "delkw": F_deletekeywords,
@@ -199,7 +202,7 @@ func (o *Organizer) write(pos int) {
 	o.command_line = ""
 }
 
-func (o *Organizer) quitApp(pos int) {
+func (o *Organizer) quitApp(_ int) {
 	unsaved_changes := false
 	for _, r := range o.rows {
 		if r.dirty {
@@ -227,7 +230,7 @@ func (o *Organizer) editNote(id int) {
 	if o.view != TASK {
 		o.command = ""
 		o.mode = NORMAL
-		sess.showOrgMessage("Only tasks have notes to edit!")
+		sess.showOrgMessage("Only entries have notes to edit!")
 		return
 	}
 
@@ -356,6 +359,54 @@ func (o *Organizer) newEntry(unused int) {
 	    } else sess.showOrgMessage("Couldn't lock file");
 	  } else sess.showOrgMessage("Couldn't open file");
 	*/
+}
+
+func (o *Organizer) refresh(unused int) {
+	if o.view == TASK {
+		getItems(MAX)
+		sess.showOrgMessage("Entries will be refreshed")
+	}
+
+	if o.taskview == BY_FIND {
+		o.searchDB(sess.fts_search_terms, false)
+	} else {
+		getItems(MAX)
+	}
+	/*
+	 } else {
+	   sess.showOrgMessage("contexts/folders will be refreshed");
+	   getContainers();
+	    if (org.mode != NO_ROWS) {
+	      Container c = getContainerInfo(org.rows.at(org.fr).id);
+	      sess.displayContainerInfo(c);
+	    }
+	  }
+	*/
+	o.mode = o.last_mode
+}
+
+func (o *Organizer) find(pos int) {
+
+	if pos == 0 {
+		sess.showOrgMessage("You did not something to find!")
+		o.mode = NORMAL
+		return
+	}
+
+	searchTerms := strings.ToLower(o.command_line[pos+1:])
+	sess.fts_search_terms = searchTerms
+	if len(searchTerms) < 3 {
+		sess.showOrgMessage("You  need to provide at least 3 characters to search on")
+		return
+	}
+
+	o.context = ""
+	o.folder = ""
+	o.taskview = BY_FIND
+
+	sess.showOrgMessage("Searching for '%s'", searchTerms)
+	//sess.fts_search_terms = searchTerms
+	o.searchDB(searchTerms, false)
 }
 
 func (o *Organizer) sync(unused int) {
