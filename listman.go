@@ -255,9 +255,9 @@ func main() {
 	org.folder = "todo"
 	org.context = "No Context"
 	org.keyword = ""
-
 	org.context_map = make(map[string]int)
 	org.folder_map = make(map[string]int)
+	org.marked_entries = make(map[int]struct{})
 
 	org.fts_titles = make(map[int]string)
 	// ? where this should be.  Also in signal.
