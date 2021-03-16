@@ -835,6 +835,119 @@ func getContainers() {
 
 }
 
+func getContainerInfo(id int) Container {
+
+	/*
+		type Container struct {
+			id       int
+			tid      int
+			title    string
+			star     bool
+			created  string
+			deleted  bool
+			modified string
+			count    int
+		}
+	*/
+
+	if id == -1 {
+		return Container{}
+	}
+
+	var table string
+	var countQuery string
+	var columns string
+	switch org.view {
+	case CONTEXT:
+		table = "context"
+		countQuery = "SELECT COUNT(*) FROM task JOIN context ON context.tid = task.context_tid WHERE context.id=?;"
+		columns = "id, tid, title, \"default\", created, deleted, modified"
+	case FOLDER:
+		table = "folder"
+		countQuery = "SELECT COUNT(*) FROM task JOIN folder ON folder.tid = task.folder_tid WHERE folder.id=?;"
+		columns = "id, tid, title, private, created, deleted, modified"
+	case KEYWORD:
+		table = "keyword"
+		countQuery = "SELECT COUNT(*) FROM task_keyword WHERE keyword_id=?;"
+		columns = "id, tid, name, star, deleted, modified"
+	default:
+		sess.showOrgMessage("Somehow you are in a view I can't handle")
+		return Container{}
+	}
+
+	var c Container
+
+	row := db.QueryRow(countQuery, id)
+	err := row.Scan(&c.count)
+	if err != nil {
+		sess.showOrgMessage("Error in getContainerInfo: %v", err)
+		return Container{}
+	}
+
+	stmt := fmt.Sprintf("SELECT %s FROM %s WHERE id=?;", columns, table)
+	row = db.QueryRow(stmt, id)
+	var tid sql.NullInt64
+	if org.view == KEYWORD {
+		err = row.Scan(
+			&c.id,
+			&tid,
+			&c.title,
+			&c.star,
+			&c.deleted,
+			&c.modified,
+		)
+	} else {
+		err = row.Scan(
+			&c.id,
+			&tid,
+			&c.title,
+			&c.star,
+			&c.created,
+			&c.deleted,
+			&c.modified,
+		)
+	}
+	if err != nil {
+		sess.showOrgMessage("Error in getContainerInfo: %v", err)
+		return Container{}
+	}
+
+	if tid.Valid {
+		c.tid = int(tid.Int64)
+	} else {
+		c.tid = 0
+	}
+
+	return c
+}
+
+func addTaskKeyword(keyword_id, entry_id int, update_fts bool) {
+
+	_, err := db.Exec("INSERT OR IGNORE INTO task_keyword (task_id, keyword_id) VALUES (?, ?);",
+		entry_id, keyword_id)
+
+	if err != nil {
+		sess.showOrgMessage("Error in addTaskKeyword = INSERT or IGNORE INTO task_keyword: %v", err)
+		return
+	}
+
+	_, err = db.Exec("UPDATE task SET modified = datetime('now') WHERE id=?;", entry_id)
+	if err != nil {
+		sess.showOrgMessage("Error in addTaskKeyword - Update task modified: %v", err)
+		return
+	}
+
+	// *************fts virtual table update**********************
+	if !update_fts {
+		return
+	}
+	s := getTaskKeywords(entry_id)
+	_, err = fts_db.Exec("UPDATE fts SET tag=? WHERE lm_id=?;", s, entry_id)
+	if err != nil {
+		sess.showOrgMessage("Error in addTaskKeyword - fts Update: %v", err)
+	}
+}
+
 func getNoteSearchPositions(id int) [][]int {
 	row := fts_db.QueryRow("SELECT rowid FROM fts WHERE lm_id=?;", id)
 	var rowid int
