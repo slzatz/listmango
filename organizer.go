@@ -34,7 +34,7 @@ type Organizer struct {
 	sort_map    map[string]int
 
 	fts_ids        []int
-	marked_entries map[int]struct{}
+	marked_entries map[int]struct{} // map instead of list makes toggling a row easier
 
 	title_search_string string
 	highlight           [2]int

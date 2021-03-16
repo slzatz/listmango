@@ -32,6 +32,10 @@ var cmd_lookup = map[string]func(*Organizer, int){
 	"folders":     (*Organizer).folders,
 	"folder":      (*Organizer).folders,
 	"f":           (*Organizer).folders,
+	"keywords":    (*Organizer).keywords,
+	"keyword":     (*Organizer).keywords,
+	"k":           (*Organizer).keywords,
+	"recent":      (*Organizer).recent,
 	/*
 	  "deletekeywords": F_deletekeywords,
 	  "delkw": F_deletekeywords,
@@ -133,7 +137,7 @@ func (o *Organizer) openContext(pos int) {
 
 	sess.showOrgMessage("'%s' will be opened", o.context)
 
-	o.marked_entries = nil
+	o.clearMarkedEntries()
 	o.folder = ""
 	o.taskview = BY_CONTEXT
 	getItems(MAX)
@@ -167,7 +171,7 @@ func (o *Organizer) openFolder(pos int) {
 
 	sess.showOrgMessage("'%s' will be opened", o.folder)
 
-	o.marked_entries = nil
+	o.clearMarkedEntries()
 	o.context = ""
 	o.taskview = BY_FOLDER
 	getItems(MAX)
@@ -191,7 +195,7 @@ func (o *Organizer) openKeyword(pos int) {
 
 	o.keyword = keyword
 	sess.showOrgMessage("'%s' will be opened", o.keyword)
-	o.marked_entries = nil
+	o.clearMarkedEntries()
 	o.context = ""
 	o.folder = ""
 	o.taskview = BY_KEYWORD
@@ -369,25 +373,21 @@ func (o *Organizer) newEntry(unused int) {
 
 func (o *Organizer) refresh(unused int) {
 	if o.view == TASK {
-		getItems(MAX)
+		if o.taskview == BY_FIND {
+			o.searchDB(sess.fts_search_terms, false)
+		} else {
+			getItems(MAX)
+		}
 		sess.showOrgMessage("Entries will be refreshed")
-	}
-
-	if o.taskview == BY_FIND {
-		o.searchDB(sess.fts_search_terms, false)
 	} else {
-		getItems(MAX)
+		getContainers()
+		if org.mode != NO_ROWS {
+			c := getContainerInfo(o.rows[o.fr].id)
+			sess.displayContainerInfo(&c)
+			sess.drawPreviewBox()
+		}
+		sess.showOrgMessage("contexts/folders will be refreshed")
 	}
-	/*
-	 } else {
-	   sess.showOrgMessage("contexts/folders will be refreshed");
-	   getContainers();
-	    if (org.mode != NO_ROWS) {
-	      Container c = getContainerInfo(org.rows.at(org.fr).id);
-	      sess.displayContainerInfo(c);
-	    }
-	  }
-	*/
 	o.mode = o.last_mode
 }
 
@@ -433,25 +433,27 @@ func (o *Organizer) contexts(pos int) {
 		getContainers()
 		if o.mode != NO_ROWS {
 			// two lines below show first context's info
-			//Container c = getContainerInfo(org.rows.at(org.fr).id);
-			//sess.displayContainerInfo(c);
+			//c := getContainerInfo(o.rows[o.fr].id)
+			c := getContainerInfo(o.rows[0].id)
+			sess.displayContainerInfo(&c)
+			sess.drawPreviewBox()
 			sess.showOrgMessage("Retrieved contexts")
 		}
 		return
 	}
 
-	var new_context string //new context for the entry
+	var context string //new context for the entry
 	success := false
 
-	cntx := o.command_line[pos+1:]
-	if len(cntx) < 3 {
+	input := o.command_line[pos+1:]
+	if len(input) < 3 {
 		sess.showOrgMessage("You need to provide at least 3 characters to match existing context")
 		return
 	}
 
 	for k, _ := range o.context_map {
-		if strings.HasPrefix(k, cntx) {
-			new_context = k
+		if strings.HasPrefix(k, input) {
+			context = k
 			success = true
 			break
 		}
@@ -462,21 +464,22 @@ func (o *Organizer) contexts(pos int) {
 		return
 	}
 
+	//should use markedEntries []int
 	marked := false
 	for _, row := range o.rows {
 		if row.marked {
-			updateTaskContext(new_context, row.id)
+			updateTaskContext(context, row.id)
 			marked = true
 		}
 	}
 
 	if marked {
-		sess.showOrgMessage("Marked tasks moved into context %s", new_context)
+		sess.showOrgMessage("Marked entries moved into context %s", context)
 		return
 	}
 
-	updateTaskContext(new_context, o.rows[o.fr].id)
-	sess.showOrgMessage("Moved current entry (since none were marked) into context %s", new_context)
+	updateTaskContext(context, o.rows[o.fr].id)
+	sess.showOrgMessage("Moved current entry (since none were marked) into context %s", context)
 }
 
 func (o *Organizer) folders(pos int) {
@@ -488,25 +491,26 @@ func (o *Organizer) folders(pos int) {
 		getContainers()
 		if o.mode != NO_ROWS {
 			// two lines below show first folder's info
-			//Container c = getContainerInfo(org.rows.at(org.fr).id);
-			//sess.displayContainerInfo(c);
+			c := getContainerInfo(o.rows[0].id)
+			sess.displayContainerInfo(&c)
+			sess.drawPreviewBox()
 			sess.showOrgMessage("Retrieved folders")
 		}
 		return
 	}
 
-	var new_folder string //new folder for the entry
+	var folder string //new folder for the entry
 	success := false
 
-	cntx := o.command_line[pos+1:]
-	if len(cntx) < 3 {
+	input := o.command_line[pos+1:]
+	if len(input) < 3 {
 		sess.showOrgMessage("You need to provide at least 3 characters to match existing folder")
 		return
 	}
 
 	for k, _ := range o.folder_map {
-		if strings.HasPrefix(k, cntx) {
-			new_folder = k
+		if strings.HasPrefix(k, input) {
+			folder = k
 			success = true
 			break
 		}
@@ -517,19 +521,69 @@ func (o *Organizer) folders(pos int) {
 		return
 	}
 
-	marked := false
-	for _, row := range o.rows {
-		if row.marked {
-			updateTaskFolder(new_folder, row.id)
-			marked = true
+	if len(o.marked_entries) > 0 {
+		for k, _ := range o.marked_entries {
+			updateTaskFolder(folder, k)
 		}
+		sess.showOrgMessage("Marked entries moved into folder %s", folder)
+		return
 	}
+	/*
+		for _, row := range o.rows {
+			if row.marked {
+				updateTaskFolder(folder, row.id)
+				marked = true
+			}
+		}
+	*/
 
-	if marked {
-		sess.showOrgMessage("Marked tasks moved into folder %s", new_folder)
+	updateTaskFolder(folder, o.rows[o.fr].id)
+	sess.showOrgMessage("Moved current entry (since none were marked) into folder %s", folder)
+}
+
+func (o *Organizer) keywords(pos int) {
+
+	o.mode = NORMAL
+
+	if pos == 0 {
+		sess.eraseRightScreen()
+		o.view = KEYWORD
+		getContainers()
+		if o.mode != NO_ROWS {
+			// two lines below show first keyword's info
+			c := getContainerInfo(o.rows[0].id)
+			sess.displayContainerInfo(&c)
+			sess.drawPreviewBox()
+			sess.showOrgMessage("Retrieved keywords")
+		}
 		return
 	}
 
-	updateTaskFolder(new_folder, o.rows[o.fr].id)
-	sess.showOrgMessage("Moved current entry (since none were marked) into folder %s", new_folder)
+	keyword := o.command_line[pos+1:]
+	keyword_id := keywordExists(keyword)
+	if keyword_id == -1 {
+		o.mode = o.last_mode
+		sess.showOrgMessage("keyword '%s' does not exist!", keyword)
+		return
+	}
+
+	if len(o.marked_entries) > 0 {
+		for entry_id, _ := range o.marked_entries {
+			addTaskKeyword(keyword_id, entry_id, true) //true = update fts_dn
+		}
+		sess.showOrgMessage("Added keyword %s to marked entries", keyword)
+		return
+	}
+
+	addTaskKeyword(keyword_id, o.rows[o.fr].id, true)
+	sess.showOrgMessage("Added keyword %s to current entry (since none were marked)", keyword)
+}
+
+func (o *Organizer) recent(unused int) {
+	sess.showOrgMessage("Will retrieve recent items")
+	o.clearMarkedEntries()
+	o.context = "No Context"
+	o.taskview = BY_RECENT
+	o.folder = "No Folder"
+	getItems(MAX)
 }
