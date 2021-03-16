@@ -800,6 +800,65 @@ func (s *Session) drawPreviewBox() {
 	fmt.Print(ab.String())
 }
 
+func (s *Session) displayContainerInfo(c *Container) {
+
+	/*
+		type Container struct {
+			id       int
+			tid      int
+			title    string
+			star     bool
+			created  string
+			deleted  bool
+			modified string
+			count    int
+		}
+	*/
+
+	var ab strings.Builder
+	width := s.totaleditorcols - 10
+	length := s.textLines - 10
+
+	// \x1b[NC moves cursor forward by N columns
+	lf_ret := fmt.Sprintf("\r\n\x1b[%dC", s.divider+6)
+
+	//hide the cursor
+	ab.WriteString("\x1b[?25l")
+	ab.WriteString(fmt.Sprintf("\x1b[%d;%dH", TOP_MARGIN+6, s.divider+7))
+
+	//erase set number of chars on each line
+	erase_chars := fmt.Sprintf("\x1b[%dX", s.totaleditorcols-10)
+	for i := 0; i < length-1; i++ {
+		ab.WriteString(erase_chars)
+		ab.WriteString(lf_ret)
+	}
+
+	ab.WriteString(fmt.Sprintf("\x1b[%d;%dH", TOP_MARGIN+6, s.divider+7))
+
+	ab.WriteString(fmt.Sprintf("\x1b[2*x\x1b[%d;%d;%d;%d;48;5;235$r\x1b[*x",
+		TOP_MARGIN+6, s.divider+7, TOP_MARGIN+4+length, s.divider+7+width))
+	ab.WriteString("\x1b[48;5;235m") //draws the box lines with same background as above rectangle
+
+	//ab.append(COLOR_6); // Blue depending on theme
+
+	ab.WriteString(fmt.Sprintf("id: %d%s", c.id, lf_ret))
+	ab.WriteString(fmt.Sprintf("tid: %d%s", c.tid, lf_ret))
+
+	title := fmt.Sprintf("title: %s", c.title)
+	if len(title) > width {
+		title = title[:width-3] + "..."
+	}
+
+	ab.WriteString(fmt.Sprintf("star: %t%s", c.star, lf_ret))
+	ab.WriteString(fmt.Sprintf("deleted: %t%s", c.deleted, lf_ret))
+
+	ab.WriteString(fmt.Sprintf("created: %s%s", c.created, lf_ret))
+	ab.WriteString(fmt.Sprintf("modified: %s%s", c.modified, lf_ret))
+	ab.WriteString(fmt.Sprintf("entry count: %d%s", c.count, lf_ret))
+
+	fmt.Print(ab.String())
+}
+
 func (s *Session) quitApp() {
 	fmt.Print("\x1b[2J\x1b[H") //clears the screen and sends cursor home
 	//Py_FinalizeEx();
