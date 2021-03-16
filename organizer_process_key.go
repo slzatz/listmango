@@ -21,31 +21,31 @@ func organizerProcessKey(c int) {
 		switch c {
 		case ':':
 			colon_N()
-			return
+			//return
 		case '\x1b':
 			org.command = ""
 			org.repeat = 0
-			return
+			//return
 		case 'i', 'I', 'a', 'A', 's':
 			org.insertRow(0, "", true, false, false, BASE_DATE)
 			org.mode = INSERT
 			org.command = ""
 			org.repeat = 0
-			return
+			//return
 		}
-		return
+		//return
 
 	case FIND:
 		switch c {
 		case ARROW_UP, ARROW_DOWN, ARROW_LEFT, ARROW_RIGHT:
 			org.moveCursor(c)
-			return
+			//return
 
 		default:
 			org.mode = NORMAL
 			org.command = ""
 			organizerProcessKey(c)
-			return
+			//return
 		}
 
 	case INSERT:
@@ -74,7 +74,7 @@ func organizerProcessKey(c int) {
 		default:
 			org.insertChar(c)
 		}
-		return // ? necessary
+		//return // ? necessary
 
 	case NORMAL:
 
@@ -135,7 +135,7 @@ func organizerProcessKey(c int) {
 			return
 		}
 
-		return // end of case NORMAL
+		//return // end of case NORMAL
 
 	case COMMAND_LINE:
 		if c == '\x1b' {
@@ -173,7 +173,7 @@ func organizerProcessKey(c int) {
 		}
 
 		sess.showOrgMessage(":%s", org.command_line)
-		return //end of case COMMAND_LINE
+		//return //end of case COMMAND_LINE
 
 	} // end switch o.mode
 } // end func organizerProcessKey(c int)
