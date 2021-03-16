@@ -62,13 +62,13 @@ func (o *Organizer) moveCursor(key int) {
 
 		if o.view == TASK {
 			sess.drawPreviewWindow(o.rows[o.fr].id) //if id == -1 does not try to retrieve note
+		} else {
+			c := getContainerInfo(o.rows[o.fr].id)
+			if c.id != 0 {
+				sess.displayContainerInfo(&c)
+				sess.drawPreviewBox()
+			}
 		}
-		//   } else {
-		//     c := getContainerInfo(o.rows[o.fr].id)
-		//     if c.id != 0 {
-		//       sess.displayContainerInfo(c)
-		//     }
-		//   }
 
 	case ARROW_DOWN, 'j':
 		if o.fr < len(o.rows)-1 {
@@ -77,13 +77,13 @@ func (o *Organizer) moveCursor(key int) {
 		o.fc, o.coloff = 0, 0
 		if o.view == TASK {
 			sess.drawPreviewWindow(o.rows[o.fr].id) //if id == -1 does not try to retrieve note
+		} else {
+			c := getContainerInfo(o.rows[o.fr].id)
+			if c.id != 0 {
+				sess.displayContainerInfo(&c)
+				sess.drawPreviewBox()
+			}
 		}
-		//  } else {
-		//    c := getContainerInfo(o.rows[o.fr].id)
-		//    if c.id != 0 {
-		//      sess.displayContainerInfo(c)
-		//    }
-		//  }
 	}
 
 	t := &o.rows[o.fr].title
@@ -356,6 +356,12 @@ func (o *Organizer) writeTitle() {
 	sess.refreshOrgScreen()
 	if o.fc > 0 {
 		o.fc--
+	}
+}
+
+func (o *Organizer) clearMarkedEntries() {
+	for k, _ := range o.marked_entries {
+		delete(o.marked_entries, k)
 	}
 }
 
