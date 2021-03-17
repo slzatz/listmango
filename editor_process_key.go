@@ -82,7 +82,10 @@ func editorProcessKey(c int, messageBuf nvim.Buffer) bool {
 			}
 		}
 
-		mode, _ = v.Mode()
+		//  ":" in NORMAL mode causes mode = c initially
+		// Am guesing but if you check mode again with no key stroke registered
+		// v.Mode returns nil
+		mode, _ = v.Mode() // appears that ":" in NORMAL mode causes mode = nil
 		sess.p.mode = modeMap[mode.Mode]
 		sess.p.showMessage("blocking = %t; mode = %v", mode.Blocking, mode.Mode) //debugging
 	}
@@ -90,7 +93,13 @@ func editorProcessKey(c int, messageBuf nvim.Buffer) bool {
 	//mode, _ = v.Mode()
 	//sess.p.showMessage("blocking = %t; mode = %v", mode.Blocking, mode.Mode) //debugging
 
+	//mode can definitely be nil - not sure how
+	//Hypothesis is nvim sets mode to nil when in command line
+	//One approach would be to intercept the ':' before nvim sees it
+	// so right now mode == nil seems ? equive to saying we are im cmd mode
 	if mode != nil && mode.Blocking == true {
+		// believe this is really necessary - don't want to redraw and do
+		//bb, err := v.BufferLines(0, 0, -1, true)if blocking just dies
 		return false
 	}
 
@@ -99,6 +108,10 @@ func editorProcessKey(c int, messageBuf nvim.Buffer) bool {
 			sess.showOrgMessage("mode: %v -> h0=%v; h1= %v", mode.Mode, highlightInfo(v)[0], highlightInfo(v)[1])
 		}
 	*/
+
+	if mode == nil {
+		sess.showOrgMessage("mode is nil!!!! editor.mode = %v", sess.p.mode)
+	}
 
 	//sess.p.mode = modeMap[mode.Mode]
 	switch sess.p.mode {
@@ -109,7 +122,7 @@ func editorProcessKey(c int, messageBuf nvim.Buffer) bool {
 			sess.p.mode = COMMAND_LINE
 			sess.p.command_line = ""
 			sess.p.command = ""
-			sess.p.showMessage(":")
+			sess.p.showMessage(":") ///////////////////////////////////////////
 			_, err := v.Input("\x1b")
 			if err != nil {
 				fmt.Printf("%v\n", err)
@@ -136,7 +149,6 @@ func editorProcessKey(c int, messageBuf nvim.Buffer) bool {
 
 		//sess.p.showMessage("blocking = %t; mode = %v; command = %v", mode.Blocking, mode.Mode, sess.p.command) //debugging
 		if cmd, found := e_lookup2[sess.p.command]; found {
-			sess.showEdMessage("Got here")
 			switch cmd := cmd.(type) {
 			case func(*Editor):
 				cmd(sess.p)

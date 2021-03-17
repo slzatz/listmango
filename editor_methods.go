@@ -785,6 +785,9 @@ func (e *Editor) getLineCharCountWW(r, line int) int {
 
 // not in use -- was attempt to draw rows without e.rows just nvim buffer
 func (e *Editor) drawRows2(pab *strings.Builder) {
+	// v.BufferLines appears to die if in blocking mode
+	// so probably should protect it directly and not rely on redraw bool
+	// Also v.Bufferlines doesn't return an err when in blocking mode - just dies so checking for err not useful
 	bb, _ := v.BufferLines(0, 0, -1, true)
 
 	if len(bb) == 0 {
@@ -1053,8 +1056,9 @@ func (e *Editor) scroll() bool {
 
 	if e.fc == 0 && e.fr == 0 {
 		e.cy, e.cx, e.line_offset, e.prev_line_offset, e.first_visible_row, e.last_visible_row = 0, 0, 0, 0, 0, 0
-		return true
+		return false // blocking issue with bb, err := v.BufferLines(0, 0, -1, true) in drawRows2
 	}
+
 	/*
 		if len(e.rows) == 0 {
 			e.fr, e.fc, e.cy, e.cx, e.line_offset, e.prev_line_offset, e.first_visible_row, e.last_visible_row = 0, 0, 0, 0, 0, 0, 0, 0
