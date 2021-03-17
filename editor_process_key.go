@@ -45,6 +45,25 @@ func highlightInfo(v *nvim.Nvim) [2][4]int {
 func editorProcessKey(c int, messageBuf nvim.Buffer) bool {
 	// need to check that every editor is instantiated with sess.p.mode == NORMAL
 
+	if c == '\x1b' {
+		_, err := v.Input("\x1b")
+		if err != nil {
+			fmt.Printf("%v\n", err)
+		}
+		//mode, _ = v.Mode() // appears that ":" in NORMAL mode causes mode = nil
+		sess.p.command = ""
+		sess.p.command_line = ""
+		sess.p.mode = NORMAL
+		//if previously in visual mode some text may be highlighted so need to return true
+		// also need the cursor position because for example going from INSERT -> NORMAL causes cursor to move back
+		// note you could fall through to getting pos but that recalcs rows which is unnecessary
+		pos, _ := v.WindowCursor(w) //set screen cx and cy from pos
+		sess.p.fr = pos[0] - 1
+		sess.p.fc = pos[1]
+		sess.p.showMessage("")
+		return true
+	}
+
 	nop := false
 	sess.p.command += string(c)
 	if strings.IndexAny(sess.p.command[0:1], "\x17\x08\x0c\x02\x05\x09\x06") == -1 {
@@ -66,7 +85,7 @@ func editorProcessKey(c int, messageBuf nvim.Buffer) bool {
 	*/
 
 	sess.showOrgMessage("char = %d; nop = %t", c, nop) //debugging
-	var mode *nvim.Mode                                //may not be needed if not debugging
+	//var mode *nvim.Mode                                //may not be needed if not debugging
 
 	if nop || sess.p.mode == COMMAND_LINE {
 		//do nothing
@@ -82,282 +101,234 @@ func editorProcessKey(c int, messageBuf nvim.Buffer) bool {
 			}
 		}
 
-		//  ":" in NORMAL mode causes mode = c initially
-		// Am guesing but if you check mode again with no key stroke registered
-		// v.Mode returns nil
-		mode, _ = v.Mode() // appears that ":" in NORMAL mode causes mode = nil
-		sess.p.mode = modeMap[mode.Mode]
+		mode, _ := v.Mode() // appears that ":" in NORMAL mode causes mode = nil
+		//sess.p.mode = modeMap[mode.Mode]
 		sess.p.showMessage("blocking = %t; mode = %v", mode.Blocking, mode.Mode) //debugging
-	}
-
-	//mode, _ = v.Mode()
-	//sess.p.showMessage("blocking = %t; mode = %v", mode.Blocking, mode.Mode) //debugging
-
-	//mode can definitely be nil - not sure how
-	//Hypothesis is nvim sets mode to nil when in command line
-	//One approach would be to intercept the ':' before nvim sees it
-	// so right now mode == nil seems ? equive to saying we are im cmd mode
-	if mode != nil && mode.Blocking == true {
-		// believe this is really necessary - don't want to redraw and do
-		//bb, err := v.BufferLines(0, 0, -1, true)if blocking just dies
-		return false
-	}
-
-	/*
-		if mode.Mode == "v" || mode.Mode == "V" || mode.Mode == string('\x16') {
-			sess.showOrgMessage("mode: %v -> h0=%v; h1= %v", mode.Mode, highlightInfo(v)[0], highlightInfo(v)[1])
+		if mode.Blocking {
+			return false // don't draw rows - bad things will happen
 		}
-	*/
-
-	if mode == nil {
-		sess.showOrgMessage("mode is nil!!!! editor.mode = %v", sess.p.mode)
-	}
-
-	//sess.p.mode = modeMap[mode.Mode]
-	switch sess.p.mode {
-	case INSERT:
-		sess.p.showMessage("--INSERT--")
-	case NORMAL:
-		if c == ':' {
+		if mode.Mode == "c" {
 			sess.p.mode = COMMAND_LINE
 			sess.p.command_line = ""
 			sess.p.command = ""
-			sess.p.showMessage(":") ///////////////////////////////////////////
+			sess.p.showMessage(":")
+			// below will put nvim back in NORMAL mode but listmango will be in COMMAND_LINE
 			_, err := v.Input("\x1b")
 			if err != nil {
 				fmt.Printf("%v\n", err)
 			}
 			return false
 		}
-		if c == '\x1b' {
-			sess.p.command = ""
-			//if previously in visual mode some text may be highlighted so need to return true
-			// also need the cursor position because for example going from INSERT -> NORMAL causes cursor to move back
-			// note you could fall through to getting pos but that recalcs rows which is unnecessary
-			pos, _ := v.WindowCursor(w) //set screen cx and cy from pos
-			sess.p.fr = pos[0] - 1
-			sess.p.fc = pos[1]
-			return true
-		}
+		sess.p.mode = modeMap[mode.Mode]
+	}
 
-		/*
-			sess.p.command += string(c)
-			if strings.IndexAny(sess.p.command[0:1], "\x17\x08\x0c\x02\x05\x09\x06") == -1 {
+	if sess.p.mode != COMMAND_LINE {
+		switch sess.p.mode {
+		case INSERT:
+			sess.p.showMessage("--INSERT--")
+		case NORMAL:
+			if cmd, found := e_lookup2[sess.p.command]; found {
+				switch cmd := cmd.(type) {
+				case func(*Editor):
+					cmd(sess.p)
+				case func():
+					cmd()
+				case func(*Editor, int):
+					cmd(sess.p, c)
+				case func(*Editor) bool:
+					cmd(sess.p)
+				}
+
+				_, err := v.Input("\x1b")
+				if err != nil {
+					fmt.Printf("%v\n", err)
+				}
 				sess.p.command = ""
+				return true
 			}
-		*/
-
-		//sess.p.showMessage("blocking = %t; mode = %v; command = %v", mode.Blocking, mode.Mode, sess.p.command) //debugging
-		if cmd, found := e_lookup2[sess.p.command]; found {
-			switch cmd := cmd.(type) {
-			case func(*Editor):
-				cmd(sess.p)
-			case func():
-				cmd()
-			case func(*Editor, int):
-				cmd(sess.p, c)
-			case func(*Editor) bool:
-				cmd(sess.p)
-			}
-
-			_, err := v.Input("\x1b")
-			if err != nil {
-				fmt.Printf("%v\n", err)
-			}
-			sess.p.command = ""
-			return true
+		case VISUAL, VISUAL_LINE, VISUAL_BLOCK:
+			sess.p.vb_highlight = highlightInfo(v)
 		}
-	case VISUAL, VISUAL_LINE, VISUAL_BLOCK:
-		sess.p.vb_highlight = highlightInfo(v)
+		sess.p.rows = nil
+		bb, _ := v.BufferLines(sess.p.vbuf, 0, -1, true)
+		for _, b := range bb {
+			sess.p.rows = append(sess.p.rows, string(b))
+		}
+		pos, _ := v.WindowCursor(w) //set screen cx and cy from pos
+		sess.p.fr = pos[0] - 1
+		sess.p.fc = pos[1]
 
-	case COMMAND_LINE:
+		if c == 'u' && sess.p.mode == NORMAL {
+			showVimMessage()
+		}
+		return true
+	}
 
-		if c == '\x1b' {
-			sess.p.mode = NORMAL
-			sess.p.command = ""
-			sess.p.repeat, sess.p.last_repeat = 0, 0
-			sess.p.showMessage("")
-			return false
+	//	case COMMAND_LINE:
+
+	if c == '\r' {
+		pos := strings.Index(sess.p.command_line, " ")
+		var cmd string
+		if pos != -1 {
+			cmd = sess.p.command_line[:pos]
+		} else {
+			pos = 0
+			cmd = sess.p.command_line
 		}
 
-		if c == '\r' {
-			pos := strings.Index(sess.p.command_line, " ")
-			var cmd string
-			if pos != -1 {
-				cmd = sess.p.command_line[:pos]
-			} else {
-				pos = 0
-				cmd = sess.p.command_line
-			}
-
-			// note that right now we are not calling editor commands like E_write_close_C
-			// and E_quit_C and E_quit0_C
-			sess.showOrgMessage("You hit return and command is %v", cmd)
-			if _, found := quit_cmds[cmd]; found {
-				if cmd == "x" {
-					if sess.p.is_subeditor {
-						sess.p.mode = NORMAL
-						sess.p.command = ""
-						sess.p.command_line = ""
-						sess.p.showMessage("You can't save the contents of the Output Window")
-						return false
-					}
-					updateNote() //should be p->E_write_C(); closing_editor = true;
-
-					/*
-						ok, err := v.DetachBuffer(0)
-						if err != nil {
-							log.Fatal(err)
-						}
-						if !ok {
-							log.Fatal()
-						}
-					*/
-
-					//sess.p.quit <- struct{}{}
-
-					// this seems like a kluge but I can't delete buffer
-					// without generating an error
-					err := v.SetBufferLines(0, 0, -1, true, [][]byte{})
-					if err != nil {
-						sess.showOrgMessage("SetBufferLines to []  error %v", err)
-					}
-
-				} else if cmd == "q!" || cmd == "quit!" {
-
-					err := v.SetBufferLines(0, 0, -1, true, [][]byte{})
-					if err != nil {
-						sess.showOrgMessage("SetBufferLines to []  error %v", err)
-					}
-					/*
-							deleteBufferOpts := map[string]bool{
-								"force":  true,
-								"unload": false,
-							}
-						//err = v.DeleteBuffer(0, deleteBufferOpts)
-						//zero is the current buffer
-						err = v.DeleteBuffer(0, map[string]bool{})
-						if err != nil {
-							sess.showOrgMessage("DeleteBuffer error %v", err)
-						}
-					*/
-
-					// do nothing = allow editor to be closed
-				} else if sess.p.dirty > 0 {
+		// note that right now we are not calling editor commands like E_write_close_C
+		// and E_quit_C and E_quit0_C
+		sess.showOrgMessage("You hit return and command is %v", cmd)
+		if _, found := quit_cmds[cmd]; found {
+			if cmd == "x" {
+				if sess.p.is_subeditor {
 					sess.p.mode = NORMAL
 					sess.p.command = ""
 					sess.p.command_line = ""
-					sess.p.showMessage("No write since last change")
+					sess.p.showMessage("You can't save the contents of the Output Window")
 					return false
 				}
+				updateNote() //should be p->E_write_C(); closing_editor = true;
 
+				/*
+					ok, err := v.DetachBuffer(0)
+					if err != nil {
+						log.Fatal(err)
+					}
+					if !ok {
+						log.Fatal()
+					}
+				*/
+
+				//sess.p.quit <- struct{}{}
+
+				// this seems like a kluge but I can't delete buffer
+				// without generating an error
+				err := v.SetBufferLines(0, 0, -1, true, [][]byte{})
+				if err != nil {
+					sess.showOrgMessage("SetBufferLines to []  error %v", err)
+				}
+
+			} else if cmd == "q!" || cmd == "quit!" {
+
+				err := v.SetBufferLines(0, 0, -1, true, [][]byte{})
+				if err != nil {
+					sess.showOrgMessage("SetBufferLines to []  error %v", err)
+				}
+				/*
+						deleteBufferOpts := map[string]bool{
+							"force":  true,
+							"unload": false,
+						}
+					//err = v.DeleteBuffer(0, deleteBufferOpts)
+					//zero is the current buffer
+					err = v.DeleteBuffer(0, map[string]bool{})
+					if err != nil {
+						sess.showOrgMessage("DeleteBuffer error %v", err)
+					}
+				*/
+
+				// do nothing = allow editor to be closed
+			} else if sess.p.dirty > 0 {
+				sess.p.mode = NORMAL
+				sess.p.command = ""
+				sess.p.command_line = ""
+				sess.p.showMessage("No write since last change")
+				return false
+			}
+
+			index := -1
+			for i := range sess.editors {
+				if sess.editors[i] == sess.p {
+					index = i
+					break
+				}
+			}
+			copy(sess.editors[index:], sess.editors[index+1:])
+			sess.editors = sess.editors[:len(sess.editors)-1]
+
+			if sess.p.linked_editor != nil {
 				index := -1
 				for i := range sess.editors {
-					if sess.editors[i] == sess.p {
+					if sess.editors[i] == sess.p.linked_editor {
 						index = i
 						break
 					}
 				}
 				copy(sess.editors[index:], sess.editors[index+1:])
 				sess.editors = sess.editors[:len(sess.editors)-1]
-
-				if sess.p.linked_editor != nil {
-					index := -1
-					for i := range sess.editors {
-						if sess.editors[i] == sess.p.linked_editor {
-							index = i
-							break
-						}
-					}
-					copy(sess.editors[index:], sess.editors[index+1:])
-					sess.editors = sess.editors[:len(sess.editors)-1]
-				}
-
-				if len(sess.editors) > 0 {
-
-					sess.p = sess.editors[0] //kluge should move in some logical fashion
-					sess.positionEditors()
-					sess.eraseRightScreen() //moved down here on 10-24-2020
-					sess.drawEditors()
-
-				} else { // we've quit the last remaining editor(s)
-					// unless commented out earlier sess.p.quiet <- causes panic
-					//sess.p = nil
-					sess.editorMode = false
-					sess.eraseRightScreen()
-
-					if sess.divider < 10 {
-						sess.cfg.ed_pct = 80
-						sess.moveDivider(80)
-					}
-
-					sess.drawPreviewWindow(org.rows[org.fr].id)
-					sess.returnCursor() //because main while loop if started in editor_mode -- need this 09302020
-				}
-
-				//sess.p.command_line = ""
-				//sess.p.mode = NORMAL
-				return false
-			} //end quit_cmds
-
-			if cmd == "s" { //switch bufferd
-				bufs, _ := v.Buffers()
-				if int(sess.p.vbuf) == 2 {
-					_ = v.SetCurrentBuffer(bufs[len(bufs)-1])
-					sess.p.vbuf = bufs[len(bufs)-1]
-				} else {
-					_ = v.SetCurrentBuffer(bufs[1])
-					sess.p.vbuf = bufs[1]
-				}
-				sess.p.command_line = ""
-				sess.p.mode = NORMAL
-				sess.p.refreshScreen(true)
-				return true
 			}
 
-			if cmd == "m" {
-				sess.p.showMessage("buffer %v has been modified %v times", sess.p.vbuf, sess.p.dirty)
-				sess.p.command_line = ""
-				sess.p.mode = NORMAL
-				return false
+			if len(sess.editors) > 0 {
+
+				sess.p = sess.editors[0] //kluge should move in some logical fashion
+				sess.positionEditors()
+				sess.eraseRightScreen() //moved down here on 10-24-2020
+				sess.drawEditors()
+
+			} else { // we've quit the last remaining editor(s)
+				// unless commented out earlier sess.p.quiet <- causes panic
+				//sess.p = nil
+				sess.editorMode = false
+				sess.eraseRightScreen()
+
+				if sess.divider < 10 {
+					sess.cfg.ed_pct = 80
+					sess.moveDivider(80)
+				}
+
+				sess.drawPreviewWindow(org.rows[org.fr].id)
+				sess.returnCursor() //because main while loop if started in editor_mode -- need this 09302020
 			}
 
-			if cmd0, found := e_lookup_C[cmd]; found {
-				cmd0(sess.p)
-				sess.p.command_line = ""
-				sess.p.mode = NORMAL
-				return false
-			}
-
-			sess.p.showMessage("\x1b[41mNot an editor command: %s\x1b[0m", cmd)
-			sess.p.mode = NORMAL
-			sess.p.command_line = ""
+			//sess.p.command_line = ""
+			//sess.p.mode = NORMAL
 			return false
-		} //end 'r'
+		} //end quit_cmds
 
-		if c == DEL_KEY || c == BACKSPACE {
-			if len(sess.p.command_line) > 0 {
-				sess.p.command_line = sess.p.command_line[:len(sess.p.command_line)-1]
+		if cmd == "s" { //switch bufferd
+			bufs, _ := v.Buffers()
+			if int(sess.p.vbuf) == 2 {
+				_ = v.SetCurrentBuffer(bufs[len(bufs)-1])
+				sess.p.vbuf = bufs[len(bufs)-1]
+			} else {
+				_ = v.SetCurrentBuffer(bufs[1])
+				sess.p.vbuf = bufs[1]
 			}
-		} else {
-			sess.p.command_line += string(c)
+			sess.p.command_line = ""
+			sess.p.mode = NORMAL
+			sess.p.refreshScreen(true)
+			return true
 		}
 
-		sess.p.showMessage(":%s", sess.p.command_line)
-		return false //end of case COMMAND_LINE
-	} //end switch
+		if cmd == "m" {
+			sess.p.showMessage("buffer %v has been modified %v times", sess.p.vbuf, sess.p.dirty)
+			sess.p.command_line = ""
+			sess.p.mode = NORMAL
+			return false
+		}
 
-	// may or may not be in middle of a command like caw or daw
-	sess.p.rows = nil
-	bb, _ := v.BufferLines(sess.p.vbuf, 0, -1, true)
-	for _, b := range bb {
-		sess.p.rows = append(sess.p.rows, string(b))
+		if cmd0, found := e_lookup_C[cmd]; found {
+			cmd0(sess.p)
+			sess.p.command_line = ""
+			sess.p.mode = NORMAL
+			return false
+		}
+
+		sess.p.showMessage("\x1b[41mNot an editor command: %s\x1b[0m", cmd)
+		sess.p.mode = NORMAL
+		sess.p.command_line = ""
+		return false
+	} //end 'r'
+
+	if c == DEL_KEY || c == BACKSPACE {
+		if len(sess.p.command_line) > 0 {
+			sess.p.command_line = sess.p.command_line[:len(sess.p.command_line)-1]
+		}
+	} else {
+		sess.p.command_line += string(c)
 	}
-	pos, _ := v.WindowCursor(w) //set screen cx and cy from pos
-	sess.p.fr = pos[0] - 1
-	sess.p.fc = pos[1]
-	if c == 'u' && sess.p.mode == NORMAL {
-		showVimMessage()
-	}
-	return true
+
+	sess.p.showMessage(":%s", sess.p.command_line)
+	return false //end of case COMMAND_LINE
 }

@@ -8,7 +8,9 @@ import (
 var z0 = struct{}{}
 
 var modeMap = map[string]Mode{
-	"n":    NORMAL,
+	"n": NORMAL,
+	//"c":    COMMAND_LINE
+	//"R":    REPLACE
 	"i":    INSERT,
 	"v":    VISUAL,
 	"V":    VISUAL_LINE,
