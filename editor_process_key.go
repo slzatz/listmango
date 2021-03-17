@@ -42,18 +42,20 @@ func highlightInfo(v *nvim.Nvim) [2][4]int {
 	return z
 }
 
-func editorProcessKey(c int, messageBuf nvim.Buffer) bool {
-	// need to check that every editor is instantiated with sess.p.mode == NORMAL
+func editorProcessKey(c int, messageBuf nvim.Buffer) bool { //bool returned is whether to redraw
+	// editors are instantiated with sess.p.mode == NORMAL
 
+	//No matter what mode you are in an escape puts you in NORMAL mode
 	if c == '\x1b' {
 		_, err := v.Input("\x1b")
 		if err != nil {
-			fmt.Printf("%v\n", err)
+			fmt.Printf("Error input escape: %v\n", err)
+			return false
 		}
-		//mode, _ = v.Mode() // appears that ":" in NORMAL mode causes mode = nil
 		sess.p.command = ""
 		sess.p.command_line = ""
 		sess.p.mode = NORMAL
+
 		//if previously in visual mode some text may be highlighted so need to return true
 		// also need the cursor position because for example going from INSERT -> NORMAL causes cursor to move back
 		// note you could fall through to getting pos but that recalcs rows which is unnecessary
@@ -64,6 +66,8 @@ func editorProcessKey(c int, messageBuf nvim.Buffer) bool {
 		return true
 	}
 
+	// there are a set of commands like ctrl-w that we are intercepting
+	// note any command that changes the UI like splits or tabs don't make sense
 	nop := false
 	sess.p.command += string(c)
 	if strings.IndexAny(sess.p.command[0:1], "\x17\x08\x0c\x02\x05\x09\x06") == -1 {
@@ -72,6 +76,7 @@ func editorProcessKey(c int, messageBuf nvim.Buffer) bool {
 		nop = true
 	}
 
+	// also supporting a leader key for commands not sent to nvim
 	if sess.p.mode == NORMAL && c == int(leader[0]) {
 		sess.p.command = leader
 		nop = true
@@ -85,10 +90,9 @@ func editorProcessKey(c int, messageBuf nvim.Buffer) bool {
 	*/
 
 	sess.showOrgMessage("char = %d; nop = %t", c, nop) //debugging
-	//var mode *nvim.Mode                                //may not be needed if not debugging
 
 	if nop || sess.p.mode == COMMAND_LINE {
-		//do nothing
+		//don't send keys to nvim - don't want it processing them
 		sess.showEdMessage("NOP or COMMAND_LINE")
 	} else {
 
@@ -101,18 +105,22 @@ func editorProcessKey(c int, messageBuf nvim.Buffer) bool {
 			}
 		}
 
-		mode, _ := v.Mode() // appears that ":" in NORMAL mode causes mode = nil
-		//sess.p.mode = modeMap[mode.Mode]
+		mode, _ := v.Mode()
 		sess.p.showMessage("blocking = %t; mode = %v", mode.Blocking, mode.Mode) //debugging
+		//Example of input that blocks is entering a number (eg, 4x) in NORMAL mode
+		//If blocked true you can't retrieve buffer with v.BufferLines (app just locks up)
 		if mode.Blocking {
-			return false // don't draw rows - bad things will happen
+			return false // don't draw rows - which calls v.BufferLines
 		}
 		if mode.Mode == "c" {
 			sess.p.mode = COMMAND_LINE
 			sess.p.command_line = ""
 			sess.p.command = ""
 			sess.p.showMessage(":")
+
 			// below will put nvim back in NORMAL mode but listmango will be in COMMAND_LINE
+			// essentially park nvim in NORMAL mode and don't feed it any keys while
+			// in COMMAND_LINE mode
 			_, err := v.Input("\x1b")
 			if err != nil {
 				fmt.Printf("%v\n", err)
@@ -164,7 +172,7 @@ func editorProcessKey(c int, messageBuf nvim.Buffer) bool {
 		return true
 	}
 
-	//	case COMMAND_LINE:
+	/************Everything below is for COMMAND_LINE**************/
 
 	if c == '\r' {
 		pos := strings.Index(sess.p.command_line, " ")
@@ -190,16 +198,6 @@ func editorProcessKey(c int, messageBuf nvim.Buffer) bool {
 				}
 				updateNote() //should be p->E_write_C(); closing_editor = true;
 
-				/*
-					ok, err := v.DetachBuffer(0)
-					if err != nil {
-						log.Fatal(err)
-					}
-					if !ok {
-						log.Fatal()
-					}
-				*/
-
 				//sess.p.quit <- struct{}{}
 
 				// this seems like a kluge but I can't delete buffer
@@ -215,17 +213,17 @@ func editorProcessKey(c int, messageBuf nvim.Buffer) bool {
 				if err != nil {
 					sess.showOrgMessage("SetBufferLines to []  error %v", err)
 				}
-				/*
-						deleteBufferOpts := map[string]bool{
-							"force":  true,
-							"unload": false,
-						}
-					//err = v.DeleteBuffer(0, deleteBufferOpts)
-					//zero is the current buffer
-					err = v.DeleteBuffer(0, map[string]bool{})
-					if err != nil {
-						sess.showOrgMessage("DeleteBuffer error %v", err)
+				/* deleteBuffer is failing (for me)
+					deleteBufferOpts := map[string]bool{
+						"force":  true,
+						"unload": false,
 					}
+				//err = v.DeleteBuffer(0, deleteBufferOpts)
+				//zero is the current buffer
+				err = v.DeleteBuffer(0, map[string]bool{})
+				if err != nil {
+					sess.showOrgMessage("DeleteBuffer error %v", err)
+				}
 				*/
 
 				// do nothing = allow editor to be closed
@@ -281,8 +279,6 @@ func editorProcessKey(c int, messageBuf nvim.Buffer) bool {
 				sess.returnCursor() //because main while loop if started in editor_mode -- need this 09302020
 			}
 
-			//sess.p.command_line = ""
-			//sess.p.mode = NORMAL
 			return false
 		} //end quit_cmds
 
@@ -330,5 +326,5 @@ func editorProcessKey(c int, messageBuf nvim.Buffer) bool {
 	}
 
 	sess.p.showMessage(":%s", sess.p.command_line)
-	return false //end of case COMMAND_LINE
+	return false //end COMMAND_LINE
 }
