@@ -300,7 +300,7 @@ func synchronize(reportOnly bool) {
 	//Client changes
 
 	//client updated contexts
-	rows, err = db.Query("SELECT id, title, \"default\", created, modified FROM context WHERE substr(context.modified, 1, 19) > $1 AND context.deleted = $2;", client_t, false)
+	rows, err = db.Query("SELECT id, tid, title, \"default\", created, modified FROM context WHERE substr(context.modified, 1, 19) > $1 AND context.deleted = $2;", client_t, false)
 
 	//defer rows.Close()
 
@@ -309,6 +309,7 @@ func synchronize(reportOnly bool) {
 		var c Container
 		rows.Scan(
 			&c.id,
+			&c.tid,
 			&c.title,
 			&c.star,
 			&c.created,
@@ -550,32 +551,25 @@ func synchronize(reportOnly bool) {
 		*/
 
 		row := pdb.QueryRow("SELECT id from context WHERE id=$1", c.tid)
-		var id int
-		err = row.Scan(&id)
+		var tid int
+		err = row.Scan(&tid)
 		switch {
 		// server context doesn't exist
 		case err == sql.ErrNoRows:
-			res, err1 := pdb.Exec("INSERT INTO context (title, \"default\", created, modified, deleted) VALUES ($1, $2, $3, now(), false);",
-				c.title, c.star, c.created)
+			err1 := pdb.QueryRow("INSERT INTO context (title, \"default\", created, modified, deleted) VALUES ($1, $2, $3, now(), false) RETURNING id;",
+				c.title, c.star, c.created).Scan(&tid)
 			if err1 != nil {
-				fmt.Fprintf(&lg, "Problem inserting new context into postgres: %v", err1)
+				fmt.Fprintf(&lg, "Problem inserting new context %d: %s into postgres: %v", c.id, c.title, err1)
 				break
 			}
-			lastId, err4 := res.LastInsertId()
-			if err4 != nil {
-				fmt.Fprintf(&lg, "Problem retrieving id/lastId from new server context to set client tid: %v\n", err4)
-				break
-			}
-			fmt.Fprintf(&lg, "Created new server/postgres context: %v with id: %v\n", c.title, lastId)
-			// need to update the new client context with the id/tid we got from the server
-			res, err2 := db.Exec("UPDATE context SET context.tid=$1 WHERE context.id=$2;", lastId, c.id)
+			_, err2 := db.Exec("UPDATE context SET tid=$1 WHERE id=$2;", tid, c.id)
 			if err2 != nil {
-				fmt.Fprintf(&lg, "Problem setting new client context's tid: %v; id: %v\n", lastId, c.id, err2)
+				fmt.Fprintf(&lg, "Problem setting new client context's tid: %v; id: %v\n", tid, c.id, err2)
 				break
 			}
-			fmt.Fprintf(&lg, "Set value of tid for client context with id: %v to tid = %v\n", c.id, lastId)
+			fmt.Fprintf(&lg, "Set value of tid for client context with id: %v to tid = %v\n", c.id, tid)
 		case err != nil:
-			fmt.Fprintf(&lg, "Problem querying postgres for a context with id: %v: %v\n", c.tid, err)
+			fmt.Fprintf(&lg, "Error querying postgres for a context with id: %v: %v\n", c.tid, err)
 		default:
 			_, err3 := pdb.Exec("UPDATE context SET title=$1, \"default\"=$2, modified=now() WHERE id=$3;", c.title, c.star, c.tid)
 			if err3 != nil {
@@ -622,36 +616,29 @@ func synchronize(reportOnly bool) {
 		*/
 
 		row := pdb.QueryRow("SELECT id from folder WHERE id=$1", c.tid)
-		var id int
-		err = row.Scan(&id)
+		var tid int
+		err = row.Scan(&tid)
 		switch {
 		// server folder doesn't exist
 		case err == sql.ErrNoRows:
-			res, err1 := pdb.Exec("INSERT INTO folder (title, private, created, modified, deleted) VALUES ($1, $2, $3, now(), false);",
-				c.title, c.star, c.created)
+			err1 := pdb.QueryRow("INSERT INTO folder (title, private, created, modified, deleted) VALUES ($1, $2, $3, now(), false) RETURNING id;",
+				c.title, c.star, c.created).Scan(&tid)
 			if err1 != nil {
-				fmt.Fprintf(&lg, "Problem inserting new folder into postgres: %v", err1)
+				fmt.Fprintf(&lg, "Problem inserting new folder %d: %s into postgres: %v", c.id, c.title, err1)
 				break
 			}
-			lastId, err4 := res.LastInsertId()
-			if err4 != nil {
-				fmt.Fprintf(&lg, "Problem retrieving id/lastId from new server folder to set client tid: %v\n", err4)
-				break
-			}
-			fmt.Fprintf(&lg, "Created new server/postgres folder: %v with id: %v\n", c.title, lastId)
-			// need to update the new client folder with the id/tid we got from the server
-			res, err2 := db.Exec("UPDATE folder SET folder.tid=$1 WHERE folder.id=$2;", lastId, c.id)
+			_, err2 := db.Exec("UPDATE folder SET tid=$1 WHERE id=$2;", tid, c.id)
 			if err2 != nil {
-				fmt.Fprintf(&lg, "Problem setting new client folder's tid: %v; id: %v\n", lastId, c.id, err2)
+				fmt.Fprintf(&lg, "Problem setting new client folder's tid: %v; id: %v\n", tid, c.id, err2)
 				break
 			}
-			fmt.Fprintf(&lg, "Set value of tid for client folder with id: %v to tid = %v\n", c.id, lastId)
+			fmt.Fprintf(&lg, "Set value of tid for client folder with id: %v to tid = %v\n", c.id, tid)
 		case err != nil:
-			fmt.Fprintf(&lg, "Problem querying postgres for a folder with id: %v: %v\n", c.tid, err)
+			fmt.Fprintf(&lg, "Error querying postgres for a folder with id: %v: %v\n", c.tid, err)
 		default:
 			_, err3 := pdb.Exec("UPDATE folder SET title=$1, private=$2, modified=now() WHERE id=$3;", c.title, c.star, c.tid)
 			if err3 != nil {
-				fmt.Fprintf(&lg, "Problem updating postgres for a folder with id: %v: %w\n", c.tid, err3)
+				fmt.Fprintf(&lg, "Error updating postgres for a folder with id: %v: %w\n", c.tid, err3)
 			} else {
 				fmt.Fprintf(&lg, "Updated server/postgres folder: %v with id: %v\n", c.title, c.tid)
 			}
@@ -694,36 +681,29 @@ func synchronize(reportOnly bool) {
 		*/
 
 		row := pdb.QueryRow("SELECT id from keyword WHERE id=$1", c.tid)
-		var id int
-		err = row.Scan(&id)
+		var tid int
+		err = row.Scan(&tid)
 		switch {
 		// server keyword doesn't exist
 		case err == sql.ErrNoRows:
-			res, err1 := pdb.Exec("INSERT INTO keyword (name, star, modified, deleted) VALUES ($1, $2, now(), false);",
-				c.title, c.star)
+			err1 := pdb.QueryRow("INSERT INTO keyword (name, star, modified, deleted) VALUES ($1, $2, now(), false) RETURNING id;",
+				c.title, c.star).Scan(&tid)
 			if err1 != nil {
-				fmt.Fprintf(&lg, "Problem inserting new keyword into postgres: %v", err1)
+				fmt.Fprintf(&lg, "Problem inserting new keyword: %d: %s into postgres: %v", c.id, c.title, err1)
 				break
 			}
-			lastId, err4 := res.LastInsertId()
-			if err4 != nil {
-				fmt.Fprintf(&lg, "Problem retrieving id/lastId from new server keyword to set client tid: %v\n", err4)
-				break
-			}
-			fmt.Fprintf(&lg, "Created new server/postgres keyword: %v with id: %v\n", c.title, lastId)
-			// need to update the new client keyword with the id/tid we got from the server
-			res, err2 := db.Exec("UPDATE keyword SET keyword.tid=$1 WHERE keyword.id=$2;", lastId, c.id)
+			_, err2 := db.Exec("UPDATE keyword SET tid=$1 WHERE id=$2;", tid, c.id)
 			if err2 != nil {
-				fmt.Fprintf(&lg, "Problem setting new client keyword's tid: %v; id: %v\n", lastId, c.id, err2)
+				fmt.Fprintf(&lg, "Error setting new client keyword's tid: %v; id: %v\n", tid, c.id, err2)
 				break
 			}
-			fmt.Fprintf(&lg, "Set value of tid for client keyword with id: %v to tid = %v\n", c.id, lastId)
+			fmt.Fprintf(&lg, "Set value of tid for client keyword with id: %v to tid = %v\n", c.id, tid)
 		case err != nil:
-			fmt.Fprintf(&lg, "Problem querying postgres for a keyword with id: %v: %v\n", c.tid, err)
+			fmt.Fprintf(&lg, "Error querying postgres for a keyword with id: %v: %v\n", c.tid, err)
 		default:
 			_, err3 := pdb.Exec("UPDATE keyword SET name=$1, star=$2, modified=now() WHERE id=$3;", c.title, c.star, c.tid)
 			if err3 != nil {
-				fmt.Fprintf(&lg, "Problem updating postgres for a keyword with id: %v: %w\n", c.tid, err3)
+				fmt.Fprintf(&lg, "Error updating postgres for a keyword with id: %v: %w\n", c.tid, err3)
 			} else {
 				fmt.Fprintf(&lg, "Updated server/postgres keyword: %v with id: %v\n", c.title, c.tid)
 			}
