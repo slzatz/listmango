@@ -88,13 +88,15 @@ func organizerProcessKey(c int) {
 			return
 		}
 
+		// this only applies to entries not containers right now
 		if c == '\r' { //also does escape into NORMAL mode
-			org.writeTitle()
+			if org.view == TASK {
+				org.writeTitle()
+			}
 			return
 		}
 
 		/*leading digit is a multiplier*/
-		//if (isdigit(c))  //equiv to if (c > 47 && c < 58)
 
 		if (c > 47 && c < 58) && len(org.command) == 0 {
 
@@ -135,7 +137,29 @@ func organizerProcessKey(c int) {
 			return
 		}
 
-		//return // end of case NORMAL
+	//return // end of case NORMAL
+
+	case REPLACE:
+		if org.repeat == 0 {
+			org.repeat = 1
+		}
+		if c == '\x1b' {
+			org.command = ""
+			org.repeat = 0
+			org.mode = NORMAL
+			return
+		}
+
+		for i := 0; i < org.repeat; i++ {
+			org.delChar()
+			org.insertChar(c)
+		}
+
+		org.repeat = 0
+		org.command = ""
+		org.mode = NORMAL
+
+		return //////// end of outer case REPLACE
 
 	case COMMAND_LINE:
 		if c == '\x1b' {
