@@ -364,7 +364,6 @@ func getItems(max int) {
 
 	for rows.Next() {
 		var row Row
-		//var completed string
 		var completed sql.NullString
 		var modified string
 
@@ -409,10 +408,12 @@ func updateTitle() {
 	// needs to be a pointer because may send to insertRow
 	row := &org.rows[org.fr]
 
+	/* check is in calling method writeTitle
 	if !row.dirty {
 		sess.showOrgMessage("Row has not been changed")
 		return
 	}
+	*/
 
 	if row.id == -1 {
 		// want to send pointer to insertRow
@@ -974,6 +975,86 @@ func getNoteSearchPositions(id int) [][]int {
 		}
 	}
 	return word_positions
+}
+
+func updateContainerTitle() {
+
+	row := &org.rows[org.fr]
+
+	if !row.dirty {
+		sess.showOrgMessage("Row has not been changed")
+		return
+	}
+
+	if row.id == -1 {
+		insertContainer(row)
+		return
+	}
+
+	var table string
+	var column string
+	switch org.view {
+	case CONTEXT:
+		table = "context"
+		column = "title"
+	case FOLDER:
+		table = "folder"
+		column = "title"
+	case KEYWORD:
+		table = "keyword"
+		column = "name"
+	default:
+		sess.showOrgMessage("Somehow that's a container I don't recognize")
+		return
+	}
+
+	stmt := fmt.Sprintf("UPDATE %s SET %s=?, modified=datetime('now') WHERE id=?",
+		table, column)
+	_, err := db.Exec(stmt, row.title, row.id)
+	if err != nil {
+		sess.showOrgMessage("Error updating %s title for %d", table, row.id)
+	}
+}
+
+func insertContainer(row *Row) int {
+
+	var stmt string
+	if org.view != KEYWORD {
+		var table string
+		var star string
+		switch org.view {
+		case CONTEXT:
+			table = "context"
+			star = "\"default\""
+		case FOLDER:
+			table = "folder"
+			star = "private"
+		default:
+			sess.showOrgMessage("Somehow that's a container I don't recognize")
+			return -1
+		}
+
+		stmt = fmt.Sprintf("INSERT INTO %s (title, %s, deleted, created, modified, tid, textcolor) ",
+			table, star)
+
+		stmt += "VALUES (?, ?, False, datetime('now'), datetime('now'), 0, 10);"
+	} else {
+
+		stmt = "INSERT INTO keyword (name, star, deleted, modified, tid) " +
+			"VALUES (?, ?, False, datetime('now'), 0);"
+	}
+
+	res, err := db.Exec(stmt, row.title, row.star)
+	if err != nil {
+		sess.showOrgMessage("Error in insertContainer: %v", err)
+		return -1
+	}
+
+	id, _ := res.LastInsertId()
+	row.id = int(id)
+	row.dirty = false
+
+	return row.id
 }
 
 func highlight_terms_string(text string, word_positions [][]int) string {
