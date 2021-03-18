@@ -330,6 +330,13 @@ func (o *Organizer) insertChar(c int) {
 
 // corrected mistaken need to do (*row) when go able to figure out it's a pointer
 func (o *Organizer) writeTitle() {
+	row := &o.rows[o.fr]
+
+	if !row.dirty {
+		sess.showOrgMessage("Row has not been changed")
+		return
+	}
+
 	if o.view == TASK {
 		updateTitle()
 		//msg = "Updated id {} to {} (+fts)";
@@ -347,10 +354,12 @@ func (o *Organizer) writeTitle() {
 		     msg = "Updated id {} to {}";
 		   }
 		*/
+	} else {
+		updateContainerTitle()
 	}
+
 	o.command = ""
 	o.mode = NORMAL
-	row := &o.rows[o.fr]
 	row.dirty = false
 	sess.showOrgMessage("Updated id %d to %s (+fts)", row.id, row.title)
 	sess.refreshOrgScreen()
