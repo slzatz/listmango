@@ -314,6 +314,36 @@ func updateNote() {
 	sess.showOrgMessage("Updated note and fts entry for item %d", sess.p.id)
 }
 
+func getSyncItems(max int) {
+	rows, err := db.Query(fmt.Sprintf("SELECT id, title, modified FROM sync_log LIMIT %d", max))
+	if err != nil {
+		sess.showOrgMessage("Error in getSyncItems: %v", err)
+		return
+	}
+
+	defer rows.Close()
+
+	org.rows = nil
+	for rows.Next() {
+		var row Row
+		var modified string
+
+		err = rows.Scan(&row.id,
+			&row.title,
+			&modified,
+		)
+
+		if err != nil {
+			sess.showOrgMessage("Error in getSyncItems: %v", err)
+			return
+		}
+
+		row.modified = timeDelta(modified)
+		org.rows = append(org.rows, row)
+
+	}
+}
+
 func getItems(max int) {
 
 	org.rows = nil
@@ -356,7 +386,7 @@ func getItems(max int) {
 		rows, err = db.Query(s, arg)
 	}
 	if err != nil {
-		sess.showOrgMessage("Error in getItems()")
+		sess.showOrgMessage("Error in getItems: %v", err)
 		return
 	}
 
@@ -542,6 +572,14 @@ func insertRow(row *Row) int {
 	return row.id
 }
 
+func insertSyncEntry(title, note string) {
+	_, err := db.Exec("INSERT INTO sync_log (title, note, modified) VALUES (?, ?, datetime('now'));",
+		title, note)
+	if err != nil {
+		fmt.Printf("Error inserting sync log into db: %v", err)
+	}
+}
+
 func readNoteIntoString(id int) string {
 	if id == -1 {
 		return "" // id given to new and unsaved entries
@@ -591,6 +629,16 @@ func readNoteIntoEditor(id int) {
 	}
 	v.SetBufferLines(sess.p.vbuf, 0, -1, true, bb)
 
+}
+
+func readSyncLog(id int) string {
+	row := db.QueryRow("SELECT note FROM sync_log WHERE id=?;", id)
+	var note string
+	err := row.Scan(&note)
+	if err != nil {
+		return ""
+	}
+	return note
 }
 
 func getEntryInfo(id int) Entry {

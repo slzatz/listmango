@@ -106,9 +106,10 @@ const (
 	SEARCH            // only editor mode
 	FIND              // only outline mode
 	ADD_CHANGE_FILTER // only outline mode
+	SYNC_LOG
 )
 
-var mode_text [12]string = [12]string{
+var mode_text = [13]string{
 	"NORMAL",
 	"INSERT",
 	"COMMAND LINE",
@@ -121,6 +122,7 @@ var mode_text [12]string = [12]string{
 	"SEARCH",
 	"FIND",
 	"ADD/CHANGE FILTER",
+	"SYNC LOG",
 }
 
 func (m Mode) String() string {
@@ -137,6 +139,7 @@ func (m Mode) String() string {
 		"SEARCH",
 		"FIND",
 		"ADD/CHANGE FILTER",
+		"SYNC LOG",
 	}[m]
 }
 
@@ -156,6 +159,7 @@ const (
 	CONTEXT
 	FOLDER
 	KEYWORD
+	SYNC_LOG_VIEW
 )
 
 //type TaskView int

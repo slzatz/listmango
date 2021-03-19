@@ -481,6 +481,8 @@ func (s *Session) drawOrgStatusBar() {
 		str = "Folders"
 	case KEYWORD:
 		str = "Keywords"
+	case SYNC_LOG_VIEW:
+		str = "Sync Log"
 	}
 
 	var length int
@@ -507,7 +509,7 @@ func (s *Session) drawOrgStatusBar() {
 		// also [0;35;7m -> because of 7m it reverses background and foreground
 		// I think the [0;7m is revert to normal and reverse video
 		status = fmt.Sprintf("\x1b[1m%s\x1b[0;7m %s...\x1b[0;35;7m %s \x1b[0;7m %d %d/%d \x1b[1;42m%s\x1b[49m",
-			str, title, keywords, (*r).id, org.fr+1, len(org.rows), mode_text[org.mode])
+			str, title, keywords, (*r).id, org.fr+1, len(org.rows), org.mode)
 
 		// klugy way of finding length of string without the escape characters
 		length = len(fmt.Sprintf("%s %s... %s  %d %d/%d %s",
@@ -682,6 +684,41 @@ func (s *Session) drawPreviewText2(text string) { //draw_preview
 	}
 	fmt.Print(ab.String())
 }
+func (s *Session) displaySyncLog(text string) { //draw_preview
+
+	var ab strings.Builder
+
+	width := s.totaleditorcols - 1
+	length := s.textLines - 1
+	//hide the cursor
+	ab.WriteString("\x1b[?25l")
+	fmt.Fprintf(&ab, "\x1b[%d;%dH", TOP_MARGIN+1, s.divider+1)
+
+	ab.WriteString(fmt.Sprintf("\x1b[%d;%dH", TOP_MARGIN+1, s.divider+2))
+
+	lf_ret := fmt.Sprintf("\r\n\x1b[%dC", s.divider+1)
+	//erase set number of chars on each line
+	erase_chars := fmt.Sprintf("\x1b[%dX", s.totaleditorcols)
+
+	for i := 0; i < length-1; i++ {
+		ab.WriteString(erase_chars)
+		ab.WriteString(lf_ret)
+	}
+
+	ab.WriteString(fmt.Sprintf("\x1b[%d;%dH", TOP_MARGIN+1, s.divider+2))
+
+	ab.WriteString(fmt.Sprintf("\x1b[2*x\x1b[%d;%d;%d;%d;48;5;235$r\x1b[*x",
+		TOP_MARGIN+1, s.divider+2, TOP_MARGIN+1+length, s.divider+2+width))
+
+	ab.WriteString("\x1b[48;5;235m")
+	//note := readNoteIntoString(org.rows[org.fr].id)
+	if text != "" {
+		ab.WriteString(generateWWString(text, width, length, lf_ret))
+	}
+	ab.WriteString("\x1b[0m") //return background to normal
+	fmt.Print(ab.String())
+}
+
 func (s *Session) displayEntryInfo(e *Entry) {
 	var ab strings.Builder
 	width := s.totaleditorcols - 10

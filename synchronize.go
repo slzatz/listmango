@@ -752,7 +752,7 @@ func synchronize(reportOnly bool) {
 					if err5 != nil {
 						fmt.Fprintf(&lg, "Problem updating fts_db for entry with id: %v: %w\n", lm_id, err5)
 					} else {
-						fmt.Fprintf(&lg, "fts_db updated for entry with id: %v\n", lm_id)
+						fmt.Fprintf(&lg, "fts_db updated for entry id: %d\n; tid: %d - %s ", lm_id, e.id, e.title)
 					}
 				}
 				fmt.Fprintf(&lg, "Updated local entry: %v with tid: %v\n", e.title, e.id)
@@ -1034,8 +1034,11 @@ func synchronize(reportOnly bool) {
 	fmt.Fprintf(&lg, "\nClient UTC timestamp: %s\n", client_ts)
 	fmt.Fprintf(&lg, "Server UTC timestamp: %s", server_ts)
 
-	sess.drawPreviewText2(lg.String())
+	log := lg.String()
+	sess.drawPreviewText2(log)
 	sess.drawPreviewBox()
+	log_title := fmt.Sprintf("Sync time: %v\n", time.Now())
+	insertSyncEntry(log_title, log)
 }
 
 /* Task

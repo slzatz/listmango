@@ -36,6 +36,7 @@ var cmd_lookup = map[string]func(*Organizer, int){
 	"keyword":     (*Organizer).keywords,
 	"k":           (*Organizer).keywords,
 	"recent":      (*Organizer).recent,
+	"log":         (*Organizer).log,
 	/*
 	  "deletekeywords": F_deletekeywords,
 	  "delkw": F_deletekeywords,
@@ -109,6 +110,14 @@ var cmd_lookup = map[string]func(*Organizer, int){
 	  "getlinked": F_getLinked,
 	  "resize": F_resize
 	*/
+}
+
+func (o *Organizer) log(unused int) {
+	getSyncItems(MAX)
+	org.fc, org.fr, org.rowoff = 0, 0, 0
+	o.mode = SYNC_LOG      //kluge INSERT, NORMAL, ...
+	o.view = SYNC_LOG_VIEW //TASK, FOLDER, KEYWORD ...
+	sess.showOrgMessage("")
 }
 
 func (o *Organizer) openContext(pos int) {

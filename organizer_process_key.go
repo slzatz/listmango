@@ -199,5 +199,29 @@ func organizerProcessKey(c int) {
 		sess.showOrgMessage(":%s", org.command_line)
 		//return //end of case COMMAND_LINE
 
+		//probably should be a org.view not org.mode but
+		// for the moment this kluge works
+	case SYNC_LOG:
+		switch c {
+		case ARROW_UP, 'k':
+			if org.fr > 0 {
+				org.fr--
+				note := readSyncLog(org.rows[org.fr].id)
+				sess.showOrgMessage("Note length: %d", len(note))
+				sess.displaySyncLog(note)
+			}
+		case ARROW_DOWN, 'j':
+			if org.fr < len(org.rows)-1 {
+				org.fr++
+				note := readSyncLog(org.rows[org.fr].id)
+				sess.showOrgMessage("Note length: %d", len(note))
+				sess.displaySyncLog(note)
+			}
+		case ':':
+			sess.showOrgMessage(":")
+			org.command_line = ""
+			org.last_mode = org.mode
+			org.mode = COMMAND_LINE
+		}
 	} // end switch o.mode
 } // end func organizerProcessKey(c int)
