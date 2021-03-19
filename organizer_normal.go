@@ -273,7 +273,6 @@ func completed_N() {
 	toggleCompleted()
 }
 
-//void outlineMoveNextWord() {
 func w_N() {
 	org.moveNextWord()
 }

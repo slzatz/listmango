@@ -513,13 +513,13 @@ func (s *Session) drawOrgStatusBar() {
 
 		// klugy way of finding length of string without the escape characters
 		length = len(fmt.Sprintf("%s %s... %s  %d %d/%d %s",
-			str, title, keywords, (*r).id, org.fr+1, len(org.rows), mode_text[org.mode]))
+			str, title, keywords, (*r).id, org.fr+1, len(org.rows), org.mode))
 	} else {
 
 		status = fmt.Sprintf("\x1b[1m%s\x1b[0;7m %.15s...\x1b[0;35;7m %s \x1b[0;7m %d %d/%d \x1b[1;42m%s\x1b[49m",
-			str, "   No Results   ", -1, 0, 0, mode_text[org.mode])
+			str, "   No Results   ", -1, 0, 0, org.mode)
 		length = len(fmt.Sprintf("%s %.15s... %d %d/%zu %s",
-			str, "   No Results   ", -1, 0, 0, mode_text[org.mode]))
+			str, "   No Results   ", -1, 0, 0, org.mode))
 	}
 
 	if length < s.divider {

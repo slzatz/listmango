@@ -109,6 +109,7 @@ const (
 	SYNC_LOG
 )
 
+/*
 var mode_text = [13]string{
 	"NORMAL",
 	"INSERT",
@@ -124,6 +125,7 @@ var mode_text = [13]string{
 	"ADD/CHANGE FILTER",
 	"SYNC LOG",
 }
+*/
 
 func (m Mode) String() string {
 	return [...]string{
