@@ -172,37 +172,14 @@ func toggleDeleted() {
 	}
 
 	s := fmt.Sprintf("UPDATE %s SET deleted=?, modified=datetime('now') WHERE id=?;", table)
-	res, err := db.Exec(s, !org.rows[org.fr].deleted, id)
-
-	/*
-		stmt, err := db.Prepare(fmt.Sprintf("UPDATE %s SET deleted=?, modified=datetime('now') WHERE id=?;",
-			table))
-	*/
-
+	_, err := db.Exec(s, !org.rows[org.fr].deleted, id)
 	if err != nil {
-		log.Fatal(err)
+		sess.showOrgMessage("Error toggling %s id %d to deleted: %v", table, id, err)
+		return
 	}
 
-	//defer stmt.Close()
-
-	/*
-		res, err := stmt.Exec(!org.rows[org.fr].deleted, id)
-		if err != nil {
-			log.Fatal(err)
-		}
-	*/
-
-	numRows, err := res.RowsAffected()
-	if err != nil {
-		log.Fatal(err)
-	}
-	if numRows != 1 {
-		log.Fatal("Toggle deleted numRows != 1")
-	}
-	//LastInsertId() (int64, error)
-
-	org.rows[org.fr].star = !org.rows[org.fr].deleted
-	sess.showOrgMessage("Toggle deleted succeeded")
+	org.rows[org.fr].deleted = !org.rows[org.fr].deleted
+	sess.showOrgMessage("Toggle deleted for %s id %d succeeded", table, id)
 }
 
 func toggleCompleted() {
@@ -216,36 +193,17 @@ func toggleCompleted() {
 		completed = "date()"
 	}
 
-	res, err := db.Exec("UPDATE tasks SET completed=?, "+
+	_, err := db.Exec("UPDATE task SET completed=?, "+
 		"modified=datetime('now') WHERE id=?;",
 		completed, id)
 
-	//stmt, err := db.Prepare("UPDATE tasks SET completed=?, modified=datetime('now') WHERE id=?;")
-
 	if err != nil {
-		log.Fatal(err)
+		sess.showOrgMessage("Error toggling entry id %d to completed: %v", id, err)
+		return
 	}
-
-	//defer stmt.Close()
-	/*
-		res, err := stmt.Exec(completed, id)
-		if err != nil {
-			log.Fatal(err)
-		}
-	*/
-
-	numRows, err := res.RowsAffected()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	if numRows != 1 {
-		log.Fatal("Toggle completed numRows != 1")
-	}
-	//LastInsertId() (int64, error)
 
 	org.rows[org.fr].completed = !org.rows[org.fr].completed
-	sess.showOrgMessage("Toggle completed succeeded")
+	sess.showOrgMessage("Toggle completed for entry %d succeeded", id)
 }
 
 func updateTaskContext(new_context string, id int) {
