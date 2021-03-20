@@ -148,8 +148,8 @@ func (s *Session) drawOrgRows() {
 	lf_ret := fmt.Sprintf("\r\n\x1b[%dC", LEFT_MARGIN)
 
 	for y := 0; y < s.textLines; y++ {
-		frr := y + org.rowoff
-		if frr > len(org.rows)-1 {
+		fr := y + org.rowoff
+		if fr > len(org.rows)-1 {
 			break
 		}
 
@@ -158,44 +158,44 @@ func (s *Session) drawOrgRows() {
 
 		//can run into this problem when deleting chars from a scrolled log line
 		var length int
-		if frr == org.fr {
-			length = len(org.rows[frr].title) - org.coloff
+		if fr == org.fr {
+			length = len(org.rows[fr].title) - org.coloff
 		} else {
-			length = len(org.rows[frr].title)
+			length = len(org.rows[fr].title)
 		}
 
 		if length > titlecols {
 			length = titlecols
 		}
 
-		if org.rows[frr].star {
+		if org.rows[fr].star {
 			ab.WriteString("\x1b[1m") //bold
 			ab.WriteString("\x1b[1;36m")
 		}
 
-		if org.rows[frr].completed && org.rows[frr].deleted {
+		if org.rows[fr].completed && org.rows[fr].deleted {
 			ab.WriteString("\x1b[32m") //green foreground
-		} else if org.rows[frr].completed {
+		} else if org.rows[fr].completed {
 			ab.WriteString("\x1b[33m") //yellow foreground
 			//else if (row.deleted) ab.append("\x1b[31m", 5); //red foreground
-		} else if org.rows[frr].deleted {
+		} else if org.rows[fr].deleted {
 			ab.WriteString(COLOR_1)
 		} //red (specific color depends on theme)
 
-		if frr == org.fr {
+		if fr == org.fr {
 			ab.WriteString("\x1b[48;5;236m") // 236 is a grey
 		}
-		if org.rows[frr].dirty {
+		if org.rows[fr].dirty {
 			ab.WriteString("\x1b[41m") //red background
 		}
 		//if (row.mark) ab.append("\x1b[46m", 5); //cyan background
-		if _, ok := org.marked_entries[org.rows[frr].id]; ok {
+		if _, ok := org.marked_entries[org.rows[fr].id]; ok {
 			ab.WriteString("\x1b[46m")
 		}
 
 		// below - only will get visual highlighting if it's the active
 		// then also deals with column offset
-		if org.mode == VISUAL && frr == org.fr {
+		if org.mode == VISUAL && fr == org.fr {
 
 			// below in case org.highlight[1] < org.highlight[0]
 			if org.highlight[1] > org.highlight[0] {
@@ -204,23 +204,23 @@ func (s *Session) drawOrgRows() {
 				k, j = 0, 1
 			}
 
-			ab.WriteString(org.rows[frr].title[org.coloff : org.highlight[j]-org.coloff])
+			ab.WriteString(org.rows[fr].title[org.coloff : org.highlight[j]-org.coloff])
 			ab.WriteString("\x1b[48;5;242m")
-			ab.WriteString(org.rows[frr].title[org.highlight[j] : org.highlight[k]-org.coloff])
+			ab.WriteString(org.rows[fr].title[org.highlight[j] : org.highlight[k]-org.coloff])
 
 			ab.WriteString("\x1b[49m") // return background to normal
-			ab.WriteString(org.rows[frr].title[:org.highlight[k]])
+			ab.WriteString(org.rows[fr].title[:org.highlight[k]])
 
 		} else {
 			// current row is only row that is scrolled if org.coloff != 0
 			var beg int
-			if frr == org.fr {
+			if fr == org.fr {
 				beg = org.coloff
 			}
-			if len(org.rows[frr].title[beg:]) > length {
-				ab.WriteString(org.rows[frr].title[beg : beg+length])
+			if len(org.rows[fr].title[beg:]) > length {
+				ab.WriteString(org.rows[fr].title[beg : beg+length])
 			} else {
-				ab.WriteString(org.rows[frr].title[beg:])
+				ab.WriteString(org.rows[fr].title[beg:])
 			}
 		}
 		// the spaces make it look like the whole row is highlighted
@@ -230,7 +230,7 @@ func (s *Session) drawOrgRows() {
 		// believe the +2 is just to give some space from the end of long titles
 		//ab.WriteString(fmt.Sprintf("\x1b[%d;%dH", y+TOP_MARGIN+1, s.divider-TIME_COL_WIDTH+2))
 		fmt.Fprintf(&ab, "\x1b[%d;%dH", y+TOP_MARGIN+1, s.divider-TIME_COL_WIDTH+2)
-		ab.WriteString(org.rows[frr].modified)
+		ab.WriteString(org.rows[fr].modified)
 		ab.WriteString("\x1b[0m") // return background to normal ////////////////////////////////
 		ab.WriteString(lf_ret)
 	}
@@ -250,42 +250,42 @@ func (s *Session) drawOrgSearchRows() {
 	lf_ret := fmt.Sprintf("\r\n\x1b[%dC", LEFT_MARGIN)
 
 	for y := 0; y < s.textLines; y++ {
-		frr := y + org.rowoff
-		if frr > len(org.rows)-1 {
+		fr := y + org.rowoff
+		if fr > len(org.rows)-1 {
 			break
 		}
-		//orow& row = org.rows[frr];
+		//orow& row = org.rows[fr];
 		var length int
 
-		if org.rows[frr].star {
+		if org.rows[fr].star {
 			ab.WriteString("\x1b[1m") //bold
 			ab.WriteString("\x1b[1;36m")
 		}
 
-		if org.rows[frr].completed && org.rows[frr].deleted {
+		if org.rows[fr].completed && org.rows[fr].deleted {
 			ab.WriteString("\x1b[32m") //green foreground
-		} else if org.rows[frr].completed {
+		} else if org.rows[fr].completed {
 			ab.WriteString("\x1b[33m") //yellow foreground
-		} else if org.rows[frr].deleted {
-			ab.WriteString("\x1b[31m")
-		} //red foreground
+		} else if org.rows[fr].deleted {
+			ab.WriteString("\x1b[31m") //red foreground
+		}
 
-		if len(org.rows[frr].title) <= titlecols { // we know it fits
-			ab.WriteString(org.rows[frr].fts_title)
+		if len(org.rows[fr].title) <= titlecols { // we know it fits
+			ab.WriteString(org.rows[fr].fts_title)
 			// note below doesn't handle two highlighted terms in same line
 			// and it might cause display issues if second highlight isn't fully escaped
 			// need to come back and deal with this
 			// coud check if LastIndex"\x1b[49m" or Index(fts_title[pos+1:titlecols+15] contained another escape
 		} else {
-			pos := strings.Index(org.rows[frr].fts_title, "\x1b[49m") //\x1b[48;5;31m', '\x1b[49m'
-			if pos > 0 && pos < titlecols+11 {                        //length of highlight escape
-				ab.WriteString(org.rows[frr].fts_title[:titlecols+15]) //titlecols + 15); // length of highlight escape + remove formatting escape
+			pos := strings.Index(org.rows[fr].fts_title, "\x1b[49m") //\x1b[48;5;31m', '\x1b[49m'
+			if pos > 0 && pos < titlecols+11 {                       //length of highlight escape
+				ab.WriteString(org.rows[fr].fts_title[:titlecols+15]) //titlecols + 15); // length of highlight escape + remove formatting escape
 			} else {
-				ab.WriteString(org.rows[frr].title[:titlecols])
+				ab.WriteString(org.rows[fr].title[:titlecols])
 			}
 		}
-		if len(org.rows[frr].title) <= titlecols {
-			length = len(org.rows[frr].title)
+		if len(org.rows[fr].title) <= titlecols {
+			length = len(org.rows[fr].title)
 		} else {
 			length = titlecols
 		}
@@ -294,8 +294,9 @@ func (s *Session) drawOrgSearchRows() {
 
 		//snprintf(buf, sizeof(buf), "\x1b[%d;%dH", y + 2, screencols/2 - TIME_COL_WIDTH + 2); //wouldn't need offset
 		ab.WriteString("\x1b[0m") // return background to normal
-		ab.WriteString(fmt.Sprintf("\x1b[%d;%dH", y+2, s.divider-TIME_COL_WIDTH+2))
-		ab.WriteString(org.rows[frr].modified)
+		//ab.WriteString(fmt.Sprintf("\x1b[%d;%dH", y+2, s.divider-TIME_COL_WIDTH+2))
+		fmt.Fprintf(&ab, "\x1b[%d;%dH", y+2, s.divider-TIME_COL_WIDTH+2)
+		ab.WriteString(org.rows[fr].modified)
 		ab.WriteString(lf_ret)
 	}
 	fmt.Print(ab.String())
@@ -485,42 +486,39 @@ func (s *Session) drawOrgStatusBar() {
 		str = "Sync Log"
 	}
 
-	var length int
-	var status string
+	var id int
+	var title string
+	var keywords string
 	if len(org.rows) > 0 {
 
-		r := &org.rows[org.fr]
+		row := &org.rows[org.fr]
 
-		var title string
-		if len((*r).title) > 12 {
-			title = (*r).title[:12]
+		if len(row.title) > 16 {
+			title = row.title[:12] + "..."
 		} else {
-			title = (*r).title
+			title = row.title
 		}
-		//if (p->dirty) truncated_title.append( "[+]"); /****this needs to be in editor class*******/
 
-		// needs to be here because org.rows could be empty
-		var keywords string
+		id = row.id
+
 		if org.view == TASK {
-			keywords = getTaskKeywords((*r).id)
+			keywords = getTaskKeywords(row.id)
 		}
-
-		// because video is reversted [42 sets text to green and 49 undoes it
-		// also [0;35;7m -> because of 7m it reverses background and foreground
-		// I think the [0;7m is revert to normal and reverse video
-		status = fmt.Sprintf("\x1b[1m%s\x1b[0;7m %s...\x1b[0;35;7m %s \x1b[0;7m %d %d/%d \x1b[1;42m%s\x1b[49m",
-			str, title, keywords, (*r).id, org.fr+1, len(org.rows), org.mode)
-
-		// klugy way of finding length of string without the escape characters
-		length = len(fmt.Sprintf("%s %s... %s  %d %d/%d %s",
-			str, title, keywords, (*r).id, org.fr+1, len(org.rows), org.mode))
 	} else {
+		title = "   No Results   "
+		id = -1
 
-		status = fmt.Sprintf("\x1b[1m%s\x1b[0;7m %.15s...\x1b[0;35;7m %s \x1b[0;7m %d %d/%d \x1b[1;42m%s\x1b[49m",
-			str, "   No Results   ", -1, 0, 0, org.mode)
-		length = len(fmt.Sprintf("%s %.15s... %d %d/%zu %s",
-			str, "   No Results   ", -1, 0, 0, org.mode))
 	}
+
+	// because video is reversted [42 sets text to green and 49 undoes it
+	// also [0;35;7m -> because of 7m it reverses background and foreground
+	// I think the [0;7m is revert to normal and reverse video
+	status := fmt.Sprintf("\x1b[1m%s\x1b[0;7m %s \x1b[0;35;7m%s\x1b[0;7m %d %d/%d \x1b[1;42m%s\x1b[49m",
+		str, title, keywords, id, org.fr+1, len(org.rows), org.mode)
+
+	// klugy way of finding length of string without the escape characters
+	length := len(fmt.Sprintf("%s %s %s %d %d/%d %s",
+		str, title, keywords, id, org.fr+1, len(org.rows), org.mode))
 
 	if length < s.divider {
 		// need to do the below because the escapes make string
