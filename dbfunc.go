@@ -273,7 +273,7 @@ func updateNote() {
 }
 
 func getSyncItems(max int) {
-	rows, err := db.Query(fmt.Sprintf("SELECT id, title, modified FROM sync_log LIMIT %d", max))
+	rows, err := db.Query(fmt.Sprintf("SELECT id, title, modified FROM sync_log ORDER BY modified DESC LIMIT %d", max))
 	if err != nil {
 		sess.showOrgMessage("Error in getSyncItems: %v", err)
 		return
