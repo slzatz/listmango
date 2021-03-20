@@ -104,7 +104,12 @@ func (o *Organizer) backspace() {
 	if len(o.rows) == 0 || *t == "" || o.fc == 0 {
 		return
 	}
-	*t = (*t)[:o.fc] + (*t)[o.fc+1:] // should do with runes
+	// below handles when INSERT is one char beyond end of line
+	fc := o.fc
+	if o.fc == len(*t) {
+		fc--
+	}
+	*t = (*t)[:fc] + (*t)[fc+1:] // should do with runes
 	o.fc--
 	o.rows[o.fr].dirty = true
 }
