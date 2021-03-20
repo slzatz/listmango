@@ -117,6 +117,9 @@ func (o *Organizer) log(unused int) {
 	org.fc, org.fr, org.rowoff = 0, 0, 0
 	o.mode = SYNC_LOG      //kluge INSERT, NORMAL, ...
 	o.view = SYNC_LOG_VIEW //TASK, FOLDER, KEYWORD ...
+	// show first row's note
+	note := readSyncLog(org.rows[0].id)
+	sess.displaySyncLog(note)
 	sess.showOrgMessage("")
 }
 

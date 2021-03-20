@@ -227,14 +227,14 @@ func organizerProcessKey(c int) {
 			if org.fr > 0 {
 				org.fr--
 				note := readSyncLog(org.rows[org.fr].id)
-				sess.showOrgMessage("Note length: %d", len(note))
+				//sess.showOrgMessage("Note length: %d", len(note))
 				sess.displaySyncLog(note)
 			}
 		case ARROW_DOWN, 'j':
 			if org.fr < len(org.rows)-1 {
 				org.fr++
 				note := readSyncLog(org.rows[org.fr].id)
-				sess.showOrgMessage("Note length: %d", len(note))
+				//sess.showOrgMessage("Note length: %d", len(note))
 				sess.displaySyncLog(note)
 			}
 		case ':':
