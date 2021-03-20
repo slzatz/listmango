@@ -534,7 +534,9 @@ func insertSyncEntry(title, note string) {
 	_, err := db.Exec("INSERT INTO sync_log (title, note, modified) VALUES (?, ?, datetime('now'));",
 		title, note)
 	if err != nil {
-		fmt.Printf("Error inserting sync log into db: %v", err)
+		sess.showOrgMessage("Error inserting sync log into db: %v", err)
+	} else {
+		sess.showOrgMessage("Wrote sync log to db")
 	}
 }
 
