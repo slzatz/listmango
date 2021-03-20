@@ -797,7 +797,8 @@ func synchronize(reportOnly bool) {
 				fmt.Fprintf(&lg, "Problem setting new client entry's tid: %v; id: %v\n", id, e.id, err2)
 				break
 			}
-			fmt.Fprintf(&lg, "Set value of tid for client task with id: %v to tid = %v\n", e.id, id)
+			fmt.Fprintf(&lg, "Created new server entry %s with id %d", e.title, id)
+			fmt.Fprintf(&lg, "And set tid for client entry with id %d to tid %d\n", e.id, id)
 
 		default:
 			fmt.Fprintf(&lg, "Something went wrong in client_updated_entries for client entry id: %v\n", e.id)
