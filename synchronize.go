@@ -750,9 +750,9 @@ func synchronize(reportOnly bool) {
 				} else {
 					_, err5 := fts_db.Exec("UPDATE fts SET title=?, note=? WHERE lm_id=?;", e.title, e.note, lm_id)
 					if err5 != nil {
-						fmt.Fprintf(&lg, "Problem updating fts_db for entry with id: %v: %w\n", lm_id, err5)
+						fmt.Fprintf(&lg, "Error updating fts_db for entry %s; id: %d; %v\n", e.title, lm_id, err5)
 					} else {
-						fmt.Fprintf(&lg, "fts_db updated for entry id: %d\n; tid: %d - %s ", lm_id, e.id, e.title)
+						fmt.Fprintf(&lg, "fts_db updated for entry %s; id: %d; tid: %d\n", e.title, lm_id, e.id)
 					}
 				}
 				fmt.Fprintf(&lg, "Updated local entry: %v with tid: %v\n", e.title, e.id)
