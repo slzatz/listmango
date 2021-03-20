@@ -395,7 +395,7 @@ func (o *Organizer) refresh(unused int) {
 			sess.displayContainerInfo(&c)
 			sess.drawPreviewBox()
 		}
-		sess.showOrgMessage("contexts/folders will be refreshed")
+		sess.showOrgMessage("view refreshed")
 	}
 	o.mode = o.last_mode
 }

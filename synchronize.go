@@ -436,7 +436,7 @@ func synchronize(reportOnly bool) {
 	}
 	if len(client_deleted_keywords) > 0 {
 		nn += len(client_deleted_keywords)
-		fmt.Fprintf(&lg, "Deleted client Keywords since last sync: %d\n", len(client_updated_keywords))
+		fmt.Fprintf(&lg, "Deleted client Keywords since last sync: %d\n", len(client_deleted_keywords))
 	} else {
 		lg.WriteString("No client Keywords deleted since last sync.\n")
 	}
@@ -824,7 +824,7 @@ func synchronize(reportOnly bool) {
 		// since may have to sync with other clients
 		res, err := pdb.Exec("UPDATE task SET deleted=true, modified=now() WHERE id=$1", e.tid) /**************/
 		if err != nil {
-			fmt.Fprintf(&lg, "Problem (pdb.Exec) setting server entry with id = %v to deleted\n", e.tid)
+			fmt.Fprintf(&lg, "Problem (pdb.Exec) setting server entry with id = %d to deleted\n", e.tid)
 			continue
 		}
 		rowsAffected, _ := res.RowsAffected()
@@ -832,12 +832,10 @@ func synchronize(reportOnly bool) {
 			fmt.Fprintf(&lg, "(rowsAffected != 1) Problem setting server entry with id = %v to deleted; rowsAffected = %v\n", e.tid, rowsAffected)
 			continue
 		}
-		fmt.Fprintf(&lg, "Updated server entry with id %v to deleted = true", e.tid)
+		fmt.Fprintf(&lg, "Updated server entry %s: id %d to deleted = true\n", e.title, e.tid)
 	}
 
 	//server_deleted_contexts
-	//pdb.Exec("Update task SET context_tid=1 WHERE task.context_tid=c.id")
-	//db.Exec("Update task SET context_tid=1 WHERE task.context_tid=c.id")
 	for _, c := range server_deleted_contexts {
 		// I think the task changes may not be necessary because only a previous client sync can delete server context
 		res, err := pdb.Exec("Update task SET context_tid=1, modified=now() WHERE context_tid=$1;", c.id)
@@ -855,17 +853,12 @@ func synchronize(reportOnly bool) {
 			fmt.Fprintf(&lg, "The number of client entries that were changed to 'No Context' (might be zero): %d\n", rowsAffected)
 		}
 
-		res, err = db.Exec("DELETE FROM context WHERE tid=?", c.id)
+		_, err = db.Exec("DELETE FROM context WHERE tid=?", c.id)
 		if err != nil {
 			fmt.Fprintf(&lg, "Problem deleting local context with tid = %v", c.id)
 			continue
 		}
-		rowsAffected, _ := res.RowsAffected()
-		if rowsAffected != 1 {
-			fmt.Fprintf(&lg, "(rowsAffected != 1) Problem deleting local context %v with tid = %v", c.id)
-			continue
-		}
-		fmt.Fprintf(&lg, "Deleted client context %v with tid %v", c.title, c.id)
+		fmt.Fprintf(&lg, "Deleted client context %s with tid %d", c.title, c.id)
 	}
 
 	// client deleted contexts
@@ -886,17 +879,17 @@ func synchronize(reportOnly bool) {
 		}
 		// since on server, we just set deleted to true
 		// since may have to sync with other clients
-		res, err = pdb.Exec("UPDATE context SET deleted=true, modified=now() WHERE context.id=$1", c.tid)
+		_, err = pdb.Exec("UPDATE context SET deleted=true, modified=now() WHERE context.id=$1", c.tid)
 		if err != nil {
-			fmt.Fprintf(&lg, "Problem (pdb.Exec) setting server context with id = %v to deleted\n", c.tid)
+			fmt.Fprintf(&lg, "Error (pdb.Exec) setting server context %s with id = %d to deleted: %v\n", c.title, c.tid, err)
 			continue
 		}
-		rowsAffected, _ := res.RowsAffected()
-		if rowsAffected != 1 {
-			fmt.Fprintf(&lg, "(rowsAffected != 1) Problem setting server context with id = %v to deleted; rowsAffected = %v\n", c.tid, rowsAffected)
+		_, err = db.Exec("DELETE FROM folder WHERE id=?", c.id)
+		if err != nil {
+			fmt.Fprintf(&lg, "Error deleting local context %s with id %d: %v", c.title, c.id, err)
 			continue
 		}
-		fmt.Fprintf(&lg, "Updated server context with id %v to deleted = true", c.tid)
+		fmt.Fprintf(&lg, "Deleted client context %s: id %d and updated server context with id %d to deleted = true", c.title, c.id, c.tid)
 	}
 
 	//server_deleted_folders
@@ -918,14 +911,9 @@ func synchronize(reportOnly bool) {
 			fmt.Fprintf(&lg, "The number of client entries that were changed to 'No Folder' (might be zero): %d\n", rowsAffected)
 		}
 
-		res, err = db.Exec("DELETE FROM folder WHERE tid=?", c.id)
+		_, err = db.Exec("DELETE FROM folder WHERE tid=?", c.id)
 		if err != nil {
 			fmt.Fprintf(&lg, "Problem deleting local folder with tid = %v", c.id)
-			continue
-		}
-		rowsAffected, _ := res.RowsAffected()
-		if rowsAffected != 1 {
-			fmt.Fprintf(&lg, "(rowsAffected != 1) Problem deleting local folder %v with tid = %v", c.id)
 			continue
 		}
 		fmt.Fprintf(&lg, "Deleted client folder %v with tid %v", c.title, c.id)
@@ -933,9 +921,10 @@ func synchronize(reportOnly bool) {
 
 	// client deleted folders
 	for _, c := range client_deleted_folders {
-		res, err := pdb.Exec("Update task SET folder_tid=1, modified=now()  WHERE folder_tid=$1;", c.tid) //?modified=now()
+		res, err := pdb.Exec("Update task SET folder_tid=1, modified=now() WHERE folder_tid=$1;", c.tid) //?modified=now()
 		if err != nil {
 			fmt.Fprintf(&lg, "Error trying to change server/postgres entry folders for a deleted folder: %v\n", err)
+			continue
 		} else {
 			rowsAffected, _ := res.RowsAffected()
 			fmt.Fprintf(&lg, "The number of server entries that were changed to No Folder: %d\n", rowsAffected)
@@ -949,17 +938,17 @@ func synchronize(reportOnly bool) {
 		}
 		// since on server, we just set deleted to true
 		// since may have to sync with other clients
-		res, err = pdb.Exec("UPDATE folder SET deleted=true, modified=now() WHERE folder.id=$1", c.tid)
+		_, err = pdb.Exec("UPDATE folder SET deleted=true, modified=now() WHERE folder.id=$1", c.tid)
 		if err != nil {
-			fmt.Fprintf(&lg, "Problem (pdb.Exec) setting server folder with id = %v to deleted\n", c.tid)
+			fmt.Fprintf(&lg, "Error (pdb.Exec) setting server folder %s with id = %v to deleted: %v\n", c.title, c.tid, err)
 			continue
 		}
-		rowsAffected, _ := res.RowsAffected()
-		if rowsAffected != 1 {
-			fmt.Fprintf(&lg, "(rowsAffected != 1) Problem setting server folder with id = %v to deleted; rowsAffected = %v\n", c.tid, rowsAffected)
+		_, err = db.Exec("DELETE FROM folder WHERE id=?", c.id)
+		if err != nil {
+			fmt.Fprintf(&lg, "Error deleting local folder %s with id %d: %v", c.title, c.id, err)
 			continue
 		}
-		fmt.Fprintf(&lg, "Updated server folder with id %v to deleted = true", c.tid)
+		fmt.Fprintf(&lg, "Deleted client folder %s: id %d and updated server folder with id %d to deleted = true", c.title, c.id, c.tid)
 	}
 
 	//server_deleted_keywords
@@ -989,21 +978,27 @@ func synchronize(reportOnly bool) {
 
 	// client deleted keywords
 	for _, c := range client_deleted_keywords {
-		pdb.Exec("DELETE FROM task_keyword WHERE keyword_id=$1;", c.tid)
-		db.Exec("DELETE FROM task_keyword WHERE keyword_id=?;", c.id)
+		_, err = pdb.Exec("DELETE FROM task_keyword WHERE keyword_id=$1;", c.tid)
+		if err != nil {
+			fmt.Fprintf(&lg, "Error trying to delete server task_keyword with id %d", c.tid)
+		}
+		_, err = db.Exec("DELETE FROM task_keyword WHERE keyword_id=?;", c.id)
+		if err != nil {
+			fmt.Fprintf(&lg, "Error trying to delete client task_keyword with id %d", c.id)
+		}
 		// since on server, we just set deleted to true
 		// since may have to sync with other clients
-		res, err := pdb.Exec("UPDATE keyword SET deleted=true WHERE keyword.id=$1", c.tid)
+		_, err := pdb.Exec("UPDATE keyword SET deleted=true WHERE keyword.id=$1", c.tid)
 		if err != nil {
-			fmt.Fprintf(&lg, "Problem (pdb.Exec) setting server keyword with id = %v to deleted\n", c.tid)
+			fmt.Fprintf(&lg, "Error (pdb.Exec) setting server keyword %s with id %d to deleted:%v\n", c.title, c.tid, err)
 			continue
 		}
-		rowsAffected, _ := res.RowsAffected()
-		if rowsAffected != 1 {
-			fmt.Fprintf(&lg, "(rowsAffected != 1) Problem setting server keyword with id = %v to deleted; rowsAffected = %v\n", c.tid, rowsAffected)
+		_, err = db.Exec("DELETE FROM keyword WHERE id=?", c.id)
+		if err != nil {
+			fmt.Fprintf(&lg, "Error deleting local keyword %s with id %d: %v\n", c.title, c.id, err)
 			continue
 		}
-		fmt.Fprintf(&lg, "Updated server keyword with id %v to deleted = true", c.tid)
+		fmt.Fprintf(&lg, "Deleted client keyword %s: id %d and updated server keyword with id %d to deleted = true", c.title, c.id, c.tid)
 	}
 	/*********************end of sync changes*************************/
 
