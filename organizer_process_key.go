@@ -88,11 +88,31 @@ func organizerProcessKey(c int) {
 			return
 		}
 
-		// this only applies to entries not containers right now
 		if c == '\r' { //also does escape into NORMAL mode
-			if org.view == TASK {
+			row := &org.rows[org.fr]
+			if row.dirty {
 				org.writeTitle()
+				return
 			}
+			switch org.view {
+			case CONTEXT:
+				org.context = row.title
+				org.folder = ""
+				org.taskview = BY_CONTEXT
+				sess.showOrgMessage("'%s' will be opened", org.context)
+			case FOLDER:
+				org.folder = row.title
+				org.context = ""
+				org.taskview = BY_FOLDER
+				sess.showOrgMessage("'%s' will be opened", org.folder)
+			case KEYWORD:
+				org.keyword = row.title
+				org.folder = ""
+				org.context = ""
+				org.taskview = BY_KEYWORD
+				sess.showOrgMessage("'%s' will be opened", org.keyword)
+			}
+			getItems(MAX)
 			return
 		}
 
