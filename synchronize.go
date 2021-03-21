@@ -246,7 +246,7 @@ func synchronize(reportOnly bool) {
 	}
 	//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	//server updated entries
-	rows, err = pdb.Query("SELECT id, title, star, created, modified, added, completed, context_tid, folder_tid, note FROM task WHERE modified > $1 AND deleted = $2;", server_t, false)
+	rows, err = pdb.Query("SELECT id, title, star, note, created, modified, added, completed, context_tid, folder_tid FROM task WHERE modified > $1 AND deleted = $2;", server_t, false)
 	var server_updated_entries []Entry
 	for rows.Next() {
 		var e Entry
@@ -254,13 +254,13 @@ func synchronize(reportOnly bool) {
 			&e.id,
 			&e.title,
 			&e.star,
+			&e.note,
 			&e.created,
 			&e.modified,
 			&e.added,
 			&e.completed,
 			&e.context_tid,
 			&e.folder_tid,
-			&e.note,
 		)
 		server_updated_entries = append(server_updated_entries, e)
 	}
@@ -444,7 +444,7 @@ func synchronize(reportOnly bool) {
 	//client updated entries
 	//rows, err = db.Query("SELECT id, tid, title, star, created, modified, added, completed, context_tid, folder_tid FROM task WHERE task.modified > ? AND task.deleted = ?;", client_t, false)
 	//rows, err = db.Query("SELECT id, tid, title, star, created, modified, added, completed, context_tid, folder_tid FROM task WHERE task.modified > ? AND task.deleted = ?;", client_t, "false")
-	rows, err = db.Query("SELECT id, tid, title, star, created, modified, added, completed, context_tid, folder_tid FROM task WHERE substr(modified, 1, 19)  > ? AND deleted = ?;", client_t, false)
+	rows, err = db.Query("SELECT id, tid, title, star, note, created, modified, added, completed, context_tid, folder_tid FROM task WHERE substr(modified, 1, 19)  > ? AND deleted = ?;", client_t, false)
 	var client_updated_entries []Entry
 	for rows.Next() {
 		var e Entry
@@ -454,6 +454,7 @@ func synchronize(reportOnly bool) {
 			&tid,
 			&e.title,
 			&e.star,
+			&e.note,
 			&e.created,
 			&e.modified,
 			&e.added,
