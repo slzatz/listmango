@@ -3,7 +3,6 @@ package main
 import (
 	"bufio"
 	"io"
-	"log"
 	"os"
 	"os/exec"
 	"strconv"
@@ -37,8 +36,6 @@ const std::unordered_map<std::string, efunc> E_lookup_C {
   {"spell",&Editor:: E_spellcheck_C},
   {"spellcheck", &Editor::E_spellcheck_C},
 
-  {"save", &Editor::E_save_note},
-  {"savefile", &Editor::E_save_note},
   {"createlink", &Editor::createLink},
   //{"cl", &Editor::createLink},
   {"getlinked", &Editor::getLinked},
@@ -75,7 +72,6 @@ func (e *Editor) writeNote() {
 		return
 	}
 
-	//update_note(false);
 	updateNote()
 
 	folder_tid := getFolderTid(e.id)
@@ -103,7 +99,7 @@ func (e *Editor) readFile() {
 	filename := e.command_line[pos+1:]
 	err := e.readFileIntoNote(filename)
 	if err != nil {
-		e.showMessage("%w", err)
+		e.showMessage("%v", err)
 		return
 	}
 	e.showMessage("Note generated from file: %s", filename)
@@ -125,34 +121,33 @@ func (e *Editor) resize() {
 
 func (e *Editor) compile() {
 
-	//var str string
 	var dir string
 	var cmd *exec.Cmd
 	if getFolderTid(e.id) == 18 {
 		dir = "/home/slzatz/clangd_examples/"
-		//str = "make"
 		cmd = exec.Command("make")
 	} else {
 		dir = "/home/slzatz/go_fragments/"
-		//str = "go build main.go"
 		cmd = exec.Command("go", "build", "main.go")
 	}
-	//cmd := exec.Command(str)
 	cmd.Dir = dir
 
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
-		log.Fatal(err)
+		sess.showEdMessage("Error in compile creating stdout pipe: %v", err)
+		return
 	}
 
 	stderr, err := cmd.StderrPipe()
 	if err != nil {
-		log.Fatal(err)
+		sess.showEdMessage("Error in compile creating stderr pipe: %v", err)
+		return
 	}
 
 	err = cmd.Start()
 	if err != nil {
-		log.Fatal(err)
+		sess.showEdMessage("Error in compile starting command: %v", err)
+		return
 	}
 
 	buffer_out := bufio.NewReader(stdout)
@@ -183,11 +178,6 @@ func (e *Editor) compile() {
 
 	*rows = append(*rows, "------------------------")
 
-	//if (text.str().empty())   text << "Go build successful";
-	//std::vector<std::string> zz = str2vecWW(text.str(), false); //ascii_only = false
-
-	//fr = fc = cy = cx = line_offset = prev_line_offset = first_visible_row = last_visible_row = 0;
-
 	e.linked_editor.fr = 0
 	e.linked_editor.fc = 0
 
@@ -201,7 +191,6 @@ func (e *Editor) compile() {
 	// added 02092021
 
 	e.linked_editor.refreshScreen(true)
-	//chdir("/home/slzatz/listmango/");
 }
 
 func (e *Editor) runLocal() {
@@ -216,11 +205,9 @@ func (e *Editor) runLocal() {
 	var obj string
 	var cmd *exec.Cmd
 	if getFolderTid(e.id) == 18 {
-		//  cmd = "/home/slzatz/clangd_examples/test_cpp";
 		obj = "./test_cpp"
 		dir = "/home/slzatz/clangd_examples/"
 	} else {
-		//  cmd = "/home/slzatz/go/src/example/main";
 		obj = "./main"
 		dir = "/home/slzatz/go_fragments/"
 	}
@@ -229,17 +216,20 @@ func (e *Editor) runLocal() {
 
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
-		log.Fatal(err)
+		sess.showEdMessage("Error in runLocal creating stdout pipe: %v", err)
+		return
 	}
 
 	stderr, err := cmd.StderrPipe()
 	if err != nil {
-		log.Fatal(err)
+		sess.showEdMessage("Error in runLocal creating stderr pipe: %v", err)
+		return
 	}
 
 	err = cmd.Start()
 	if err != nil {
-		log.Fatal(err)
+		sess.showEdMessage("Error in runLocal starting command: %v", err)
+		return
 	}
 
 	buffer_out := bufio.NewReader(stdout)
@@ -267,18 +257,33 @@ func (e *Editor) runLocal() {
 
 	*rows = append(*rows, "------------------------")
 
-	e.linked_editor.fr = 0
-	e.linked_editor.fc = 0
+	le := e.linked_editor
+	le.fr = 0
+	le.fc = 0
 
 	// added 02092021
-	e.linked_editor.cy = 0
-	e.linked_editor.cx = 0
-	e.linked_editor.line_offset = 0
-	e.linked_editor.prev_line_offset = 0
-	e.linked_editor.first_visible_row = 0
-	e.linked_editor.last_visible_row = 0
+	le.cy = 0
+	le.cx = 0
+	le.line_offset = 0
+	le.prev_line_offset = 0
+	le.first_visible_row = 0
+	le.last_visible_row = 0
 
-	e.linked_editor.refreshScreen(true)
+	le.refreshScreen(true)
+	/*
+		e.linked_editor.fr = 0
+		e.linked_editor.fc = 0
+
+		// added 02092021
+		e.linked_editor.cy = 0
+		e.linked_editor.cx = 0
+		e.linked_editor.line_offset = 0
+		e.linked_editor.prev_line_offset = 0
+		e.linked_editor.first_visible_row = 0
+		e.linked_editor.last_visible_row = 0
+
+		e.linked_editor.refreshScreen(true)
+	*/
 }
 
 func (e *Editor) sync() {
