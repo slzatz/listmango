@@ -870,15 +870,17 @@ func (e *Editor) drawCodeRows(pab *strings.Builder) {
 	//save the current file to code_file with correct extension
 	f, err := os.Create("code_file")
 	if err != nil {
-		log.Fatalf("error creating file: %s: %w", f, err)
+		sess.showEdMessage("Error creating code_file: %v", err)
+		return
 	}
-	//defer f.Close()
+	defer f.Close()
 
-	_, err = f.WriteString(e.generateWWString())
+	_, err = f.WriteString(e.generateWWStringFromBuffer())
 	if err != nil {
-		log.Fatalf("error writing to file: %s: %w", f, err)
+		sess.showEdMessage("Error writing code_file: %v", err)
+		return
 	}
-	f.Close()
+	//f.Close()
 
 	//var ab strings.Builder
 
@@ -931,7 +933,7 @@ func (e *Editor) drawCodeRows(pab *strings.Builder) {
 		}
 		n++
 	}
-	//draw_visual(ab);
+	e.draw_visual(pab)
 }
 
 /* below exists to create a text file that has the proper
@@ -961,6 +963,75 @@ func (e *Editor) generateWWString() string {
 		//char ret = '\n';
 		ret := "\t"
 		row := e.rows[filerow]
+		// if you put a \n in the middle of a comment the wrapped portion won't be italic
+		//if (row.find("//") != std::string::npos) ret = '\t';
+		//ret = '\t';
+
+		if len(row) == 0 {
+			if y == e.screenlines-1 {
+				return ab.String()
+			}
+			ab.WriteString("\n")
+			filerow++
+			y++
+			continue
+		}
+
+		pos := 0
+		prev_pos := 0 //except for start -> pos + 1
+		for {
+			// if remainder of line is less than screen width
+			if prev_pos+e.screencols-e.left_margin_offset > len(row)-1 {
+				ab.WriteString(row[prev_pos:])
+				if y == e.screenlines-1 {
+					e.last_visible_row = filerow - 1
+					return ab.String()
+				}
+				ab.WriteString("\n")
+				y++
+				filerow++
+				break
+			}
+
+			pos = strings.LastIndex(row[:prev_pos+e.screencols-e.left_margin_offset], " ")
+
+			//note npos when signed = -1 and order of if/else may matter
+			if pos == -1 || pos == prev_pos-1 {
+				pos = prev_pos + e.screencols - e.left_margin_offset - 1
+			}
+
+			ab.WriteString(row[prev_pos : pos+1]) //? pos+1
+			if y == e.screenlines-1 {
+				e.last_visible_row = filerow - 1
+				return ab.String()
+			}
+			ab.WriteString(ret)
+			prev_pos = pos + 1
+			y++
+		}
+	}
+}
+
+func (e *Editor) generateWWStringFromBuffer() string {
+
+	bb, _ := v.BufferLines(0, 0, -1, true)
+	numLines := len(bb)
+	if numLines == 0 {
+		return ""
+	}
+	var ab strings.Builder
+	y := -e.line_offset
+	filerow := 0
+
+	for {
+		if filerow == numLines {
+			e.last_visible_row = filerow - 1
+			return ab.String()
+		}
+
+		//char ret = '\n';
+		ret := "\t"
+		row := string(bb[filerow])
 		// if you put a \n in the middle of a comment the wrapped portion won't be italic
 		//if (row.find("//") != std::string::npos) ret = '\t';
 		//ret = '\t';
