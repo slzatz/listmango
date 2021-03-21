@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"io"
 	"log"
+	"os"
 	"os/exec"
 	"strconv"
 	"strings"
@@ -20,12 +21,12 @@ var e_lookup_C = map[string]func(*Editor){
 	"r":        (*Editor).runLocal,
 	"test":     (*Editor).sync,
 	"sync":     (*Editor).sync,
+	"save":     (*Editor).saveNoteToFile,
+	"savefile": (*Editor).saveNoteToFile,
 }
 
 /* EDITOR cpp COMMAND_LINE mode lookup
 const std::unordered_map<std::string, efunc> E_lookup_C {
-  {"write", &Editor::E_write_C},
-  {"w", &Editor::E_write_C},
  // all below handled (right now) in editor command line switch statement
  // {"x", &Editor::E_write_close_C},
  // {"quit", &Editor::E_quit_C},
@@ -35,28 +36,38 @@ const std::unordered_map<std::string, efunc> E_lookup_C {
   {"vim", &Editor::E_open_in_vim_C},
   {"spell",&Editor:: E_spellcheck_C},
   {"spellcheck", &Editor::E_spellcheck_C},
-  {"read", &Editor::E_readfile_C},
-  {"readfile", &Editor::E_readfile_C},
 
-  {"compile", &Editor::E_compile_C},
-  {"c", &Editor::E_compile_C},
-  {"make", &Editor::E_compile_C},
-  {"r", &Editor::E_runlocal_C}, // this does change the text/usually COMMAND_LINE doesn't
-  {"runl", &Editor::E_runlocal_C}, // this does change the text/usually COMMAND_LINE doesn't
-  {"runlocal", &Editor::E_runlocal_C}, // this does change the text/usually COMMAND_LINE doesn't
-  {"run", &Editor::E_runlocal_C}, //compile and run on Compiler Explorer
-  {"rr", &Editor::E_run_code_C}, //compile and run on Compiler Explorer
-  {"runremote", &Editor::E_run_code_C}, //compile and run on Compiler Explorer
   {"save", &Editor::E_save_note},
   {"savefile", &Editor::E_save_note},
   {"createlink", &Editor::createLink},
   //{"cl", &Editor::createLink},
   {"getlinked", &Editor::getLinked},
   {"gl", &Editor::getLinked},
-  {"resize", &Editor::moveDivider},
   {"hide", &Editor::hide},
 };
 */
+
+func (e *Editor) saveNoteToFile() {
+	pos := strings.Index(e.command_line, " ")
+	if pos == -1 {
+		e.showMessage("You need to provide a filename")
+		return
+	}
+	filename := e.command_line[pos+1:]
+	f, err := os.Create(filename)
+	if err != nil {
+		sess.showEdMessage("Error creating file %s: %v", filename, err)
+		return
+	}
+	defer f.Close()
+
+	_, err = f.WriteString(e.generateWWStringFromBuffer())
+	if err != nil {
+		sess.showEdMessage("Error writing file %s: %v", filename, err)
+		return
+	}
+	sess.showEdMessage("Note written to file %s", filename)
+}
 
 func (e *Editor) writeNote() {
 	if e.is_subeditor {
