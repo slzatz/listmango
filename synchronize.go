@@ -72,7 +72,7 @@ func synchronize(reportOnly bool) {
 	// Ping to connection
 	err = pdb.Ping()
 	if err != nil {
-		sess.showOrgMessage("postgres ping failure!: %w", err)
+		sess.showOrgMessage("postgres ping failure!: %v", err)
 		return
 	}
 
@@ -762,8 +762,8 @@ func synchronize(reportOnly bool) {
 
 	for _, e := range client_updated_entries {
 		// server wins if both client and server have updated an item
-		if server_id, found := server_updated_entries_ids[e.tid]; found {
-			fmt.Fprintf(&lg, "Server won updating server id/client tid: %v", server_id)
+		if _, found := server_updated_entries_ids[e.tid]; found {
+			fmt.Fprintf(&lg, "Server won updating server id/client tid: %d\n", e.tid)
 			continue
 		}
 
@@ -797,7 +797,7 @@ func synchronize(reportOnly bool) {
 				fmt.Fprintf(&lg, "Problem setting new client entry's tid: %v; id: %v\n", id, e.id, err2)
 				break
 			}
-			fmt.Fprintf(&lg, "Created new server entry %s with id %d", e.title, id)
+			fmt.Fprintf(&lg, "Created new server entry %s with id %d\n", e.title, id)
 			fmt.Fprintf(&lg, "And set tid for client entry with id %d to tid %d\n", e.id, id)
 
 		default:
