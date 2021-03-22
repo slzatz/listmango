@@ -738,8 +738,8 @@ func synchronize(reportOnly bool) {
 		case err != nil:
 			fmt.Fprintf(&lg, "Problem querying sqlite for a entry with tid: %v: %w\n", e.id, err)
 		default:
-			_, err3 := db.Exec("UPDATE task SET title=?, star=?, context_tid=?, folder_tid=?, note=?, modified=datetime('now') WHERE tid=?;",
-				e.title, e.star, e.context_tid, e.folder_tid, e.note, e.id)
+			_, err3 := db.Exec("UPDATE task SET title=?, star=?, context_tid=?, folder_tid=?, note=?, completed=?,  modified=datetime('now') WHERE tid=?;",
+				e.title, e.star, e.context_tid, e.folder_tid, e.note, e.completed, e.id)
 			if err3 != nil {
 				fmt.Fprintf(&lg, "Problem updating sqlite for an entry with tid: %v: %w\n", e.id, err3)
 			} else {
@@ -776,12 +776,12 @@ func synchronize(reportOnly bool) {
 			fmt.Fprintf(&lg, "Problem checking if postgres has an entry for '%s' with client tid/pg id: %d: %v\n", e.title[:15], e.tid, err)
 
 		case exists:
-			_, err3 := pdb.Exec("UPDATE task SET title=$1, star=$2, context_tid=$3, folder_tid=$4, note=$5, modified=now() WHERE id=$6;",
-				e.title, e.star, e.context_tid, e.folder_tid, e.note, e.tid)
+			_, err3 := pdb.Exec("UPDATE task SET title=$1, star=$2, context_tid=$3, folder_tid=$4, note=$5, completed=$6, modified=now() WHERE id=$7;",
+				e.title, e.star, e.context_tid, e.folder_tid, e.note, e.completed, e.tid)
 			if err3 != nil {
-				fmt.Fprintf(&lg, "Problem updating server entry: %v with id: %v; %v", e.title, e.tid, err3)
+				fmt.Fprintf(&lg, "Error updating server entry: %s with id: %d; %v", e.title, e.tid, err3)
 			} else {
-				fmt.Fprintf(&lg, "Updated server entry: %v with id: %v\n", e.title, e.tid)
+				fmt.Fprintf(&lg, "Updated server entry: %s with id: %d\n", e.title, e.tid)
 			}
 
 		case !exists:

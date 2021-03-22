@@ -58,7 +58,7 @@ type Entry struct { //right now only for getEntryInfo
 	star        bool
 	note        string
 	added       string
-	completed   sql.NullString
+	completed   sql.NullTime
 	deleted     bool
 	modified    string
 }

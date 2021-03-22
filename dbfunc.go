@@ -186,15 +186,14 @@ func toggleCompleted() {
 	//orow& row = org.rows.at(org.fr);
 	id := getId()
 
-	var completed string
+	var completed sql.NullTime
 	if org.rows[org.fr].completed {
-		completed = "NULL"
+		completed = sql.NullTime{}
 	} else {
-		completed = "date()"
+		completed = sql.NullTime{Time: time.Now(), Valid: true}
 	}
 
-	_, err := db.Exec("UPDATE task SET completed=?, "+
-		"modified=datetime('now') WHERE id=?;",
+	_, err := db.Exec("UPDATE task SET completed=?, modified=datetime('now') WHERE id=?;",
 		completed, id)
 
 	if err != nil {
@@ -352,7 +351,7 @@ func getItems(max int) {
 
 	for rows.Next() {
 		var row Row
-		var completed sql.NullString
+		var completed sql.NullTime
 		var modified string
 
 		err = rows.Scan(&row.id,
