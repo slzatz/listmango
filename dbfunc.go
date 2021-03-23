@@ -815,7 +815,8 @@ func getContainers() {
 	stmt := fmt.Sprintf("SELECT %s FROM %s ORDER BY %s COLLATE NOCASE ASC;", columns, table, orderBy)
 	rows, err := db.Query(stmt)
 	if err != nil {
-		log.Fatal(err)
+		sess.showOrgMessage("Error SELECTING %s FROM %s", columns, table)
+		return
 	}
 	defer rows.Close()
 	for rows.Next() {
@@ -840,6 +841,59 @@ func getContainers() {
 	// below should be somewhere else
 	org.fc, org.fr, org.rowoff = 0, 0, 0
 	org.context, org.folder, org.keyword = "", "", "" // this makes sense if you are not in an O.view == TASK
+
+}
+
+func getAltContainers() {
+	org.altRows = nil
+
+	var table string
+	var columns string
+	var orderBy string //only needs to be change for keyword
+
+	switch org.altView {
+	case CONTEXT:
+		table = "context"
+		columns = "id, title, \"default\""
+		orderBy = "title"
+	case FOLDER:
+		table = "folder"
+		columns = "id, title, private"
+		orderBy = "title"
+	case KEYWORD:
+		table = "keyword"
+		columns = "id, name, star"
+		orderBy = "name"
+	default:
+		sess.showOrgMessage("Somehow you are in a view I can't handle")
+		return
+	}
+
+	stmt := fmt.Sprintf("SELECT %s FROM %s ORDER BY %s COLLATE NOCASE ASC;", columns, table, orderBy)
+	rows, err := db.Query(stmt)
+	if err != nil {
+		sess.showOrgMessage("Error SELECTING %s FROM %s", columns, table)
+		return
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var r AltRow
+		rows.Scan(
+			&r.id,
+			&r.title,
+			&r.star,
+		)
+
+		org.altRows = append(org.altRows, r)
+	}
+	/*
+		if len(org.altRows) == 0 {
+			sess.showOrgMessage("No results were returned")
+		}
+	*/
+
+	// below should ? be somewhere else
+	org.altR = 0
 
 }
 

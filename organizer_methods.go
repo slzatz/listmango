@@ -99,6 +99,28 @@ func (o *Organizer) moveCursor(key int) {
 	}
 }
 
+func (o *Organizer) moveAltCursor(key int) {
+
+	if len(o.altRows) == 0 {
+		return
+	}
+
+	//o.fc = 0
+
+	switch key {
+
+	case ARROW_UP, 'k':
+		if o.altR > 0 {
+			o.altR--
+		}
+
+	case ARROW_DOWN, 'j':
+		if o.altR < len(o.altRows)-1 {
+			o.altR++
+		}
+	}
+}
+
 func (o *Organizer) backspace() {
 	t := &o.rows[o.fr].title
 	if len(o.rows) == 0 || *t == "" || o.fc == 0 {

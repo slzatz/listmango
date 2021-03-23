@@ -8,8 +8,10 @@ type Organizer struct {
 	fc, fr int // file x and y position
 	rowoff int //the number of rows scrolled (aka number of top rows now off-screen
 	coloff int //the number of columns scrolled (aka number of left rows now off-screen
+	altR   int
 
 	rows         []Row
+	altRows      []AltRow
 	context      string
 	folder       string
 	keyword      string // could be multiple (comma separated)
@@ -24,6 +26,7 @@ type Organizer struct {
 	show_completed bool
 
 	view            int
+	altView         int
 	taskview        int
 	current_task_id int
 	string_buffer   string

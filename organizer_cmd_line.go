@@ -41,6 +41,7 @@ var cmd_lookup = map[string]func(*Organizer, int){
 	"delkw":          (*Organizer).deleteKeywords,
 	"delk":           (*Organizer).deleteKeywords,
 	"showall":        (*Organizer).showAll,
+	"uc":             (*Organizer).updateContainer,
 	/*
 	  "deletekeywords": F_deletekeywords,
 	  "delkw": F_deletekeywords,
@@ -627,5 +628,16 @@ func (o *Organizer) showAll(unused int) {
 		sess.showOrgMessage("Showing completed/deleted")
 	} else {
 		sess.showOrgMessage("Hiding completed/deleted")
+	}
+}
+
+func (o *Organizer) updateContainer(unused int) {
+	//o.current_task_id = o.rows[o.fr].id
+	sess.eraseRightScreen()
+	o.altView = CONTEXT
+	getAltContainers() //O.mode = NORMAL is in get_containers
+	if len(org.altRows) != 0 {
+		o.mode = ADD_CHANGE_FILTER //this needs to change to somthing like UPDATE_TASK_MODIFIERS
+		sess.showOrgMessage("Select context to add to marked or current entry")
 	}
 }

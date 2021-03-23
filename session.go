@@ -302,6 +302,47 @@ func (s *Session) drawOrgSearchRows() {
 	fmt.Print(ab.String())
 }
 
+func (s *Session) drawOrgAltRows() {
+
+	if len(org.altRows) == 0 {
+		return
+	}
+
+	var ab strings.Builder
+	// Cursor should be hidden in ADD_CHANGE_FILTER mode
+	ab.WriteString("\x1b[?25l")
+	lf_ret := fmt.Sprintf("\r\n\x1b[%dC", s.divider+1)
+
+	fmt.Fprintf(&ab, "\x1b[%dG", s.divider+2)
+
+	for y := 0; y < s.textLines; y++ {
+		fr := y + org.rowoff
+		if fr > len(org.altRows)-1 {
+			break
+		}
+
+		length := len(org.altRows[fr].title)
+		if length > s.totaleditorcols {
+			length = s.totaleditorcols
+		}
+
+		if org.altRows[fr].star {
+			ab.WriteString("\x1b[1m") //bold
+			ab.WriteString("\x1b[1;36m")
+		}
+
+		if fr == org.altR {
+			ab.WriteString("\x1b[48;5;236m") // 236 is a grey
+		}
+
+		ab.WriteString(org.altRows[fr].title[:length])
+		ab.WriteString("\x1b[0m") // return background to normal ////////////////////////////////
+		ab.WriteString(lf_ret)
+	}
+	//fmt.Fprint(os.Stdout, ab.String())
+	fmt.Print(ab.String())
+}
+
 func (s *Session) drawEditors() {
 	var ab strings.Builder
 	for _, e := range s.editors {
@@ -413,7 +454,7 @@ func (s *Session) refreshOrgScreen() {
 	//if (org.view != KEYWORD) {
 	if org.mode != ADD_CHANGE_FILTER {
 		for j := TOP_MARGIN; j < s.textLines+1; j++ {
-			ab.WriteString(fmt.Sprintf("\x1b[%d;%dH\x1b[1K", j+TOP_MARGIN, titlecols+LEFT_MARGIN+17))
+			fmt.Fprintf(&ab, "\x1b[%d;%dH\x1b[1K", j+TOP_MARGIN, titlecols+LEFT_MARGIN+17)
 		}
 	}
 	// put cursor at upper left after erasing
@@ -426,6 +467,8 @@ func (s *Session) refreshOrgScreen() {
 		s.drawOrgSearchRows()
 		//} else if org.mode == ADD_CHANGE_FILTER {
 		//  s.drawOrgFilters()
+	} else if org.mode == ADD_CHANGE_FILTER {
+		s.drawOrgAltRows()
 	} else {
 		s.drawOrgRows()
 	}
@@ -544,10 +587,10 @@ func (s *Session) returnCursor() {
 			ab.WriteString("\x1b[?25h") // show cursor
 		}
 	} else {
-		if org.mode == ADD_CHANGE_FILTER {
-			//ab.WriteString(fmt.Sprintf("\x1b[%d;%dH", org.cy+TOP_MARGIN+1, s.divider+1))
-			fmt.Fprintf(&ab, "\x1b[%d;%dH", org.cy+TOP_MARGIN+1, s.divider+1)
-		} else if org.mode == FIND {
+		//if org.mode == ADD_CHANGE_FILTER {
+		//ab.WriteString(fmt.Sprintf("\x1b[%d;%dH", org.cy+TOP_MARGIN+1, s.divider+1))
+		//fmt.Fprintf(&ab, "\x1b[%d;%dH", org.cy+TOP_MARGIN+1, s.divider+1)
+		if org.mode == FIND {
 			//ab.WriteString(fmt.Sprintf("\x1b[%d;%dH\x1b[1;34m>", org.cy+TOP_MARGIN+1, LEFT_MARGIN)) //blue
 			fmt.Fprintf(&ab, "\x1b[%d;%dH\x1b[1;34m>", org.cy+TOP_MARGIN+1, LEFT_MARGIN) //blue
 		} else if org.mode != COMMAND_LINE {

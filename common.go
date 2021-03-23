@@ -48,6 +48,12 @@ type Row struct {
 	marked bool
 }
 
+type AltRow struct {
+	id    int
+	title string
+	star  bool
+}
+
 type Entry struct { //right now only for getEntryInfo
 	id          int
 	tid         int
