@@ -9,34 +9,37 @@ import (
 )
 
 var cmd_lookup = map[string]func(*Organizer, int){
-	"open":        (*Organizer).openContext,
-	"o":           (*Organizer).openContext,
-	"openfolder":  (*Organizer).openFolder,
-	"of":          (*Organizer).openFolder,
-	"openkeyword": (*Organizer).openKeyword,
-	"ok":          (*Organizer).openKeyword,
-	"quit":        (*Organizer).quitApp,
-	"q":           (*Organizer).quitApp,
-	"e":           (*Organizer).editNote,
-	"resize":      (*Organizer).resize,
-	"test":        (*Organizer).sync,
-	"sync":        (*Organizer).sync,
-	"new":         (*Organizer).newEntry,
-	"n":           (*Organizer).newEntry,
-	"refresh":     (*Organizer).refresh,
-	"r":           (*Organizer).refresh,
-	"find":        (*Organizer).find,
-	"contexts":    (*Organizer).contexts,
-	"context":     (*Organizer).contexts,
-	"c":           (*Organizer).contexts,
-	"folders":     (*Organizer).folders,
-	"folder":      (*Organizer).folders,
-	"f":           (*Organizer).folders,
-	"keywords":    (*Organizer).keywords,
-	"keyword":     (*Organizer).keywords,
-	"k":           (*Organizer).keywords,
-	"recent":      (*Organizer).recent,
-	"log":         (*Organizer).log,
+	"open":           (*Organizer).openContext,
+	"o":              (*Organizer).openContext,
+	"openfolder":     (*Organizer).openFolder,
+	"of":             (*Organizer).openFolder,
+	"openkeyword":    (*Organizer).openKeyword,
+	"ok":             (*Organizer).openKeyword,
+	"quit":           (*Organizer).quitApp,
+	"q":              (*Organizer).quitApp,
+	"e":              (*Organizer).editNote,
+	"resize":         (*Organizer).resize,
+	"test":           (*Organizer).sync,
+	"sync":           (*Organizer).sync,
+	"new":            (*Organizer).newEntry,
+	"n":              (*Organizer).newEntry,
+	"refresh":        (*Organizer).refresh,
+	"r":              (*Organizer).refresh,
+	"find":           (*Organizer).find,
+	"contexts":       (*Organizer).contexts,
+	"context":        (*Organizer).contexts,
+	"c":              (*Organizer).contexts,
+	"folders":        (*Organizer).folders,
+	"folder":         (*Organizer).folders,
+	"f":              (*Organizer).folders,
+	"keywords":       (*Organizer).keywords,
+	"keyword":        (*Organizer).keywords,
+	"k":              (*Organizer).keywords,
+	"recent":         (*Organizer).recent,
+	"log":            (*Organizer).log,
+	"deletekeywords": (*Organizer).deleteKeywords,
+	"delkw":          (*Organizer).deleteKeywords,
+	"delk":           (*Organizer).deleteKeywords,
 	/*
 	  "deletekeywords": F_deletekeywords,
 	  "delkw": F_deletekeywords,
@@ -598,4 +601,13 @@ func (o *Organizer) recent(unused int) {
 	o.taskview = BY_RECENT
 	o.folder = "No Folder"
 	getItems(MAX)
+}
+
+func (o *Organizer) deleteKeywords(unused int) {
+	id := getId()
+	res := deleteKeywords(id)
+	o.mode = o.last_mode
+	if res != -1 {
+		sess.showOrgMessage("%d keyword(s) deleted from entry %d", res, id)
+	}
 }
