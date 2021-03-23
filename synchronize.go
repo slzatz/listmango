@@ -8,6 +8,7 @@ import (
 	"fmt"
 	_ "github.com/lib/pq"
 	_ "github.com/mattn/go-sqlite3"
+	"io"
 	"io/ioutil"
 	//	"log"
 	//"os"
@@ -47,33 +48,47 @@ func FromFile(path string) (*dbConfig, error) {
 	}
 	return &cfg, nil
 }
-func keywordExistsPQ(dbase *sql.DB, plg *strings.Builder, name string) int {
+
+func keywordExistsS(dbase *sql.DB, plg io.Writer, name string) int {
 	row := dbase.QueryRow("SELECT keyword.id FROM keyword WHERE keyword.name=$1;", name)
 	var id int
 	err := row.Scan(&id)
 	if err != nil {
-		fmt.Fprintf(plg, "Error in server keywordExistsPQ: %v", err)
+		fmt.Fprintf(plg, "Error in keywordExistsS: %v", err)
 		return -1
 	}
 	return id
 }
 
-func addTaskKeywordPQ(dbase *sql.DB, plg *strings.Builder, keyword_id, entry_id int) {
+func addTaskKeywordS(dbase *sql.DB, plg io.Writer, keyword_id, entry_id int, update_fts bool) {
 
 	_, err := dbase.Exec("INSERT INTO task_keyword (task_id, keyword_id) VALUES ($1, $2);",
 		entry_id, keyword_id)
 	if err != nil {
-		fmt.Fprintf(plg, "Error in server addTaskKeywordPQ = INSERT or IGNORE INTO task_keyword: %v", err)
+		fmt.Fprintf(plg, "Error in addTaskKeywordS = INSERT INTO task_keyword: %v", err)
 		return
+	}
+
+	// *************fts virtual table update**********************
+	if !update_fts {
+		return
+	}
+	kk := getTaskKeywordsS(dbase, plg, entry_id) // returns []string
+	kw := strings.Join(kk, ",")
+	_, err = fts_db.Exec("UPDATE fts SET tag=$1 WHERE lm_id=$2;", kw, entry_id)
+	if err != nil {
+		fmt.Fprintf(plg, "Error in addTaskKeywordS = fts Update: %v", err)
+	} else {
+		fmt.Fprintf(plg, "Keywords '%s' updated in fts_db for client id %d", kw, entry_id)
 	}
 }
 
-func getTaskKeywordSlicePQ(dbase *sql.DB, plg *strings.Builder, id int) []string {
+func getTaskKeywordsS(dbase *sql.DB, plg io.Writer, id int) []string {
 
 	rows, err := dbase.Query("SELECT keyword.name FROM task_keyword LEFT OUTER JOIN keyword ON "+
 		"keyword.id=task_keyword.keyword_id WHERE task_keyword.task_id=$1;", id)
 	if err != nil {
-		fmt.Fprintf(plg, "Error in getTaskKeywordSlicePQ: %v", err)
+		fmt.Fprintf(plg, "Error in getTaskKeywordsS: %v", err)
 	}
 	defer rows.Close()
 
@@ -798,11 +813,13 @@ func synchronize(reportOnly bool) {
 			fmt.Fprintf(&lg, "Error deleting from task_keyword from server id %d: %v", client_id, err5)
 			continue
 		}
-		kwns := getTaskKeywordSlicePQ(pdb, &lg, e.id) // this is a server query
+		kwns := getTaskKeywordsS(pdb, &lg, e.id) // this is a server query
 		for _, kwn := range kwns {
-			keyword_id := keywordExists(kwn)
+			//keyword_id := keywordExists(kwn)
+			keyword_id := keywordExistsS(db, &lg, kwn)
 			if keyword_id != -1 { // ? should create the keyword if it doesn't exits or unnecessary?
-				addTaskKeyword(keyword_id, client_id, true)
+				//addTaskKeyword(keyword_id, client_id, true)
+				addTaskKeywordS(db, &lg, keyword_id, client_id, true) // true = update client fts_db
 			}
 		}
 	}
@@ -857,11 +874,11 @@ func synchronize(reportOnly bool) {
 			fmt.Fprintf(&lg, "Error deleting from task_keyword from server id %d: %v", id, err4)
 			continue
 		}
-		kwns := getTaskKeywordSlice(e.id) // this is a client query
+		kwns := getTaskKeywordsS(db, &lg, e.id) // this is a client query
 		for _, kwn := range kwns {
-			keyword_id := keywordExistsPQ(pdb, &lg, kwn)
+			keyword_id := keywordExistsS(pdb, &lg, kwn)
 			if keyword_id != -1 { // ? should create the keyword if it doesn't exits or unnecessary?
-				addTaskKeywordPQ(pdb, &lg, keyword_id, id)
+				addTaskKeywordS(pdb, &lg, keyword_id, id, false) // don't update server fts_db (doesn't exist)
 			}
 		}
 	}
