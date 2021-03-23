@@ -510,7 +510,11 @@ func (e *Editor) refreshScreen(draw bool) {
 
 		tid = getFolderTid(e.id)
 		if tid == 18 || tid == 14 { //&& !e.is_subeditor {
-			e.drawCodeRows(&ab) //uaing pointer so drawing is smoother
+			if e.is_subeditor {
+				e.drawRows(&ab) // doesn't use buffer; uses rows
+			} else {
+				e.drawCodeRows(&ab) //uaing pointer so drawing is smoother
+			}
 		} else {
 			e.drawRows2(&ab) //2 -> uses nvim buffer
 		}
