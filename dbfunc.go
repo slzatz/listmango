@@ -677,6 +677,27 @@ func getTaskKeywords(id int) string {
 	return strings.Join(kk, ",")
 }
 
+func getTaskKeywordSlice(id int) []string {
+
+	rows, err := db.Query("SELECT keyword.name FROM task_keyword LEFT OUTER JOIN keyword ON "+
+		"keyword.id=task_keyword.keyword_id WHERE task_keyword.task_id=?;",
+		id)
+	if err != nil {
+		log.Fatal(err)
+		sess.showOrgMessage("Error in getTaskKeywordSlice: %v", err)
+	}
+	defer rows.Close()
+
+	kk := []string{}
+	for rows.Next() {
+		var name string
+
+		err = rows.Scan(&name)
+		kk = append(kk, name)
+	}
+	return kk
+}
+
 func (o *Organizer) searchDB(st string, help bool) {
 
 	o.rows = nil
@@ -1062,6 +1083,27 @@ func insertContainer(row *Row) int {
 	row.dirty = false
 
 	return row.id
+}
+
+func deleteKeywords(id int) int {
+	res, err := db.Exec("DELETE FROM task_keyword WHERE task_id=?;", id)
+	if err != nil {
+		sess.showOrgMessage("Error deleting from task_keyword: %v", err)
+		return -1
+	}
+	rowsAffected, _ := res.RowsAffected()
+	_, err = db.Exec("UPDATE task SET modified=datetime('now') WHERE id=?;", id)
+	if err != nil {
+		sess.showOrgMessage("Error updating entry modified column in deleteKeywords: %v", err)
+		return -1
+	}
+
+	_, err = fts_db.Exec("UPDATE fts SET tag='' WHERE lm_id=?", id)
+	if err != nil {
+		sess.showOrgMessage("Error updating fts in deleteKeywords: %v", err)
+		return -1
+	}
+	return int(rowsAffected)
 }
 
 func highlight_terms_string(text string, word_positions [][]int) string {

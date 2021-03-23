@@ -47,11 +47,50 @@ func FromFile(path string) (*dbConfig, error) {
 	}
 	return &cfg, nil
 }
+func keywordExistsPQ(dbase *sql.DB, plg *strings.Builder, name string) int {
+	row := dbase.QueryRow("SELECT keyword.id FROM keyword WHERE keyword.name=$1;", name)
+	var id int
+	err := row.Scan(&id)
+	if err != nil {
+		fmt.Fprintf(plg, "Error in server keywordExistsPQ: %v", err)
+		return -1
+	}
+	return id
+}
+
+func addTaskKeywordPQ(dbase *sql.DB, plg *strings.Builder, keyword_id, entry_id int) {
+
+	_, err := dbase.Exec("INSERT INTO task_keyword (task_id, keyword_id) VALUES ($1, $2);",
+		entry_id, keyword_id)
+	if err != nil {
+		fmt.Fprintf(plg, "Error in server addTaskKeywordPQ = INSERT or IGNORE INTO task_keyword: %v", err)
+		return
+	}
+}
+
+func getTaskKeywordSlicePQ(dbase *sql.DB, plg *strings.Builder, id int) []string {
+
+	rows, err := dbase.Query("SELECT keyword.name FROM task_keyword LEFT OUTER JOIN keyword ON "+
+		"keyword.id=task_keyword.keyword_id WHERE task_keyword.task_id=$1;", id)
+	if err != nil {
+		fmt.Fprintf(plg, "Error in getTaskKeywordSlicePQ: %v", err)
+	}
+	defer rows.Close()
+
+	kk := []string{}
+	for rows.Next() {
+		var name string
+
+		err = rows.Scan(&name)
+		kk = append(kk, name)
+	}
+	return kk
+}
 
 func synchronize(reportOnly bool) {
 	config, err := FromFile("/home/slzatz/listmango/config.json")
 	if err != nil {
-		sess.showOrgMessage("Problem reading postgres config file: %v", err)
+		sess.showOrgMessage("Error reading postgres config file: %v", err)
 		return
 	}
 
@@ -717,8 +756,8 @@ func synchronize(reportOnly bool) {
 		// below is for server always wins
 		server_updated_entries_ids[e.id] = struct{}{}
 		row := db.QueryRow("SELECT id from task WHERE tid=?", e.id)
-		var id int
-		err = row.Scan(&id)
+		var client_id int
+		err := row.Scan(&client_id)
 		switch {
 		case err == sql.ErrNoRows:
 			res, err1 := db.Exec("INSERT INTO task (tid, title, star, created, added, completed, context_tid, folder_tid, note, modified, deleted) "+
@@ -728,35 +767,42 @@ func synchronize(reportOnly bool) {
 				fmt.Fprintf(&lg, "Problem inserting new entry into sqlite: %w", err1)
 				break
 			}
-			lastId, _ := res.LastInsertId()
-			_, err2 := fts_db.Exec("INSERT INTO fts (title, note, lm_id) VALUES (?, ?, ?);", e.title, e.note, lastId)
+			client_id, _ := res.LastInsertId()
+			_, err2 := fts_db.Exec("INSERT INTO fts (title, note, lm_id) VALUES (?, ?, ?);", e.title, e.note, client_id)
 			if err2 != nil {
-				fmt.Fprintf(&lg, "Problem inserting into fts_db for entry with id: %v: %w\n", lastId, err2)
+				fmt.Fprintf(&lg, "Error inserting into fts_db for entry with id: %v: %w\n", client_id, err2)
 				break
 			}
-			fmt.Fprintf(&lg, "Created new local entry: %v with local id: %v and tid: %v\n", e.title, lastId, e.id)
+			fmt.Fprintf(&lg, "Created new local entry: %v with local id: %v and tid: %v\n", e.title, client_id, e.id)
 		case err != nil:
-			fmt.Fprintf(&lg, "Problem querying sqlite for a entry with tid: %v: %w\n", e.id, err)
+			fmt.Fprintf(&lg, "Error querying sqlite for a entry with tid: %v: %w\n", e.id, err)
+			continue
 		default:
 			_, err3 := db.Exec("UPDATE task SET title=?, star=?, context_tid=?, folder_tid=?, note=?, completed=?,  modified=datetime('now') WHERE tid=?;",
 				e.title, e.star, e.context_tid, e.folder_tid, e.note, e.completed, e.id)
 			if err3 != nil {
 				fmt.Fprintf(&lg, "Problem updating sqlite for an entry with tid: %v: %w\n", e.id, err3)
+				continue
+			}
+			_, err4 := fts_db.Exec("UPDATE fts SET title=?, note=? WHERE lm_id=?;", e.title, e.note, client_id)
+			if err4 != nil {
+				fmt.Fprintf(&lg, "Error updating fts_db for entry %s; id: %d; %v\n", e.title, client_id, err4)
 			} else {
-				row = db.QueryRow("SELECT id FROM task WHERE tid=?;", e.id)
-				var lm_id int
-				err4 := row.Scan(&lm_id)
-				if err4 != nil {
-					fmt.Fprintf(&lg, "Error trying to retrieve entry id to update fts_db: %w", err4)
-				} else {
-					_, err5 := fts_db.Exec("UPDATE fts SET title=?, note=? WHERE lm_id=?;", e.title, e.note, lm_id)
-					if err5 != nil {
-						fmt.Fprintf(&lg, "Error updating fts_db for entry %s; id: %d; %v\n", e.title, lm_id, err5)
-					} else {
-						fmt.Fprintf(&lg, "fts_db updated for entry %s; id: %d; tid: %d\n", e.title, lm_id, e.id)
-					}
-				}
-				fmt.Fprintf(&lg, "Updated local entry: %v with tid: %v\n", e.title, e.id)
+				fmt.Fprintf(&lg, "fts_db updated for entry %s; id: %d; tid: %d\n", e.title, client_id, e.id)
+			}
+			fmt.Fprintf(&lg, "Updated local entry: %s with id %d and tid: %d\n", e.title, client_id, e.id)
+		}
+		// Update the client entry's keywords
+		_, err5 := db.Exec("DELETE FROM task_keyword WHERE task_id=?;", client_id)
+		if err5 != nil {
+			fmt.Fprintf(&lg, "Error deleting from task_keyword from server id %d: %v", client_id, err5)
+			continue
+		}
+		kwns := getTaskKeywordSlicePQ(pdb, &lg, e.id) // this is a server query
+		for _, kwn := range kwns {
+			keyword_id := keywordExists(kwn)
+			if keyword_id != -1 { // ? should create the keyword if it doesn't exits or unnecessary?
+				addTaskKeyword(keyword_id, client_id, true)
 			}
 		}
 	}
@@ -769,6 +815,7 @@ func synchronize(reportOnly bool) {
 		}
 
 		var exists bool
+		var id int
 		err := pdb.QueryRow("SELECT EXISTS(SELECT 1 FROM task WHERE id=$1);", e.tid).Scan(&exists)
 		switch {
 
@@ -783,9 +830,8 @@ func synchronize(reportOnly bool) {
 			} else {
 				fmt.Fprintf(&lg, "Updated server entry: %s with id: %d\n", e.title, e.tid)
 			}
-
+			id = e.tid // needed below for keywords
 		case !exists:
-			var id int
 			err1 := pdb.QueryRow("INSERT INTO task (title, star, created, added, completed, context_tid, folder_tid, note, modified, deleted) "+
 				"VALUES ($1, $2, $3, $4, $5, $6, $7, $8, now(), false) RETURNING id;",
 				e.title, e.star, e.created, e.added, e.completed, e.context_tid, e.folder_tid, e.note).Scan(&id)
@@ -803,8 +849,23 @@ func synchronize(reportOnly bool) {
 
 		default:
 			fmt.Fprintf(&lg, "Something went wrong in client_updated_entries for client entry id: %v\n", e.id)
+			continue
+		}
+		// Update the server entry's keywords
+		_, err4 := pdb.Exec("DELETE FROM task_keyword WHERE task_id=$1;", id)
+		if err4 != nil {
+			fmt.Fprintf(&lg, "Error deleting from task_keyword from server id %d: %v", id, err4)
+			continue
+		}
+		kwns := getTaskKeywordSlice(e.id) // this is a client query
+		for _, kwn := range kwns {
+			keyword_id := keywordExistsPQ(pdb, &lg, kwn)
+			if keyword_id != -1 { // ? should create the keyword if it doesn't exits or unnecessary?
+				addTaskKeywordPQ(pdb, &lg, keyword_id, id)
+			}
 		}
 	}
+
 	// server deleted entries
 	for _, e := range server_deleted_entries {
 		res, err := db.Exec("DELETE FROM task WHERE tid=?;", e.id)
