@@ -40,6 +40,7 @@ var cmd_lookup = map[string]func(*Organizer, int){
 	"deletekeywords": (*Organizer).deleteKeywords,
 	"delkw":          (*Organizer).deleteKeywords,
 	"delk":           (*Organizer).deleteKeywords,
+	"showall":        (*Organizer).showAll,
 	/*
 	  "deletekeywords": F_deletekeywords,
 	  "delkw": F_deletekeywords,
@@ -609,5 +610,22 @@ func (o *Organizer) deleteKeywords(unused int) {
 	o.mode = o.last_mode
 	if res != -1 {
 		sess.showOrgMessage("%d keyword(s) deleted from entry %d", res, id)
+	}
+}
+
+func (o *Organizer) showAll(unused int) {
+	if o.view == TASK {
+		o.show_deleted = !o.show_deleted
+		o.show_completed = !o.show_completed
+		if o.taskview == BY_FIND {
+			//search_db();
+		} else {
+			getItems(MAX)
+		}
+	}
+	if o.show_deleted {
+		sess.showOrgMessage("Showing completed/deleted")
+	} else {
+		sess.showOrgMessage("Hiding completed/deleted")
 	}
 }
