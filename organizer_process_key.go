@@ -201,16 +201,26 @@ func organizerProcessKey(c int) {
 				switch org.altView {
 				case KEYWORD:
 					addTaskKeyword(altRow.id, row.id, true)
-					sess.showOrgMessage("No tasks were marked so added keyword %s to current task",
-						altRow.title)
+					sess.showOrgMessage("Added keyword %s to current entry", altRow.title)
 				case FOLDER:
 					updateTaskFolder(altRow.title, row.id)
-					sess.showOrgMessage("No tasks were marked so current task had folder changed to %s",
-						altRow.title)
+					sess.showOrgMessage("Current entry folder changed to %s", altRow.title)
 				case CONTEXT:
 					updateTaskContext(altRow.title, row.id)
-					sess.showOrgMessage("No tasks were marked so current task had context changed to %s",
-						altRow.title)
+					sess.showOrgMessage("Current entry had context changed to %s", altRow.title)
+				}
+			} else {
+				for id := range org.marked_entries {
+					switch org.altView {
+					case KEYWORD:
+						addTaskKeyword(altRow.id, id, true)
+					case FOLDER:
+						updateTaskFolder(altRow.title, id)
+					case CONTEXT:
+						updateTaskContext(altRow.title, id)
+
+					}
+					sess.showOrgMessage("Marked entries' %d changed/added to %s", org.altView, altRow.title)
 				}
 			}
 		}
