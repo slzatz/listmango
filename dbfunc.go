@@ -590,6 +590,22 @@ func readNoteIntoEditor(id int) {
 
 }
 
+func readSyncLogIntoAltRows(id int) {
+	row := db.QueryRow("SELECT note FROM sync_log WHERE id=?;", id)
+	var note string
+	err := row.Scan(&note)
+	if err != nil {
+		return
+	}
+	org.altRows = nil
+	for _, line := range strings.Split(note, "\n") {
+		var r AltRow
+		r.title = line
+		org.altRows = append(org.altRows, r)
+	}
+
+}
+
 func readSyncLog(id int) string {
 	row := db.QueryRow("SELECT note FROM sync_log WHERE id=?;", id)
 	var note string

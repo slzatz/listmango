@@ -36,7 +36,7 @@ var cmd_lookup = map[string]func(*Organizer, int){
 	"keyword":        (*Organizer).keywords,
 	"k":              (*Organizer).keywords,
 	"recent":         (*Organizer).recent,
-	"log":            (*Organizer).log,
+	"log":            (*Organizer).log2,
 	"deletekeywords": (*Organizer).deleteKeywords,
 	"delkw":          (*Organizer).deleteKeywords,
 	"delk":           (*Organizer).deleteKeywords,
@@ -96,6 +96,19 @@ func (o *Organizer) log(unused int) {
 	// show first row's note
 	note := readSyncLog(org.rows[0].id)
 	sess.displaySyncLog(note)
+	sess.showOrgMessage("")
+}
+
+func (o *Organizer) log2(unused int) {
+	getSyncItems(MAX)
+	org.fc, org.fr, org.rowoff = 0, 0, 0
+	org.altR, org.altRowoff = 0, 0
+	o.mode = SYNC_LOG      //kluge INSERT, NORMAL, ...
+	o.view = SYNC_LOG_VIEW //TASK, FOLDER, KEYWORD ...
+	// show first row's note
+	readSyncLogIntoAltRows(org.rows[0].id)
+	sess.eraseRightScreen()
+	sess.drawOrgAltRows2()
 	sess.showOrgMessage("")
 }
 

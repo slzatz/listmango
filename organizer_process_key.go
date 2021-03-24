@@ -270,22 +270,35 @@ func organizerProcessKey(c int) {
 		case ARROW_UP, 'k':
 			if org.fr > 0 {
 				org.fr--
-				note := readSyncLog(org.rows[org.fr].id)
-				//sess.showOrgMessage("Note length: %d", len(note))
-				sess.displaySyncLog(note)
+				readSyncLogIntoAltRows(org.rows[org.fr].id)
+				sess.eraseRightScreen()
+				org.altR = 0
+				sess.drawOrgAltRows2()
 			}
 		case ARROW_DOWN, 'j':
 			if org.fr < len(org.rows)-1 {
 				org.fr++
-				note := readSyncLog(org.rows[org.fr].id)
-				//sess.showOrgMessage("Note length: %d", len(note))
-				sess.displaySyncLog(note)
+				readSyncLogIntoAltRows(org.rows[org.fr].id)
+				sess.eraseRightScreen()
+				org.altR = 0
+				sess.drawOrgAltRows2()
 			}
 		case ':':
 			sess.showOrgMessage(":")
 			org.command_line = ""
 			org.last_mode = org.mode
 			org.mode = COMMAND_LINE
+
+		// the two below only handle logs < 2x textLines
+		case PAGE_DOWN:
+			sess.showOrgMessage("Got here")
+			org.altR = len(org.altRows) - 1
+			sess.eraseRightScreen()
+			sess.drawOrgAltRows2()
+		case PAGE_UP:
+			org.altR = 0
+			sess.eraseRightScreen()
+			sess.drawOrgAltRows2()
 		}
 	} // end switch o.mode
 } // end func organizerProcessKey(c int)

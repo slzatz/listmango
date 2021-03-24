@@ -344,6 +344,44 @@ func (s *Session) drawOrgAltRows() {
 	fmt.Print(ab.String())
 }
 
+func (s *Session) drawOrgAltRows2() {
+
+	if len(org.altRows) == 0 {
+		return
+	}
+	//scroll
+	if org.altR > sess.textLines+org.altRowoff-1 {
+		org.altRowoff = org.altR - sess.textLines + 1
+	}
+	if org.altR < org.altRowoff {
+		org.altRowoff = org.altR
+	}
+	// end scroll
+
+	var ab strings.Builder
+	fmt.Fprintf(&ab, "\x1b[%d;%dH", TOP_MARGIN+1, s.divider+2)
+	lf_ret := fmt.Sprintf("\r\n\x1b[%dC", s.divider+1)
+
+	for y := 0; y < s.textLines; y++ {
+
+		fr := y + org.altRowoff
+		if fr > len(org.altRows)-1 {
+			break
+		}
+
+		length := len(org.altRows[fr].title)
+		if length > s.totaleditorcols {
+			length = s.totaleditorcols
+		}
+
+		ab.WriteString(org.altRows[fr].title[:length])
+		ab.WriteString("\x1b[0m") // return background to normal
+		ab.WriteString(lf_ret)
+	}
+	fmt.Print(ab.String())
+	sess.showOrgMessage("altR = %d; altRowoff = %d", org.altR, org.altRowoff)
+}
+
 func (s *Session) drawEditors() {
 	var ab strings.Builder
 	for _, e := range s.editors {
