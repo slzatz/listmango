@@ -309,14 +309,12 @@ func (s *Session) drawOrgAltRows() {
 	}
 
 	var ab strings.Builder
-	// Cursor should be hidden in ADD_CHANGE_FILTER mode
-	ab.WriteString("\x1b[?25l")
+	fmt.Fprintf(&ab, "\x1b[%d;%dH", TOP_MARGIN+1, s.divider+2)
 	lf_ret := fmt.Sprintf("\r\n\x1b[%dC", s.divider+1)
 
-	fmt.Fprintf(&ab, "\x1b[%dG", s.divider+2)
-
 	for y := 0; y < s.textLines; y++ {
-		fr := y + org.rowoff
+
+		fr := y + org.altRowoff
 		if fr > len(org.altRows)-1 {
 			break
 		}
@@ -336,10 +334,9 @@ func (s *Session) drawOrgAltRows() {
 		}
 
 		ab.WriteString(org.altRows[fr].title[:length])
-		ab.WriteString("\x1b[0m") // return background to normal ////////////////////////////////
+		ab.WriteString("\x1b[0m") // return background to normal
 		ab.WriteString(lf_ret)
 	}
-	//fmt.Fprint(os.Stdout, ab.String())
 	fmt.Print(ab.String())
 }
 

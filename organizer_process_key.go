@@ -179,35 +179,35 @@ func organizerProcessKey(c int) {
 		org.command = ""
 		org.mode = NORMAL
 
-		return //////// end of outer case REPLACE
+		return
 
 	case ADD_CHANGE_FILTER:
+
 		switch c {
+
 		case '\x1b':
 			org.mode = NORMAL
 			org.command = ""
 			org.command_line = ""
 			org.repeat = 0
+
 		case ARROW_UP, ARROW_DOWN, 'j', 'k':
 			org.moveAltCursor(c)
+
 		case '\r':
-			altRow := &org.altRows[org.altR] //currently highlighted keyword
-			row := &org.rows[org.fr]         //currently highlighted keyword
+			altRow := &org.altRows[org.altR] //currently highlighted container row
+			row := &org.rows[org.fr]         //currently highlighted entry row
 			if len(org.marked_entries) == 0 {
 				switch org.altView {
 				case KEYWORD:
-					//add_task_keyword(row.id, org.current_task_id);
 					addTaskKeyword(altRow.id, row.id, true)
 					sess.showOrgMessage("No tasks were marked so added keyword %s to current task",
 						altRow.title)
 				case FOLDER:
-					//org.update_task_folder(row.title, org.current_task_id);
 					updateTaskFolder(altRow.title, row.id)
 					sess.showOrgMessage("No tasks were marked so current task had folder changed to %s",
 						altRow.title)
-					break
 				case CONTEXT:
-					//org.update_task_context(row.title, org.current_task_id);
 					updateTaskContext(altRow.title, row.id)
 					sess.showOrgMessage("No tasks were marked so current task had context changed to %s",
 						altRow.title)

@@ -4,11 +4,12 @@ type Organizer struct {
 	mode      Mode
 	last_mode Mode
 
-	cx, cy int //cursor x and y position
-	fc, fr int // file x and y position
-	rowoff int //the number of rows scrolled (aka number of top rows now off-screen
-	coloff int //the number of columns scrolled (aka number of left rows now off-screen
-	altR   int
+	cx, cy    int //cursor x and y position
+	fc, fr    int // file x and y position
+	rowoff    int //the number of rows scrolled (aka number of top rows now off-screen
+	altRowoff int
+	coloff    int //the number of columns scrolled (aka number of left rows now off-screen
+	altR      int
 
 	rows         []Row
 	altRows      []AltRow

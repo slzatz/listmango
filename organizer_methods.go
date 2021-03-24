@@ -312,12 +312,16 @@ func (o *Organizer) insertRow(at int, s string, star bool, deleted bool, complet
 
 func (o *Organizer) scroll() {
 
-	titlecols := sess.divider - TIME_COL_WIDTH - LEFT_MARGIN
-
-	if len(o.rows) == 0 {
-		o.fr, o.fc, o.coloff, o.cx, o.cy = 0, 0, 0, 0, 0
+	if o.mode == ADD_CHANGE_FILTER {
+		o.altScroll()
 		return
 	}
+
+	if len(o.rows) == 0 {
+		o.fr, o.fc, o.coloff, o.rowoff, o.cx, o.cy = 0, 0, 0, 0, 0, 0
+		return
+	}
+	titlecols := sess.divider - TIME_COL_WIDTH - LEFT_MARGIN
 
 	if o.fr > sess.textLines+o.rowoff-1 {
 		o.rowoff = o.fr - sess.textLines + 1
@@ -337,6 +341,26 @@ func (o *Organizer) scroll() {
 
 	o.cx = o.fc - o.coloff
 	o.cy = o.fr - o.rowoff
+}
+
+func (o *Organizer) altScroll() {
+
+	if len(o.altRows) == 0 {
+		return
+	}
+	prevRowoff := o.altRowoff
+
+	if o.altR > sess.textLines+o.altRowoff-1 {
+		o.altRowoff = o.altR - sess.textLines + 1
+	}
+
+	if o.altR < o.altRowoff {
+		o.altRowoff = o.altR
+	}
+
+	if prevRowoff != o.altRowoff {
+		sess.eraseRightScreen()
+	}
 }
 
 func (o *Organizer) insertChar(c int) {

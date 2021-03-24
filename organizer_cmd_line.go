@@ -41,47 +41,16 @@ var cmd_lookup = map[string]func(*Organizer, int){
 	"delkw":          (*Organizer).deleteKeywords,
 	"delk":           (*Organizer).deleteKeywords,
 	"showall":        (*Organizer).showAll,
-	"uc":             (*Organizer).updateContainer,
-	/*
-	  "deletekeywords": F_deletekeywords,
-	  "delkw": F_deletekeywords,
-	  "delk": F_deletekeywords,
-	  "addkeywords": F_addkeyword,
-	  "addkw": F_addkeyword,
-	  "addk": F_addkeyword,
-	  "k": F_keywords,
-	  "keyword": F_keywords,
-	  "keywords": F_keywords,
-	*/
-	"write": (*Organizer).write,
-	"w":     (*Organizer).write,
+	"cc":             (*Organizer).updateContainer,
+	"ff":             (*Organizer).updateContainer,
+	"kk":             (*Organizer).updateContainer,
+	"write":          (*Organizer).write,
+	"w":              (*Organizer).write,
 	/*
 	  "x": F_x,
-	  "refresh": F_refresh,
-	  "r": F_refresh,
-	  "n": F_new,
-	  "new": F_new,
-	  "e": F_edit,
-	  "edit": F_edit,
-	  "contexts": F_contexts,
-	  "context": F_contexts,
-	  "c": F_contexts,
-	  "folders": F_folders,
-	  "folder": F_folders,
-	  "f": F_folders,
-	  "recent": F_recent,
 	 // {"linked", F_linked,
 	 // {"l", F_linked,
 	 // {"related", F_linked,
-	  "find": F_find,
-	  "fin": F_find,
-	  "search": F_find,
-	  "sync": F_sync,
-	  "test": F_sync_test,
-	  "updatefolder": F_updatefolder,
-	  "uf": F_updatefolder,
-	  "updatecontext": F_updatecontext,
-	  "uc": F_updatecontext,
 	  "delmarks": F_delmarks,
 	  "delm": F_delmarks,
 	  "save": F_savefile,
@@ -113,7 +82,6 @@ var cmd_lookup = map[string]func(*Organizer, int){
 	  "quitbrowser": F_quit_lm_browser,
 	  "createlink": F_createLink,
 	  "getlinked": F_getLinked,
-	  "resize": F_resize
 	*/
 }
 
@@ -634,7 +602,14 @@ func (o *Organizer) showAll(unused int) {
 func (o *Organizer) updateContainer(unused int) {
 	//o.current_task_id = o.rows[o.fr].id
 	sess.eraseRightScreen()
-	o.altView = CONTEXT
+	switch o.command_line {
+	case "cc":
+		o.altView = CONTEXT
+	case "ff":
+		o.altView = FOLDER
+	case "kk":
+		o.altView = KEYWORD
+	}
 	getAltContainers() //O.mode = NORMAL is in get_containers
 	if len(org.altRows) != 0 {
 		o.mode = ADD_CHANGE_FILTER //this needs to change to somthing like UPDATE_TASK_MODIFIERS
