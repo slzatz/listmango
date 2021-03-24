@@ -46,6 +46,9 @@ var cmd_lookup = map[string]func(*Organizer, int){
 	"kk":             (*Organizer).updateContainer,
 	"write":          (*Organizer).write,
 	"w":              (*Organizer).write,
+	"deletemarks":    (*Organizer).deleteMarks,
+	"delmarks":       (*Organizer).deleteMarks,
+	"delm":           (*Organizer).deleteMarks,
 	/*
 	  "x": F_x,
 	 // {"linked", F_linked,
@@ -374,6 +377,7 @@ func (o *Organizer) refresh(unused int) {
 		sess.showOrgMessage("view refreshed")
 	}
 	o.mode = o.last_mode
+	o.clearMarkedEntries()
 }
 
 func (o *Organizer) find(pos int) {
@@ -449,20 +453,13 @@ func (o *Organizer) contexts(pos int) {
 		return
 	}
 
-	//should use markedEntries []int
-	marked := false
-	for _, row := range o.rows {
-		if row.marked {
-			updateTaskContext(context, row.id)
-			marked = true
+	if len(o.marked_entries) > 0 {
+		for entry_id := range o.marked_entries {
+			updateTaskContext(context, entry_id) //true = update fts_dn
 		}
-	}
-
-	if marked {
 		sess.showOrgMessage("Marked entries moved into context %s", context)
 		return
 	}
-
 	updateTaskContext(context, o.rows[o.fr].id)
 	sess.showOrgMessage("Moved current entry (since none were marked) into context %s", context)
 }
@@ -507,21 +504,12 @@ func (o *Organizer) folders(pos int) {
 	}
 
 	if len(o.marked_entries) > 0 {
-		for k, _ := range o.marked_entries {
-			updateTaskFolder(folder, k)
+		for entry_id, _ := range o.marked_entries {
+			updateTaskFolder(folder, entry_id)
 		}
 		sess.showOrgMessage("Marked entries moved into folder %s", folder)
 		return
 	}
-	/*
-		for _, row := range o.rows {
-			if row.marked {
-				updateTaskFolder(folder, row.id)
-				marked = true
-			}
-		}
-	*/
-
 	updateTaskFolder(folder, o.rows[o.fr].id)
 	sess.showOrgMessage("Moved current entry (since none were marked) into folder %s", folder)
 }
@@ -615,4 +603,11 @@ func (o *Organizer) updateContainer(unused int) {
 		o.mode = ADD_CHANGE_FILTER //this needs to change to somthing like UPDATE_TASK_MODIFIERS
 		sess.showOrgMessage("Select context to add to marked or current entry")
 	}
+}
+
+func (o *Organizer) deleteMarks(unused int) {
+	o.clearMarkedEntries()
+	o.mode = NORMAL
+	o.command_line = ""
+	sess.showOrgMessage("Marks cleared")
 }
