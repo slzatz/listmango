@@ -169,8 +169,8 @@ func (s *Session) drawOrgRows() {
 		}
 
 		if org.rows[fr].star {
-			ab.WriteString("\x1b[1m") //bold
-			ab.WriteString("\x1b[1;36m")
+			ab.WriteString("\x1b[1m")    //bold
+			ab.WriteString("\x1b[1;36m") //light cyan
 		}
 
 		if org.rows[fr].completed && org.rows[fr].deleted {
@@ -179,18 +179,22 @@ func (s *Session) drawOrgRows() {
 			ab.WriteString("\x1b[33m") //yellow foreground
 			//else if (row.deleted) ab.append("\x1b[31m", 5); //red foreground
 		} else if org.rows[fr].deleted {
-			ab.WriteString(COLOR_1)
+			ab.WriteString(RED_FG)
 		} //red (specific color depends on theme)
 
 		if fr == org.fr {
 			ab.WriteString("\x1b[48;5;236m") // 236 is a grey
 		}
 		if org.rows[fr].dirty {
-			ab.WriteString("\x1b[41m") //red background
+			ab.WriteString("\x1b[30;47m") //black letters on white bg
+			//ab.WriteString(BLACK_FG + WHITE_BG) //this unbolded for star for some reason
 		}
 		//if (row.mark) ab.append("\x1b[46m", 5); //cyan background
 		if _, ok := org.marked_entries[org.rows[fr].id]; ok {
-			ab.WriteString("\x1b[46m")
+			//ab.WriteString("\x1b[46m")
+			//ab.WriteString(YELLOW_BG)
+			ab.WriteString(YELLOW_BG)
+			ab.WriteString("\x1b[30;43m") //black letters on yellow bg
 		}
 
 		// below - only will get visual highlighting if it's the active

@@ -18,16 +18,29 @@ var modeMap = map[string]Mode{
 }
 
 const (
-	TZ_OFFSET          = 4
-	BASE_DATE          = "1970-01-01 00:00"
-	LINKED_NOTE_HEIGHT = 20
-	TOP_MARGIN         = 1
-	MAX                = 500
-	TIME_COL_WIDTH     = 18
-	LEFT_MARGIN        = 1
-	LEFT_MARGIN_OFFSET = 4
-	//SCROLL_UP = 1
-	COLOR_1 = "\x1b[0;31m"
+	TZ_OFFSET                 = 4
+	LINKED_NOTE_HEIGHT        = 20
+	TOP_MARGIN                = 1
+	MAX                       = 500
+	TIME_COL_WIDTH            = 18
+	LEFT_MARGIN               = 1
+	LEFT_MARGIN_OFFSET        = 4
+	BASE_DATE          string = "1970-01-01 00:00"
+	BLACK_FG           string = "\x1b[0;30m" //red if 1 -> generally called light (e.g., light red)
+	RED_FG             string = "\x1b[0;31m" //red if 1 -> generally called light (e.g., light red)
+	GREEN_FG           string = "\x1b[0;32m" //green
+	YELLOW_FG          string = "\x1b[0;33m" //yellow
+	BLUE_FG            string = "\x1b[0;34m" //blue
+	MAGENTA_FG         string = "\x1b[0;35m" //magenta
+	CYAN_FG            string = "\x1b[0;36m" //cyan
+	WHITE_FG           string = "\x1b[0;37m"
+	RED_BG             string = "\x1b[41m"
+	GREEN_BG           string = "\x1b[42m"
+	YELLOW_BG          string = "\x1b[43m"
+	BLUE_BG            string = "\x1b[44m"
+	MAGENTA_BG         string = "\x1b[45m"
+	CYAN_BG            string = "\x1b[46m"
+	WHITE_BG           string = "\x1b[47m"
 )
 
 func ctrlKey(b byte) int { //rune
@@ -114,24 +127,6 @@ const (
 	ADD_CHANGE_FILTER // only outline mode
 	SYNC_LOG
 )
-
-/*
-var mode_text = [13]string{
-	"NORMAL",
-	"INSERT",
-	"COMMAND LINE",
-	"VISUAL LINE",
-	"VISUAL",
-	"REPLACE",
-	"FILE DISPLAY",
-	"NO ROWS",
-	"VISUAL BLOCK",
-	"SEARCH",
-	"FIND",
-	"ADD/CHANGE FILTER",
-	"SYNC LOG",
-}
-*/
 
 func (m Mode) String() string {
 	return [...]string{
