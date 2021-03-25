@@ -34,7 +34,9 @@ type Organizer struct {
 	fts_titles      map[int]string
 
 	context_map map[string]int
+	idToContext map[int]string
 	folder_map  map[string]int
+	idToFolder  map[int]string
 	sort_map    map[string]int
 
 	fts_ids        []int
