@@ -770,7 +770,8 @@ func synchronize(reportOnly bool) {
 				fmt.Fprintf(&lg, "Problem inserting new entry into sqlite: %w", err1)
 				break
 			}
-			client_id, _ = res.LastInsertId()
+			id, _ := res.LastInsertId()
+			client_id = int(id)
 			_, err2 := fts_db.Exec("INSERT INTO fts (title, note, lm_id) VALUES (?, ?, ?);", e.title, e.note, client_id)
 			if err2 != nil {
 				fmt.Fprintf(&lg, "Error inserting into fts_db for entry with id: %v: %w\n", client_id, err2)
@@ -848,7 +849,7 @@ func synchronize(reportOnly bool) {
 				"VALUES ($1, $2, $3, $4, $5, $6, $7, $8, now(), false) RETURNING id;",
 				e.title, e.star, e.created, e.added, e.completed, e.context_tid, e.folder_tid, e.note).Scan(&server_id)
 			if err1 != nil {
-				fmt.Fprintf(&lg, "Problem inserting new server entry for client entry %s with id %d into postgres: %v\n", e.title[:15], e.d, err1)
+				fmt.Fprintf(&lg, "Problem inserting new server entry for client entry %s with id %d into postgres: %v\n", e.title[:15], e.id, err1)
 				break
 			}
 			_, err2 := db.Exec("UPDATE task SET tid=? WHERE id=?;", server_id, e.id)
