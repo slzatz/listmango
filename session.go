@@ -538,8 +538,9 @@ func (s *Session) drawOrgStatusBar() {
 	var ab strings.Builder
 	//position cursor and erase - and yes you do have to reposition cursor after erase
 	fmt.Fprintf(&ab, "\x1b[%d;%dH\x1b[1K\x1b[%d;1H", s.textLines+TOP_MARGIN+1, s.divider, s.textLines+TOP_MARGIN+1)
-	ab.WriteString("\x1b[7m") //switches to inverted colors
+	ab.WriteString("\x1b[7m") //switches to reversed colors
 
+	e := getEntryInfo(getId())
 	var str string
 
 	switch org.view {
@@ -548,13 +549,17 @@ func (s *Session) drawOrgStatusBar() {
 		case BY_FIND:
 			str = "search - " + s.fts_search_terms
 		case BY_FOLDER:
-			str = org.folder + "[f]"
+			str = fmt.Sprintf("%s[f] (%s[c])", org.folder, org.idToContext[e.context_tid])
+			//str = org.folder + "[f]" + " (" + org.context
 		case BY_CONTEXT:
-			str = org.context + "[c]"
+			//str = org.context + "[c]"
+			str = fmt.Sprintf("%s[c] (%s[f])", org.context, org.idToFolder[e.folder_tid])
 		case BY_RECENT:
-			str = "recent"
-		case BY_JOIN:
-			str = org.context + "[c] + " + org.folder + "[f]"
+			str = fmt.Sprintf("Recent: %s[c] %s[f]",
+				org.idToContext[e.context_tid], org.idToFolder[e.folder_tid])
+			//str = "recent"
+		//case BY_JOIN:
+		//	str = org.context + "[c] + " + org.folder + "[f]"
 		case BY_KEYWORD:
 			str = org.keyword + "[k]"
 		}
@@ -592,22 +597,36 @@ func (s *Session) drawOrgStatusBar() {
 
 	}
 
+	// [49m - revert background to normal
+	// 7m - reverses video
 	// because video is reversted [42 sets text to green and 49 undoes it
 	// also [0;35;7m -> because of 7m it reverses background and foreground
-	// I think the [0;7m is revert to normal and reverse video
+	// I think the [0;7m is revert text to normal and reverse video
 	status := fmt.Sprintf("\x1b[1m%s\x1b[0;7m %s \x1b[0;35;7m%s\x1b[0;7m %d %d/%d \x1b[1;42m%s\x1b[49m",
 		str, title, keywords, id, org.fr+1, len(org.rows), org.mode)
 
 	// klugy way of finding length of string without the escape characters
-	length := len(fmt.Sprintf("%s %s %s %d %d/%d %s",
-		str, title, keywords, id, org.fr+1, len(org.rows), org.mode))
+	plain := fmt.Sprintf("%s %s %s %d %d/%d %s",
+		str, title, keywords, id, org.fr+1, len(org.rows), org.mode)
+	length := len(plain)
 
 	if length < s.divider {
 		// need to do the below because the escapes make string
 		// longer than it actually prints so pad separately
 		fmt.Fprintf(&ab, "%s%-*s", status, s.divider-length, " ")
 	} else {
-		ab.WriteString(status[:s.divider])
+		status = fmt.Sprintf("\x1b[1m%s\x1b[0;7m %s \x1b[0;35;7m%s\x1b[0;7m %d %d/%d\x1b[49m",
+			str, title, keywords, id, org.fr+1, len(org.rows))
+		plain = fmt.Sprintf("%s %s %s %d %d/%d",
+			str, title, keywords, id, org.fr+1, len(org.rows))
+		length := len(plain)
+		if length < s.divider {
+			fmt.Fprintf(&ab, "%s%-*s", status, s.divider-length, " ")
+		} else {
+			status = fmt.Sprintf("\x1b[1m%s\x1b[0;7m %s %s %d %d/%d",
+				str, title, keywords, id, org.fr+1, len(org.rows))
+			ab.WriteString(status[:s.divider+10])
+		}
 	}
 	ab.WriteString("\x1b[0m") //switches back to normal formatting
 	fmt.Print(ab.String())
