@@ -88,6 +88,11 @@ func organizerProcessKey(c int) {
 			return
 		}
 
+		if c == ctrlKey('l') && org.last_mode == ADD_CHANGE_FILTER {
+			org.mode = ADD_CHANGE_FILTER
+			sess.eraseRightScreen()
+		}
+
 		if c == '\r' { //also does escape into NORMAL mode
 			row := &org.rows[org.fr]
 			if row.dirty {
@@ -187,6 +192,7 @@ func organizerProcessKey(c int) {
 
 		case '\x1b':
 			org.mode = NORMAL
+			org.last_mode = ADD_CHANGE_FILTER
 			org.command = ""
 			org.command_line = ""
 			org.repeat = 0
