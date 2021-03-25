@@ -69,6 +69,7 @@ func generateContextMap() {
 
 		err = rows.Scan(&tid, &title)
 		org.context_map[title] = tid
+		org.idToContext[tid] = title
 	}
 }
 
@@ -85,6 +86,7 @@ func generateFolderMap() {
 
 		err = rows.Scan(&tid, &title)
 		org.folder_map[title] = tid
+		org.idToFolder[tid] = title
 	}
 }
 
