@@ -822,7 +822,7 @@ func synchronize(reportOnly bool) {
 	for _, e := range client_updated_entries {
 		// server wins if both client and server have updated an item
 		if _, found := server_updated_entries_ids[e.tid]; found {
-			fmt.Fprintf(&lg, "Server won updating server id/client tid: %d\n", e.tid)
+			fmt.Fprintf(&lg, "Server won: client entry %s with id %d and tid %d was updated by server\n", e.title, e.id, e.tid)
 			continue
 		}
 
@@ -1107,7 +1107,7 @@ func synchronize(reportOnly bool) {
 	log := lg.String()
 	sess.drawPreviewText2(log)
 	sess.drawPreviewBox()
-	log_title := fmt.Sprintf("Sync time: %v\n", time.Now())
+	log_title := fmt.Sprintf("%v - %d change(s)", time.Now().Format("Mon Jan 2 15:04:05"), nn)
 	insertSyncEntry(log_title, log)
 }
 
