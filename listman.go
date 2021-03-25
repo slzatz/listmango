@@ -256,7 +256,9 @@ func main() {
 	org.context = "No Context"
 	org.keyword = ""
 	org.context_map = make(map[string]int)
+	org.idToContext = make(map[int]string)
 	org.folder_map = make(map[string]int)
+	org.idToFolder = make(map[int]string)
 	org.marked_entries = make(map[int]struct{})
 
 	org.fts_titles = make(map[int]string)
@@ -309,13 +311,6 @@ func main() {
 				sess.drawOrgStatusBar()
 			}
 		}
-
-		/*
-			if sess.divider > 10 {
-				sess.drawOrgStatusBar()
-			}
-		*/
-
 		sess.returnCursor()
 
 		// if it's been 5 secs since the last status message, reset
