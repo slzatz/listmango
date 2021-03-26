@@ -785,7 +785,7 @@ func synchronize(reportOnly bool) {
 			_, err3 := db.Exec("UPDATE task SET title=?, star=?, context_tid=?, folder_tid=?, note=?, completed=?,  modified=datetime('now') WHERE tid=?;",
 				e.title, e.star, e.context_tid, e.folder_tid, e.note, e.completed, e.id)
 			if err3 != nil {
-				fmt.Fprintf(&lg, "Problem updating sqlite for an entry with tid: %v: %w\n", e.id, err3)
+				fmt.Fprintf(&lg, "Error updating sqlite for an entry with tid: %d: %v\n", e.id, err3)
 				continue
 			}
 			_, err4 := fts_db.Exec("UPDATE fts SET title=?, note=? WHERE lm_id=?;", e.title, e.note, client_id)
@@ -804,10 +804,8 @@ func synchronize(reportOnly bool) {
 		}
 		kwns := getTaskKeywordsS(pdb, &lg, e.id) // returns []string
 		for _, kwn := range kwns {
-			//keyword_id := keywordExists(kwn)
 			keyword_id := keywordExistsS(db, &lg, kwn)
-			if keyword_id != -1 { // ? should create the keyword if it doesn't exits or unnecessary?
-				//addTaskKeyword(keyword_id, client_id, true)
+			if keyword_id != -1 { // ? should create the keyword if it doesn't exist
 				addTaskKeywordS(db, &lg, keyword_id, client_id)
 			}
 		}
@@ -823,7 +821,7 @@ func synchronize(reportOnly bool) {
 	for _, e := range client_updated_entries {
 		// server wins if both client and server have updated an item
 		if _, found := server_updated_entries_ids[e.tid]; found {
-			fmt.Fprintf(&lg, "Server won: client entry %s with id %d and tid %d was updated by server\n", e.title, e.id, e.tid)
+			fmt.Fprintf(&lg, "Server won: client entry '%s' with id %d and tid %d was updated by server\n", e.title[:15], e.id, e.tid)
 			continue
 		}
 
@@ -849,19 +847,19 @@ func synchronize(reportOnly bool) {
 				"VALUES ($1, $2, $3, $4, $5, $6, $7, $8, now(), false) RETURNING id;",
 				e.title, e.star, e.created, e.added, e.completed, e.context_tid, e.folder_tid, e.note).Scan(&server_id)
 			if err1 != nil {
-				fmt.Fprintf(&lg, "Problem inserting new server entry for client entry %s with id %d into postgres: %v\n", e.title[:15], e.id, err1)
+				fmt.Fprintf(&lg, "Error inserting new server entry for client entry %s with id %d into postgres: %v\n", e.title[:15], e.id, err1)
 				break
 			}
 			_, err2 := db.Exec("UPDATE task SET tid=? WHERE id=?;", server_id, e.id)
 			if err2 != nil {
-				fmt.Fprintf(&lg, "Error setting tid for client entry %s with id %d to tid %d: %v\n", e.title, e.id, server_id, err2)
+				fmt.Fprintf(&lg, "Error setting tid for client entry '%s' with id %d to tid %d: %v\n", e.title[:15], e.id, server_id, err2)
 				break
 			}
-			fmt.Fprintf(&lg, "Created new server entry %s with id %d\n", e.title, server_id)
+			fmt.Fprintf(&lg, "Created new server entry '%s' with id %d\n", e.title, server_id)
 			fmt.Fprintf(&lg, "And set tid for client entry with id %d to tid %d\n", e.id, server_id)
 
 		default:
-			fmt.Fprintf(&lg, "Something went wrong in client_updated_entries for client entry id: %v\n", e.id)
+			fmt.Fprintf(&lg, "Error in SELECT EXISTS in client_updated_entries for client entry id: %d\n", e.id)
 			continue
 		}
 		// Update the server entry's keywords
@@ -873,7 +871,7 @@ func synchronize(reportOnly bool) {
 		kwns := getTaskKeywordsS(db, &lg, e.id) // returns []string
 		for _, kwn := range kwns {
 			keyword_id := keywordExistsS(pdb, &lg, kwn)
-			if keyword_id != -1 { // ? should create the keyword if it doesn't exits or unnecessary?
+			if keyword_id != -1 { // ? should create the keyword if it doesn't exist
 				addTaskKeywordS(pdb, &lg, keyword_id, server_id)
 			}
 		}
@@ -883,15 +881,15 @@ func synchronize(reportOnly bool) {
 	for _, e := range server_deleted_entries {
 		res, err := db.Exec("DELETE FROM task WHERE tid=?;", e.id)
 		if err != nil {
-			fmt.Fprintf(&lg, "Problem deleting local entry with tid = %v", e.id)
+			fmt.Fprintf(&lg, "Error deleting local entry with tid = %d\n", e.id)
 			continue
 		}
 		rowsAffected, _ := res.RowsAffected()
 		if rowsAffected != 1 {
-			fmt.Fprintf(&lg, "(rowsAffected != 1)Problem deleting local entry with tid = %v", e.id)
+			fmt.Fprintf(&lg, "(rowsAffected != 1) Error deleting local entry with tid = %d\n", e.id)
 			continue
 		}
-		fmt.Fprintf(&lg, "Deleted client entry %v with tid %v", e.title, e.id)
+		fmt.Fprintf(&lg, "Deleted client entry '%s' with tid %d\n", e.title[:15], e.id)
 	}
 
 	// client deleted entries
