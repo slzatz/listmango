@@ -412,7 +412,7 @@ func (o *Organizer) writeTitle() {
 	o.command = ""
 	o.mode = NORMAL
 	row.dirty = false
-	sess.showOrgMessage("Updated id %d to %s (+fts)", row.id, row.title)
+	sess.showOrgMessage("Updated id %d to %s (+fts)", row.id, row.title[:15])
 	sess.refreshOrgScreen()
 	if o.fc > 0 {
 		o.fc--

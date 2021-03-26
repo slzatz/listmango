@@ -694,22 +694,22 @@ func synchronize(reportOnly bool) {
 		err = row.Scan(&id)
 		switch {
 		case err == sql.ErrNoRows:
-			res, err1 := db.Exec("INSERT INTO keyword (tid, name, star, created, modified, deleted) VALUES (?,?,?,?, datetime('now'), false);",
-				c.id, c.title, c.star, c.created)
+			res, err1 := db.Exec("INSERT INTO keyword (tid, name, star, modified, deleted) VALUES (?,?,?, datetime('now'), false);",
+				c.id, c.title, c.star)
 			if err1 != nil {
-				fmt.Fprintf(&lg, "Problem inserting new keyword into sqlite: %w", err1)
+				fmt.Fprintf(&lg, "Error inserting new keyword into sqlite: %v", err1)
 				break
 			}
 			lastId, _ := res.LastInsertId()
-			fmt.Fprintf(&lg, "Created new local keyword: %v with local id: %v and tid: %v\n", c.title, lastId, c.id)
+			fmt.Fprintf(&lg, "Created new local keyword '%s' with local id %d and tid: %d\n", c.title, lastId, c.id)
 		case err != nil:
-			fmt.Fprintf(&lg, "Problem querying sqlite for a keyword with tid: %v: %w\n", c.id, err)
+			fmt.Fprintf(&lg, "Error querying sqlite for a keyword with tid: %v: %w\n", c.id, err)
 		default:
 			_, err2 := db.Exec("UPDATE keyword SET name=?, star=?, modified=datetime('now') WHERE tid=?;", c.title, c.star, c.id)
 			if err2 != nil {
-				fmt.Fprintf(&lg, "Problem updating sqlite for a keyword with tid: %v: %w\n", c.id, err2)
+				fmt.Fprintf(&lg, "Error updating local keyword '%s' with tid %d: %v\n", c.title, c.id, err2)
 			} else {
-				fmt.Fprintf(&lg, "Updated local keyword: %v with tid: %v\n", c.title, c.id)
+				fmt.Fprintf(&lg, "Updated local keyword '%s' with tid %d\n", c.title, c.id)
 			}
 		}
 	}
