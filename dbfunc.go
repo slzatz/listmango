@@ -22,13 +22,6 @@ func timeDelta(t string) string {
 	t0 := time.Now()
 	t1, _ := time.Parse("2006-01-02T15:04:05Z", t)
 	diff := t0.Sub(t1)
-	//diff2 := time.Since(t1)
-
-	/*
-	  fmt.Println(t1)
-	  fmt.Println(diff)
-	  fmt.Printf("%#v\n", diff)
-	*/
 
 	diff = diff / 1000000000
 	if diff <= 120 {
@@ -127,29 +120,11 @@ func toggleStar() {
 
 	s := fmt.Sprintf("UPDATE %s SET %s=?, modified=datetime('now') WHERE id=?;",
 		table, column)
-	res, err := db.Exec(s, !org.rows[org.fr].star, id)
+	_, err := db.Exec(s, !org.rows[org.fr].star, id)
 
 	if err != nil {
-		log.Fatal(err)
+		sess.showOrgMessage("Error in toggleStar for id %d: %v", id, err)
 	}
-
-	//defer stmt.Close()
-
-	/*
-		res, err := stmt.Exec(!org.rows[org.fr].star, id)
-		if err != nil {
-			log.Fatal(err)
-		}
-	*/
-
-	numRows, err := res.RowsAffected()
-	if err != nil {
-		log.Fatal(err)
-	}
-	if numRows != 1 {
-		log.Fatal("Toggle star numRows != 1")
-	}
-	//LastInsertId() (int64, error)
 
 	org.rows[org.fr].star = !org.rows[org.fr].star
 	sess.showOrgMessage("Toggle star succeeded")
@@ -235,39 +210,18 @@ func updateNote() {
 
 	text := sess.p.rowsToString()
 
-	// need to escape single quotes with two single quotes
-
-	//stmt, err := db.Prepare("UPDATE task SET note=?, modified=datetime('now') WHERE id=?;")
-
-	res, err := db.Exec("UPDATE task SET note=?, modified=datetime('now') WHERE id=?;",
+	_, err := db.Exec("UPDATE task SET note=?, modified=datetime('now') WHERE id=?;",
 		text, sess.p.id)
 	if err != nil {
-		log.Fatal(err)
-	}
-
-	//defer stmt.Close()
-
-	/*
-		res, err := stmt.Exec(text, sess.p.id)
-		if err != nil {
-			log.Fatal(err)
-		}
-	*/
-
-	numRows, err := res.RowsAffected()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	if numRows != 1 {
-		log.Fatal("updateTaskFolder: numRows != 1")
+		sess.showOrgMessage("Error in updateNote for entry with id %d: %v", sess.p.id, err)
+		return
 	}
 
 	/***************fts virtual table update*********************/
 
 	_, err = fts_db.Exec("UPDATE fts SET note=? WHERE lm_id=?;", text, sess.p.id)
 	if err != nil {
-		log.Fatal(err)
+		sess.showOrgMessage("Error in updateNote updating fts for entry with id %d: %v", sess.p.id, err)
 	}
 
 	sess.showOrgMessage("Updated note and fts entry for item %d", sess.p.id)
@@ -365,7 +319,8 @@ func getItems(max int) {
 		)
 
 		if err != nil {
-			log.Fatal(err)
+			sess.showOrgMessage("Error in getItems: %v", err)
+			return
 		}
 
 		if completed.Valid {
@@ -397,39 +352,25 @@ func updateTitle() {
 	// needs to be a pointer because may send to insertRow
 	row := &org.rows[org.fr]
 
-	/* check is in calling method writeTitle
-	if !row.dirty {
-		sess.showOrgMessage("Row has not been changed")
-		return
-	}
-	*/
-
 	if row.id == -1 {
 		// want to send pointer to insertRow
 		insertRow(row)
 		return
 	}
 
-	res, err := db.Exec("UPDATE task SET title=?, modified=datetime('now') WHERE id=?", row.title, row.id)
+	_, err := db.Exec("UPDATE task SET title=?, modified=datetime('now') WHERE id=?", row.title, row.id)
 	if err != nil {
-		log.Fatal(err)
-	}
-
-	_, err = res.RowsAffected()
-	if err != nil {
-		log.Fatal(err)
+		sess.showOrgMessage("Error in updateTitle for id %d: %v", row.id, err)
 		return
 	}
 
-	//row.dirty = false // done in caller
 	/***************fts virtual table update*********************/
-	//_, err = fts_db.Exec("INSERT INTO fts (title, lm_id) VALUES (?, ?);", row.title, row.id)
+
 	_, err = fts_db.Exec("UPDATE fts SET title=? WHERE lm_id=?;", row.title, row.id)
 	if err != nil {
-		log.Fatal(err)
+		sess.showOrgMessage("Error in updateTitle update fts for id %d: %v", row.id, err)
 		return
 	}
-	//sess.showOrgMessage("Updated title for %v and indexed it", row.id)
 }
 
 func updateRows() {
@@ -447,14 +388,9 @@ func updateRows() {
 			continue
 		}
 
-		res, err := db.Exec("UPDATE task SET title=?, modified=datetime('now') WHERE id=?", row.title, row.id)
+		_, err := db.Exec("UPDATE task SET title=?, modified=datetime('now') WHERE id=?", row.title, row.id)
 		if err != nil {
-			log.Fatal(err)
-		}
-
-		_, err = res.RowsAffected()
-		if err != nil {
-			log.Fatal(err)
+			sess.showOrgMessage("Error in updateRows for id %d: %v", row.id, err)
 			return
 		}
 
@@ -508,7 +444,7 @@ func insertRow(row *Row) int {
 
 	row_id, err := res.LastInsertId()
 	if err != nil {
-		log.Fatal(err)
+		sess.showOrgMessage("Error in insertRow for %s: %v", row.title, err)
 		return -1
 	}
 	row.id = int(row_id)
@@ -516,14 +452,10 @@ func insertRow(row *Row) int {
 
 	/***************fts virtual table update*********************/
 
-	//should probably create a separate function that is a klugy
-	//way of making up for fact that pg created tasks don't appear in fts db
-	//"INSERT OR IGNORE INTO fts (title, lm_id) VALUES ('" << title << row.id << ");";
-	/***************fts virtual table update*********************/
 	_, err = fts_db.Exec("INSERT INTO fts (title, lm_id) VALUES (?, ?);", row.title, row.id)
 	if err != nil {
-		log.Fatal(err)
-		return -1
+		sess.showOrgMessage("Error in insertRow inserting into fts for %s: %v", row.title, err)
+		return row.id
 	}
 
 	sess.showOrgMessage("Successfully inserted new row with id {} and indexed it (new vesrsion)", row.id)
@@ -567,10 +499,10 @@ func readNoteIntoEditor(id int) {
 		return
 	}
 
-	//? use scan which will catch /r/n
-	note = strings.ReplaceAll(note, "\r", "")
-	sess.p.rows = strings.Split(note, "\n")
-	//rows := strings.Split(note, "\n")
+	//note = strings.ReplaceAll(note, "\r", "")
+	//sess.p.rows = strings.Split(note, "\n")
+	sess.p.rows = strings.Split(note, "\r\n")
+
 	// send note to nvim
 	var bb [][]byte
 	for _, s := range sess.p.rows {
@@ -1041,7 +973,8 @@ func getNoteSearchPositions(id int) [][]int {
 		word_positions = append(word_positions, []int{})
 		rows, err := fts_db.Query("SELECT offset FROM fts_v WHERE doc=? AND term=? AND col='note';", rowid, term)
 		if err != nil {
-			log.Fatal(err)
+			sess.showOrgMessage("Error in getNoteSearchPositions - 'SELECT offset FROM fts_v': %v", err)
+			return [][]int{}
 		}
 		defer rows.Close()
 
@@ -1049,7 +982,8 @@ func getNoteSearchPositions(id int) [][]int {
 			var offset int
 			err = rows.Scan(&offset)
 			if err != nil {
-				log.Fatal(err)
+				sess.showOrgMessage("Error in getNoteSearchPositions - 'rows.Scan(&offset)': %v", err)
+				continue
 			}
 			word_positions[i] = append(word_positions[i], offset)
 		}
