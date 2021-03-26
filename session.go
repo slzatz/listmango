@@ -540,11 +540,10 @@ func (s *Session) drawOrgStatusBar() {
 	fmt.Fprintf(&ab, "\x1b[%d;%dH\x1b[1K\x1b[%d;1H", s.textLines+TOP_MARGIN+1, s.divider, s.textLines+TOP_MARGIN+1)
 	ab.WriteString("\x1b[7m") //switches to reversed colors
 
-	e := getEntryInfo(getId())
 	var str string
-
 	switch org.view {
 	case TASK:
+		e := getEntryInfo(getId())
 		switch org.taskview {
 		case BY_FIND:
 			str = "search - " + s.fts_search_terms
