@@ -640,7 +640,7 @@ func getEntryInfo(id int) Entry {
 		&e.modified,
 	)
 	if err != nil {
-		log.Fatal(err)
+		sess.showOrgMessage("Error in getEntryInfo for id %d: %v", id, err)
 		return Entry{}
 	}
 	if tid.Valid {
@@ -678,7 +678,8 @@ func getTaskKeywords(id int) string {
 		"keyword.id=task_keyword.keyword_id WHERE task_keyword.task_id=?;",
 		id)
 	if err != nil {
-		log.Fatal(err)
+		sess.showOrgMessage("Error in getTaskKeywords for entry id %d: %v", id, err)
+		return ""
 	}
 	defer rows.Close()
 
