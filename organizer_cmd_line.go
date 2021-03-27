@@ -49,6 +49,7 @@ var cmd_lookup = map[string]func(*Organizer, int){
 	"deletemarks":    (*Organizer).deleteMarks,
 	"delmarks":       (*Organizer).deleteMarks,
 	"delm":           (*Organizer).deleteMarks,
+	"copy":           (*Organizer).copyEntry,
 	/*
 	  "x": F_x,
 	 // {"linked", F_linked,
@@ -623,4 +624,11 @@ func (o *Organizer) deleteMarks(unused int) {
 	o.mode = NORMAL
 	o.command_line = ""
 	sess.showOrgMessage("Marks cleared")
+}
+
+func (o *Organizer) copyEntry(unused int) {
+	copyEntry()
+	o.mode = NORMAL
+	o.command_line = ""
+	sess.showOrgMessage("Entry copied")
 }

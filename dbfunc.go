@@ -499,9 +499,9 @@ func readNoteIntoEditor(id int) {
 		return
 	}
 
-	//note = strings.ReplaceAll(note, "\r", "")
-	//sess.p.rows = strings.Split(note, "\n")
-	sess.p.rows = strings.Split(note, "\r\n")
+	note = strings.ReplaceAll(note, "\r", "")
+	sess.p.rows = strings.Split(note, "\n")
+	//sess.p.rows = strings.Split(note, "\r\n")
 
 	// send note to nvim
 	var bb [][]byte
@@ -626,6 +626,25 @@ func getTaskKeywords(id int) string {
 		return ""
 	}
 	return strings.Join(kk, ",")
+}
+
+func getTaskKeywordIds(id int) []int {
+
+	kk := []int{}
+	rows, err := db.Query("SELECT keyword_id FROM task_keyword LEFT OUTER JOIN keyword ON "+
+		"keyword.id=task_keyword.keyword_id WHERE task_keyword.task_id=?;", id)
+	if err != nil {
+		sess.showOrgMessage("Error in getTaskKeywordIds for entry id %d: %v", id, err)
+		return kk
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var k int
+		err = rows.Scan(&k)
+		kk = append(kk, k)
+	}
+	return kk
 }
 
 func (o *Organizer) searchDB(st string, help bool) {
@@ -1090,6 +1109,42 @@ func deleteKeywords(id int) int {
 		return -1
 	}
 	return int(rowsAffected)
+}
+
+func copyEntry() {
+	id := getId()
+	row := db.QueryRow("SELECT title, star, note, context_tid, folder_tid FROM task WHERE id=?;", id)
+	var e Entry
+	err := row.Scan(
+		&e.title,
+		&e.star,
+		&e.note,
+		&e.context_tid,
+		&e.folder_tid,
+	)
+	if err != nil {
+		sess.showOrgMessage("Error in copyEntry trying to copy id %d: %v", id, err)
+	}
+
+	res, err := db.Exec("INSERT INTO task (title, star, note, context_tid, folder_tid, created, added, modified, deleted) "+
+		"VALUES (?, ?, ?, ?, ?, datetime('now'), datetime('now'), datetime('now'), false);",
+		"copy of "+e.title, e.star, e.note, e.context_tid, e.folder_tid)
+	if err != nil {
+		sess.showOrgMessage("Error inserting copy of entry %q into sqlite: %v:", truncate(e.title, 15), err)
+		return
+	}
+	lastId, _ := res.LastInsertId()
+	newId := int(lastId)
+	kwids := getTaskKeywordIds(id)
+	for _, keywordId := range kwids {
+		addTaskKeyword(keywordId, newId, false) // means don't update fts
+	}
+	tag := getTaskKeywords(newId) // returns string
+	_, err = fts_db.Exec("INSERT INTO fts (title, note, tag, lm_id) VALUES (?, ?, ?, ?);", e.title, e.note, tag, newId)
+	if err != nil {
+		sess.showOrgMessage("Error inserting into fts_db for entry %q with id %d: %v", truncate(e.title, 15), newId, err)
+		return
+	}
 }
 
 func highlight_terms_string(text string, word_positions [][]int) string {
