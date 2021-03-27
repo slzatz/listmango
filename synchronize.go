@@ -602,12 +602,12 @@ func synchronize(reportOnly bool) {
 			err1 := pdb.QueryRow("INSERT INTO context (title, \"default\", created, modified, deleted) VALUES ($1, $2, $3, now(), false) RETURNING id;",
 				c.title, c.star, c.created).Scan(&tid)
 			if err1 != nil {
-				fmt.Fprintf(&lg, "Problem inserting new context %d: %s into postgres: %v", c.id, c.title, err1)
+				fmt.Fprintf(&lg, "Error inserting new context %q with id %d into postgres: %v", truncate(c.title, 15), c.id, err1)
 				break
 			}
 			_, err2 := db.Exec("UPDATE context SET tid=$1 WHERE id=$2;", tid, c.id)
 			if err2 != nil {
-				fmt.Fprintf(&lg, "Problem setting new client context's tid: %v; id: %v\n", tid, c.id, err2)
+				fmt.Fprintf(&lg, "Error setting tid for new client context %q with id %d to %d: %v\n", truncate(c.title, 15), c.id, tid, err2)
 				break
 			}
 			fmt.Fprintf(&lg, "Set value of tid for client context with id: %v to tid = %v\n", c.id, tid)
@@ -616,7 +616,7 @@ func synchronize(reportOnly bool) {
 		default:
 			_, err3 := pdb.Exec("UPDATE context SET title=$1, \"default\"=$2, modified=now() WHERE id=$3;", c.title, c.star, c.tid)
 			if err3 != nil {
-				fmt.Fprintf(&lg, "Problem updating postgres for a context with id: %v: %w\n", c.tid, err3)
+				fmt.Fprintf(&lg, "Error updating postgres for context %q with id %d: %v\n", truncate(c.title, 15), c.tid, err3)
 			} else {
 				fmt.Fprintf(&lg, "Updated server/postgres context: %v with id: %v\n", c.title, c.tid)
 			}
@@ -672,7 +672,7 @@ func synchronize(reportOnly bool) {
 			}
 			_, err2 := db.Exec("UPDATE folder SET tid=$1 WHERE id=$2;", tid, c.id)
 			if err2 != nil {
-				fmt.Fprintf(&lg, "Problem setting new client folder's tid: %v; id: %v\n", tid, c.id, err2)
+				fmt.Fprintf(&lg, "Error setting tid to %d for new client folder %q with id %d: %v\n", tid, truncate(c.title, 15), c.id, err2)
 				break
 			}
 			fmt.Fprintf(&lg, "Set value of tid for client folder with id: %v to tid = %v\n", c.id, tid)
@@ -681,9 +681,9 @@ func synchronize(reportOnly bool) {
 		default:
 			_, err3 := pdb.Exec("UPDATE folder SET title=$1, private=$2, modified=now() WHERE id=$3;", c.title, c.star, c.tid)
 			if err3 != nil {
-				fmt.Fprintf(&lg, "Error updating postgres for a folder with id: %v: %w\n", c.tid, err3)
+				fmt.Fprintf(&lg, "Error updating postgres for folder %q with id %d: %v\n", truncate(c.title, 15), c.tid, err3)
 			} else {
-				fmt.Fprintf(&lg, "Updated server/postgres folder: %v with id: %v\n", c.title, c.tid)
+				fmt.Fprintf(&lg, "Updated server/postgres folder %q with id %d\n", truncate(c.title, 15), c.tid)
 			}
 		}
 	}
@@ -701,15 +701,15 @@ func synchronize(reportOnly bool) {
 				break
 			}
 			lastId, _ := res.LastInsertId()
-			fmt.Fprintf(&lg, "Created new local keyword '%s' with local id %d and tid: %d\n", c.title, lastId, c.id)
+			fmt.Fprintf(&lg, "Created new local keyword %q with local id %d and tid: %d\n", truncate(c.title, 15), lastId, c.id)
 		case err != nil:
 			fmt.Fprintf(&lg, "Error querying sqlite for a keyword with tid: %v: %w\n", c.id, err)
 		default:
 			_, err2 := db.Exec("UPDATE keyword SET name=?, star=?, modified=datetime('now') WHERE tid=?;", c.title, c.star, c.id)
 			if err2 != nil {
-				fmt.Fprintf(&lg, "Error updating local keyword '%s' with tid %d: %v\n", c.title, c.id, err2)
+				fmt.Fprintf(&lg, "Error updating local keyword %q with tid %d: %v\n", truncate(c.title, 15), c.id, err2)
 			} else {
-				fmt.Fprintf(&lg, "Updated local keyword '%s' with tid %d\n", c.title, c.id)
+				fmt.Fprintf(&lg, "Updated local keyword %q with tid %d\n", truncate(c.title, 15), c.id)
 			}
 		}
 	}
@@ -767,7 +767,7 @@ func synchronize(reportOnly bool) {
 				"VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), false);",
 				e.id, e.title, e.star, e.created, e.added, e.completed, e.context_tid, e.folder_tid, e.note)
 			if err1 != nil {
-				fmt.Fprintf(&lg, "Problem inserting new entry into sqlite: %w", err1)
+				fmt.Fprintf(&lg, "Error inserting new entry for %q into sqlite: %v\n", truncate(e.title, 15), err1)
 				break
 			}
 			id, _ := res.LastInsertId()
@@ -814,14 +814,14 @@ func synchronize(reportOnly bool) {
 		if err != nil {
 			fmt.Fprintf(&lg, "Error in Update tag in fts: %v\n", err)
 		} else {
-			fmt.Fprintf(&lg, "Keywords '%s' updated in fts_db for client id %d\n", tag, client_id)
+			fmt.Fprintf(&lg, "Keywords %q updated in fts_db for client id %d\n", tag, client_id)
 		}
 	}
 
 	for _, e := range client_updated_entries {
 		// server wins if both client and server have updated an item
 		if _, found := server_updated_entries_ids[e.tid]; found {
-			fmt.Fprintf(&lg, "Server won: client entry '%s' with id %d and tid %d was updated by server\n", e.title[:15], e.id, e.tid)
+			fmt.Fprintf(&lg, "Server won: client entry %q with id %d and tid %d was updated by server\n", truncate(e.title, 15), e.id, e.tid)
 			continue
 		}
 
@@ -831,7 +831,7 @@ func synchronize(reportOnly bool) {
 		switch {
 
 		case err != nil:
-			fmt.Fprintf(&lg, "Problem checking if postgres has an entry for '%s' with client tid/pg id: %d: %v\n", e.title[:15], e.tid, err)
+			fmt.Fprintf(&lg, "Problem checking if postgres has an entry for %q with client tid/pg id: %d: %v\n", truncate(e.title, 15), e.tid, err)
 
 		case exists:
 			_, err3 := pdb.Exec("UPDATE task SET title=$1, star=$2, context_tid=$3, folder_tid=$4, note=$5, completed=$6, modified=now() WHERE id=$7;",
@@ -847,15 +847,15 @@ func synchronize(reportOnly bool) {
 				"VALUES ($1, $2, $3, $4, $5, $6, $7, $8, now(), false) RETURNING id;",
 				e.title, e.star, e.created, e.added, e.completed, e.context_tid, e.folder_tid, e.note).Scan(&server_id)
 			if err1 != nil {
-				fmt.Fprintf(&lg, "Error inserting new server entry for client entry %s with id %d into postgres: %v\n", e.title[:15], e.id, err1)
+				fmt.Fprintf(&lg, "Error inserting new server entry for client entry %s with id %d into postgres: %v\n", truncate(e.title, 15), e.id, err1)
 				break
 			}
 			_, err2 := db.Exec("UPDATE task SET tid=? WHERE id=?;", server_id, e.id)
 			if err2 != nil {
-				fmt.Fprintf(&lg, "Error setting tid for client entry '%s' with id %d to tid %d: %v\n", e.title[:15], e.id, server_id, err2)
+				fmt.Fprintf(&lg, "Error setting tid for client entry %q with id %d to tid %d: %v\n", truncate(e.title, 15), e.id, server_id, err2)
 				break
 			}
-			fmt.Fprintf(&lg, "Created new server entry '%s' with id %d\n", e.title, server_id)
+			fmt.Fprintf(&lg, "Created new server entry %q with id %d\n", truncate(e.title, 15), server_id)
 			fmt.Fprintf(&lg, "And set tid for client entry with id %d to tid %d\n", e.id, server_id)
 
 		default:
@@ -889,7 +889,7 @@ func synchronize(reportOnly bool) {
 			fmt.Fprintf(&lg, "(rowsAffected != 1) Error deleting local entry with tid = %d\n", e.id)
 			continue
 		}
-		fmt.Fprintf(&lg, "Deleted client entry '%s' with tid %d\n", e.title[:15], e.id)
+		fmt.Fprintf(&lg, "Deleted client entry %q with tid %d\n", truncate(e.title, 15), e.id)
 	}
 
 	// client deleted entries
