@@ -47,6 +47,14 @@ func ctrlKey(b byte) int { //rune
 	return int(b & 0x1f)
 }
 
+func truncate(s string, length int) string {
+	if len(s) > length {
+		return s[:length] + "..."
+	} else {
+		return s
+	}
+}
+
 type Row struct {
 	id        int
 	title     string
