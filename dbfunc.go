@@ -499,9 +499,9 @@ func readNoteIntoEditor(id int) {
 		return
 	}
 
-	note = strings.ReplaceAll(note, "\r", "")
+	// there should not be "\r" in notes
+	//note = strings.ReplaceAll(note, "\r", "")
 	sess.p.rows = strings.Split(note, "\n")
-	//sess.p.rows = strings.Split(note, "\r\n")
 
 	// send note to nvim
 	var bb [][]byte
