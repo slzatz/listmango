@@ -792,7 +792,7 @@ func (e *Editor) drawRows2(pab *strings.Builder) {
 	// v.BufferLines appears to die if in blocking mode
 	// so probably should protect it directly and not rely on redraw bool
 	// Also v.Bufferlines doesn't return an err when in blocking mode - just dies so checking for err not useful
-	bb, _ := v.BufferLines(0, 0, -1, true)
+	bb, _ := v.BufferLines(e.vbuf, 0, -1, true)
 
 	if len(bb) == 0 {
 		return
@@ -1018,7 +1018,7 @@ func (e *Editor) generateWWString() string {
 
 func (e *Editor) generateWWStringFromBuffer() string {
 
-	bb, _ := v.BufferLines(0, 0, -1, true)
+	bb, _ := v.BufferLines(e.vbuf, 0, -1, true)
 	numLines := len(bb)
 	if numLines == 0 {
 		return ""
