@@ -856,7 +856,7 @@ func synchronize(reportOnly bool) {
 				break
 			}
 			fmt.Fprintf(&lg, "Created new server entry %q with id %d\n", truncate(e.title, 15), server_id)
-			fmt.Fprintf(&lg, "And set tid for client entry with id %d to tid %d\n", e.id, server_id)
+			fmt.Fprintf(&lg, "and set tid for client entry (id %d) to tid %d\n", e.id, server_id)
 
 		default:
 			fmt.Fprintf(&lg, "Error in SELECT EXISTS in client_updated_entries for client entry id: %d\n", e.id)
