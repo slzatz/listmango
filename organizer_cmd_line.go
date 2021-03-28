@@ -630,5 +630,6 @@ func (o *Organizer) copyEntry(unused int) {
 	copyEntry()
 	o.mode = NORMAL
 	o.command_line = ""
+	o.refresh(0)
 	sess.showOrgMessage("Entry copied")
 }

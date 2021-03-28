@@ -697,7 +697,7 @@ func synchronize(reportOnly bool) {
 			res, err1 := db.Exec("INSERT INTO keyword (tid, name, star, modified, deleted) VALUES (?,?,?, datetime('now'), false);",
 				c.id, c.title, c.star)
 			if err1 != nil {
-				fmt.Fprintf(&lg, "Error inserting new keyword into sqlite: %v", err1)
+				fmt.Fprintf(&lg, "Error inserting new keyword %q into sqlite: %v", truncate(c.title, 15), err1)
 				break
 			}
 			lastId, _ := res.LastInsertId()
@@ -1032,22 +1032,17 @@ func synchronize(reportOnly bool) {
 		var id int
 		err = row.Scan(&id)
 		if err != nil {
-			sess.showOrgMessage("Problem with getting current time from server: %w", err)
-			return
+			sess.showOrgMessage("Error SELECTING id FROM client keyword with tid %d: %v", c.id, err)
+			continue
 		}
 		db.Exec("DELETE FROM task_keyword WHERE keyword_id=?;", id)
 		//res, err := db.Exec("DELETE FROM keyword WHERE tid=?", c.id)
-		res, err := db.Exec("DELETE FROM keyword WHERE tid=?", id)
+		_, err := db.Exec("DELETE FROM keyword WHERE tid=?", id)
 		if err != nil {
-			fmt.Fprintf(&lg, "Problem deleting local keyword with tid = %v", c.id)
+			fmt.Fprintf(&lg, "Error deleting local keyword with tid = %v", c.id)
 			continue
 		}
-		rowsAffected, _ := res.RowsAffected()
-		if rowsAffected != 1 {
-			fmt.Fprintf(&lg, "(rowsAffected != 1) Problem deleting local keyword %v with tid = %v", c.id)
-			continue
-		}
-		fmt.Fprintf(&lg, "Deleted client keyword %v with tid %v", c.title, c.id)
+		fmt.Fprintf(&lg, "Deleted client keyword %q with tid %d", truncate(c.title, 15), c.id)
 	}
 
 	// client deleted keywords
