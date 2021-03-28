@@ -28,7 +28,7 @@ func ctrlKey(b byte) rune {
 //var move_only = map[string]struct{}{"w": z0, "e": z0, "b": z0, "0": z0, "$": z0, ":": z0, "*": z0, "n": z0, "[s": z0, "]s": z0, "z=": z0, "gg": z0, "G": z0, "yy": z0} //could put 'u' ctrl-r here
 
 var sess Session
-var org Organizer
+var org = Organizer{Session: &sess}
 
 var v *nvim.Nvim
 var w nvim.Window
@@ -274,7 +274,7 @@ func main() {
 	getItems(MAX)
 
 	sess.refreshOrgScreen()
-	sess.drawOrgStatusBar()
+	org.drawStatusBar()
 	sess.showOrgMessage("rows: %d  columns: %d", sess.screenLines, sess.screenCols)
 	sess.returnCursor()
 	sess.run = true
@@ -308,7 +308,7 @@ func main() {
 			org.scroll()
 			sess.refreshOrgScreen()
 			if sess.divider > 10 {
-				sess.drawOrgStatusBar()
+				org.drawStatusBar()
 			}
 		}
 		sess.returnCursor()

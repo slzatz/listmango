@@ -344,14 +344,15 @@ func (s *Session) drawOrgAltRows() {
 	fmt.Print(ab.String())
 }
 
+// for drawing sync log (note)
 func (s *Session) drawOrgAltRows2() {
 
 	if len(org.altRows) == 0 {
 		return
 	}
 	//scroll
-	if org.altR > sess.textLines+org.altRowoff-1 {
-		org.altRowoff = org.altR - sess.textLines + 1
+	if org.altR > s.textLines+org.altRowoff-1 {
+		org.altRowoff = org.altR - s.textLines + 1
 	}
 	if org.altR < org.altRowoff {
 		org.altRowoff = org.altR

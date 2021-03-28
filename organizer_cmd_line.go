@@ -36,7 +36,7 @@ var cmd_lookup = map[string]func(*Organizer, int){
 	"keyword":        (*Organizer).keywords,
 	"k":              (*Organizer).keywords,
 	"recent":         (*Organizer).recent,
-	"log":            (*Organizer).log2,
+	"log":            (*Organizer).log,
 	"deletekeywords": (*Organizer).deleteKeywords,
 	"delkw":          (*Organizer).deleteKeywords,
 	"delk":           (*Organizer).deleteKeywords,
@@ -87,26 +87,17 @@ var cmd_lookup = map[string]func(*Organizer, int){
 
 func (o *Organizer) log(unused int) {
 	getSyncItems(MAX)
-	org.fc, org.fr, org.rowoff = 0, 0, 0
+	o.fc, o.fr, o.rowoff = 0, 0, 0
+	o.altR, o.altRowoff = 0, 0
 	o.mode = SYNC_LOG      //kluge INSERT, NORMAL, ...
 	o.view = SYNC_LOG_VIEW //TASK, FOLDER, KEYWORD ...
-	// show first row's note
-	note := readSyncLog(org.rows[0].id)
-	sess.displaySyncLog(note)
-	sess.showOrgMessage("")
-}
 
-func (o *Organizer) log2(unused int) {
-	getSyncItems(MAX)
-	org.fc, org.fr, org.rowoff = 0, 0, 0
-	org.altR, org.altRowoff = 0, 0
-	o.mode = SYNC_LOG      //kluge INSERT, NORMAL, ...
-	o.view = SYNC_LOG_VIEW //TASK, FOLDER, KEYWORD ...
 	// show first row's note
-	readSyncLogIntoAltRows(org.rows[0].id)
-	sess.eraseRightScreen()
-	sess.drawOrgAltRows2()
-	sess.showOrgMessage("")
+	readSyncLogIntoAltRows(o.rows[0].id)
+	o.eraseRightScreen()
+	//o.drawOrgAltRows2()
+	o.drawAltRows2()
+	o.showOrgMessage("")
 }
 
 func (o *Organizer) openContext(pos int) {
@@ -133,7 +124,7 @@ func (o *Organizer) openContext(pos int) {
 		return
 	}
 
-	sess.showOrgMessage("'%s' will be opened", o.context)
+	o.showOrgMessage("'%s' will be opened", o.context)
 
 	o.clearMarkedEntries()
 	o.folder = ""
