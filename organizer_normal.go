@@ -1,19 +1,19 @@
 package main
 
 var n_lookup = map[string]func(){
-	string(ctrlKey('l')):       goto_editor_N,
-	string([]byte{0x17, 0x17}): goto_editor_N,
+	string(ctrlKey('l')):       switchToEditorMode,
+	string([]byte{0x17, 0x17}): switchToEditorMode,
 	//  "\r": return_N, //return_O
-	"i": insert_N,
-	"s": s_N,
-	"~": tilde_N,
-	"r": r_N,
-	"a": a_N,
-	"A": A_N,
-	"x": x_N,
+	"i": insert,
+	"s": substitute,
+	"~": tilde,
+	"r": replace,
+	"a": appnd,
+	"A": Appnd,
+	"x": delchars,
 	"w": w_N,
 
-	"daw": daw_N,
+	"daw": daw,
 	"dw":  dw_N,
 	"caw": caw_N,
 	"cw":  cw_N,
@@ -45,13 +45,13 @@ var n_lookup = map[string]func(){
 }
 
 //case 'i':
-func insert_N() {
+func insert() {
 	org.mode = INSERT
 	sess.showOrgMessage("\x1b[1m-- INSERT --\x1b[0m")
 }
 
 //case 's':
-func s_N() {
+func substitute() {
 	for i := 0; i < org.repeat; i++ {
 		org.delChar()
 	}
@@ -61,14 +61,14 @@ func s_N() {
 }
 
 //case 'x':
-func x_N() {
+func delchars() {
 	for i := 0; i < org.repeat; i++ {
 		org.delChar()
 	}
 	//row.dirty = true;
 }
 
-func daw_N() {
+func daw() {
 	for i := 0; i < org.repeat; i++ {
 		org.delWord()
 	}
@@ -120,26 +120,26 @@ func d_dollar_N() {
 }
 
 //case 'r':
-func r_N() {
+func replace() {
 	org.mode = REPLACE
 }
 
 //case '~'
-func tilde_N() {
+func tilde() {
 	for i := 0; i < org.repeat; i++ {
 		org.changeCase()
 	}
 }
 
 //case 'a':
-func a_N() {
+func appnd() {
 	org.mode = INSERT //this has to go here for MoveCursor to work right at EOLs
 	org.moveCursor(ARROW_RIGHT)
 	sess.showOrgMessage("\x1b[1m-- INSERT --\x1b[0m")
 }
 
 //case 'A':
-func A_N() {
+func Appnd() {
 	org.moveCursorEOL()
 	org.mode = INSERT //needs to be here for movecursor to work at EOLs
 	org.moveCursor(ARROW_RIGHT)
@@ -283,7 +283,7 @@ func info_N() {
 	sess.drawPreviewBox()
 }
 
-func goto_editor_N() {
+func switchToEditorMode() {
 	if len(sess.editors) == 0 {
 		sess.showOrgMessage("There are no active editors")
 		return
