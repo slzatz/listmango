@@ -273,7 +273,7 @@ func main() {
 	sess.eraseScreenRedrawLines()
 	getItems(MAX)
 
-	sess.refreshOrgScreen()
+	org.refreshScreen()
 	org.drawStatusBar()
 	sess.showOrgMessage("rows: %d  columns: %d", sess.screenLines, sess.screenCols)
 	sess.returnCursor()
@@ -306,7 +306,7 @@ func main() {
 		} else {
 			organizerProcessKey(k)
 			org.scroll()
-			sess.refreshOrgScreen()
+			org.refreshScreen()
 			if sess.divider > 10 {
 				org.drawStatusBar()
 			}

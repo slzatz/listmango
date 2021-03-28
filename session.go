@@ -135,7 +135,7 @@ func (s *Session) positionEditors() {
 	}
 }
 
-func (s *Session) drawOrgRows() {
+func (s *Session) drawOrgRows_() {
 
 	if len(org.rows) == 0 {
 		return
@@ -242,7 +242,7 @@ func (s *Session) drawOrgRows() {
 	fmt.Print(ab.String())
 }
 
-func (s *Session) drawOrgSearchRows() {
+func (s *Session) drawOrgSearchRows_() {
 
 	if len(org.rows) == 0 {
 		return
@@ -306,7 +306,7 @@ func (s *Session) drawOrgSearchRows() {
 	fmt.Print(ab.String())
 }
 
-func (s *Session) drawOrgAltRows() {
+func (s *Session) drawOrgAltRows_() {
 
 	if len(org.altRows) == 0 {
 		return
@@ -345,7 +345,7 @@ func (s *Session) drawOrgAltRows() {
 }
 
 // for drawing sync log (note)
-func (s *Session) drawOrgAltRows2() {
+func (s *Session) drawOrgAltRows2_() {
 
 	if len(org.altRows) == 0 {
 		return
@@ -483,7 +483,8 @@ func Restore(original []byte) error {
 	return nil
 }
 
-func (s *Session) refreshOrgScreen() {
+/*
+func (s *Session) refreshOrgScreen_() {
 	var ab strings.Builder
 	titlecols := s.divider - TIME_COL_WIDTH - LEFT_MARGIN
 
@@ -513,6 +514,7 @@ func (s *Session) refreshOrgScreen() {
 		s.drawOrgRows()
 	}
 }
+*/
 
 func (s *Session) showOrgMessage(format string, a ...interface{}) {
 	fmt.Printf("\x1b[%d;%dH\x1b[1K\x1b[%d;1H", s.textLines+2+TOP_MARGIN, s.divider, s.textLines+2+TOP_MARGIN)
@@ -534,7 +536,7 @@ func (s *Session) showEdMessage(format string, a ...interface{}) {
 	fmt.Print(str)
 }
 
-func (s *Session) drawOrgStatusBar() {
+func (s *Session) drawOrgStatusBar_() {
 
 	var ab strings.Builder
 	//position cursor and erase - and yes you do have to reposition cursor after erase
@@ -670,7 +672,7 @@ func (s *Session) returnCursor() {
 func (s *Session) drawPreviewWindow(id int) { //get_preview
 
 	if org.taskview != BY_FIND {
-		s.drawPreviewText()
+		s.drawPreviewText(id)
 	} else {
 		s.drawSearchPreview()
 	}
@@ -716,7 +718,7 @@ func (s *Session) drawSearchPreview() {
 	fmt.Print(ab.String())
 }
 
-func (s *Session) drawPreviewText() { //draw_preview
+func (s *Session) drawPreviewText(id int) { //draw_preview
 
 	var ab strings.Builder
 
@@ -742,7 +744,8 @@ func (s *Session) drawPreviewText() { //draw_preview
 		TOP_MARGIN+6, s.divider+7, TOP_MARGIN+4+length, s.divider+7+width)
 
 	ab.WriteString("\x1b[48;5;235m")
-	note := readNoteIntoString(org.rows[org.fr].id)
+	//note := readNoteIntoString(org.rows[org.fr].id)
+	note := readNoteIntoString(id)
 	if note != "" {
 		ab.WriteString(generateWWString(note, width, length, lf_ret))
 	}
@@ -1009,6 +1012,8 @@ func (s *Session) quitApp() {
 	os.Exit(0)
 }
 
+// utility function with no receiver?
+/*
 func (s *Session) moveDivider(pct int) {
 	// note below only necessary if window resized or font size changed
 	s.textLines = s.screenLines - 2 - TOP_MARGIN
@@ -1038,6 +1043,7 @@ func (s *Session) moveDivider(pct int) {
 
 	s.returnCursor()
 }
+*/
 
 func (s *Session) signalHandler() {
 	//s.GetWindowSize()
@@ -1050,7 +1056,7 @@ func (s *Session) signalHandler() {
 	//that percentage should be in session
 	// so right now this reverts back if it was changed during session
 	//s.moveDivider(s.cfg.ed_pct)
-	s.moveDivider(60)
+	moveDivider(60)
 }
 
 /*

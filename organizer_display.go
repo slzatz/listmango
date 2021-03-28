@@ -26,11 +26,11 @@ func (o *Organizer) refreshScreen() {
 	fmt.Print(ab.String())
 
 	if o.mode == FIND {
-		o.drawOrgSearchRows()
+		o.drawSearchRows()
 		//} else if org.mode == ADD_CHANGE_FILTER {
 		//  s.drawOrgFilters()
 	} else if o.mode == ADD_CHANGE_FILTER {
-		o.drawOrgAltRows()
+		o.drawAltRows()
 	} else {
 		o.drawRows()
 	}
@@ -140,6 +140,45 @@ func (o *Organizer) drawRows() {
 		ab.WriteString(lf_ret)
 	}
 	//fmt.Fprint(os.Stdout, ab.String())
+	fmt.Print(ab.String())
+}
+
+// for drawing containers when making a selection
+func (o *Organizer) drawAltRows() {
+
+	if len(o.altRows) == 0 {
+		return
+	}
+
+	var ab strings.Builder
+	fmt.Fprintf(&ab, "\x1b[%d;%dH", TOP_MARGIN+1, o.divider+2)
+	lf_ret := fmt.Sprintf("\r\n\x1b[%dC", o.divider+1)
+
+	for y := 0; y < o.textLines; y++ {
+
+		fr := y + o.altRowoff
+		if fr > len(o.altRows)-1 {
+			break
+		}
+
+		length := len(o.altRows[fr].title)
+		if length > o.totaleditorcols {
+			length = o.totaleditorcols
+		}
+
+		if o.altRows[fr].star {
+			ab.WriteString("\x1b[1m") //bold
+			ab.WriteString("\x1b[1;36m")
+		}
+
+		if fr == o.altR {
+			ab.WriteString("\x1b[48;5;236m") // 236 is a grey
+		}
+
+		ab.WriteString(o.altRows[fr].title[:length])
+		ab.WriteString("\x1b[0m") // return background to normal
+		ab.WriteString(lf_ret)
+	}
 	fmt.Print(ab.String())
 }
 
@@ -277,5 +316,69 @@ func (o *Organizer) drawStatusBar() {
 		}
 	}
 	ab.WriteString("\x1b[0m") //switches back to normal formatting
+	fmt.Print(ab.String())
+}
+
+func (o *Organizer) drawSearchRows() {
+
+	if len(o.rows) == 0 {
+		return
+	}
+
+	var ab strings.Builder
+	titlecols := o.divider - TIME_COL_WIDTH - LEFT_MARGIN
+
+	lf_ret := fmt.Sprintf("\r\n\x1b[%dC", LEFT_MARGIN)
+
+	for y := 0; y < o.textLines; y++ {
+		fr := y + o.rowoff
+		if fr > len(o.rows)-1 {
+			break
+		}
+		//orow& row = org.rows[fr];
+		var length int
+
+		if o.rows[fr].star {
+			ab.WriteString("\x1b[1m") //bold
+			ab.WriteString("\x1b[1;36m")
+		}
+
+		if o.rows[fr].completed && o.rows[fr].deleted {
+			ab.WriteString("\x1b[32m") //green foreground
+		} else if o.rows[fr].completed {
+			ab.WriteString("\x1b[33m") //yellow foreground
+		} else if o.rows[fr].deleted {
+			ab.WriteString("\x1b[31m") //red foreground
+		}
+
+		if len(o.rows[fr].title) <= titlecols { // we know it fits
+			ab.WriteString(o.rows[fr].fts_title)
+			// note below doesn't handle two highlighted terms in same line
+			// and it might cause display issues if second highlight isn't fully escaped
+			// need to come back and deal with this
+			// coud check if LastIndex"\x1b[49m" or Index(fts_title[pos+1:titlecols+15] contained another escape
+		} else {
+			pos := strings.Index(o.rows[fr].fts_title, "\x1b[49m") //\x1b[48;5;31m', '\x1b[49m'
+			if pos > 0 && pos < titlecols+11 {                     //length of highlight escape
+				ab.WriteString(o.rows[fr].fts_title[:titlecols+15]) //titlecols + 15); // length of highlight escape + remove formatting escape
+			} else {
+				ab.WriteString(o.rows[fr].title[:titlecols])
+			}
+		}
+		if len(o.rows[fr].title) <= titlecols {
+			length = len(o.rows[fr].title)
+		} else {
+			length = titlecols
+		}
+		spaces := titlecols - length
+		ab.WriteString(strings.Repeat(" ", spaces))
+
+		//snprintf(buf, sizeof(buf), "\x1b[%d;%dH", y + 2, screencols/2 - TIME_COL_WIDTH + 2); //wouldn't need offset
+		ab.WriteString("\x1b[0m") // return background to normal
+		//ab.WriteString(fmt.Sprintf("\x1b[%d;%dH", y+2, s.divider-TIME_COL_WIDTH+2))
+		fmt.Fprintf(&ab, "\x1b[%d;%dH", y+2, o.divider-TIME_COL_WIDTH+2)
+		ab.WriteString(o.rows[fr].modified)
+		ab.WriteString(lf_ret)
+	}
 	fmt.Print(ab.String())
 }

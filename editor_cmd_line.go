@@ -116,7 +116,7 @@ func (e *Editor) resize() {
 		sess.showEdMessage("You need to provide a number 0 - 100")
 		return
 	}
-	sess.moveDivider(pct)
+	moveDivider(pct)
 }
 
 func (e *Editor) compile() {

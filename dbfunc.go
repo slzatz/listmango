@@ -1293,3 +1293,33 @@ func updateCodeFile() {
 	  }
 	*/
 }
+
+func moveDivider(pct int) {
+	// note below only necessary if window resized or font size changed
+	sess.textLines = sess.screenLines - 2 - TOP_MARGIN
+
+	if pct == 100 {
+		sess.divider = 1
+	} else {
+		sess.divider = sess.screenCols - pct*sess.screenCols/100
+	}
+	sess.totaleditorcols = sess.screenCols - sess.divider - 2 //? OUTLINE MARGINS?
+
+	sess.eraseScreenRedrawLines()
+
+	if sess.divider > 10 { //////////////////////////////////////////////////////
+		org.refreshScreen()
+		org.drawStatusBar()
+	}
+
+	if sess.editorMode {
+		sess.positionEditors()
+		sess.eraseRightScreen() //erases editor area + statusbar + msg
+		sess.drawEditors()
+	} else if org.view == TASK && org.mode != NO_ROWS {
+		sess.drawPreviewWindow(org.rows[org.fr].id) //get_preview
+	}
+	sess.showOrgMessage("rows: %d  cols: %d  divider: %d", sess.screenLines, sess.screenCols, sess.divider)
+
+	sess.returnCursor()
+}

@@ -304,7 +304,7 @@ func (o *Organizer) resize(pos int) {
 		o.mode = NORMAL
 		return
 	}
-	sess.moveDivider(pct)
+	moveDivider(pct)
 	o.mode = NORMAL
 }
 func (o *Organizer) newEntry(unused int) {

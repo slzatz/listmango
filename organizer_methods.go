@@ -414,7 +414,7 @@ func (o *Organizer) writeTitle() {
 	row.dirty = false
 
 	sess.showOrgMessage("Updated id %d to %s (+fts if Entry)", row.id, truncate(row.title, 15))
-	sess.refreshOrgScreen()
+	o.refreshScreen()
 	if o.fc > 0 {
 		o.fc--
 	}

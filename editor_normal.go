@@ -127,7 +127,7 @@ func controlH() {
 
 		if sess.divider < 10 {
 			sess.cfg.ed_pct = 80
-			sess.moveDivider(80)
+			moveDivider(80)
 		}
 
 		sess.editorMode = false //needs to be here
@@ -167,7 +167,7 @@ func controlH() {
 
 		if sess.divider < 10 {
 			sess.cfg.ed_pct = 80
-			sess.moveDivider(80)
+			moveDivider(80)
 		}
 
 		sess.editorMode = false //needs to be here

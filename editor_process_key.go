@@ -272,7 +272,7 @@ func editorProcessKey(c int, messageBuf nvim.Buffer) bool { //bool returned is w
 
 				if sess.divider < 10 {
 					sess.cfg.ed_pct = 80
-					sess.moveDivider(80)
+					moveDivider(80)
 				}
 
 				sess.drawPreviewWindow(org.rows[org.fr].id)

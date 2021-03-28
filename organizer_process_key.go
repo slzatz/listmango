@@ -279,7 +279,7 @@ func organizerProcessKey(c int) {
 				readSyncLogIntoAltRows(org.rows[org.fr].id)
 				sess.eraseRightScreen()
 				org.altR = 0
-				sess.drawOrgAltRows2()
+				org.drawAltRows2()
 			}
 		case ARROW_DOWN, 'j':
 			if org.fr < len(org.rows)-1 {
@@ -287,7 +287,7 @@ func organizerProcessKey(c int) {
 				readSyncLogIntoAltRows(org.rows[org.fr].id)
 				sess.eraseRightScreen()
 				org.altR = 0
-				sess.drawOrgAltRows2()
+				org.drawAltRows2()
 			}
 		case ':':
 			sess.showOrgMessage(":")
@@ -300,11 +300,11 @@ func organizerProcessKey(c int) {
 			sess.showOrgMessage("Got here")
 			org.altR = len(org.altRows) - 1
 			sess.eraseRightScreen()
-			sess.drawOrgAltRows2()
+			org.drawAltRows2()
 		case PAGE_UP:
 			org.altR = 0
 			sess.eraseRightScreen()
-			sess.drawOrgAltRows2()
+			org.drawAltRows2()
 		}
 	} // end switch o.mode
 } // end func organizerProcessKey(c int)
