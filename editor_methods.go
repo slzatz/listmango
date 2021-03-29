@@ -353,9 +353,13 @@ func (e *Editor) rowsToString() string {
 
 func (e *Editor) getScreenXFromRowColWW(r, c int) int {
 	// can't use reference to row because replacing blanks to handle corner case
-	//bb, _ := v.BufferLines(0, 0, -1, true)
+	//bb, _ := v.BufferLines(e.vbuf, 0, -1, true)
+	bb, _ := v.BufferLines(e.vbuf, r, r+1, true)
+	//sess.showOrgMessage("r = %d", r)
 	//row := string(bb[r])
-	row := e.rows[r]
+	row := string(bb[0])
+
+	//row := e.rows[r]
 
 	/* pos is the position of the last char in the line
 	 * and pos+1 is the position of first character of the next row
@@ -669,11 +673,13 @@ func (e *Editor) draw_visual(pab *strings.Builder) {
 
 	if e.mode == VISUAL {
 		startCol, endCol := e.vb_highlight[0][2], e.vb_highlight[1][2]
-		startRow, endRow := e.vb_highlight[0][1], e.vb_highlight[1][1] //startRow always <= endRow
+
+		// startRow always <= endRow and need to subtract 1 since counting starts at 1 not zero
+		startRow, endRow := e.vb_highlight[0][1]-1, e.vb_highlight[1][1]-1 //startRow always <= endRow
 		numRows := endRow - startRow + 1
 
 		x := e.getScreenXFromRowColWW(startRow, startCol) + e.left_margin + e.left_margin_offset
-		y := e.getScreenYFromRowColWW(startRow, startCol) + e.top_margin - e.line_offset - 1
+		y := e.getScreenYFromRowColWW(startRow, startCol) + e.top_margin - e.line_offset // - 1
 
 		(*pab).WriteString("\x1b[48;5;244m")
 		for n := 0; n < numRows; n++ {
@@ -684,7 +690,7 @@ func (e *Editor) draw_visual(pab *strings.Builder) {
 				fmt.Fprintf(pab, "\x1b[%d;%dH", y+n, 1+e.left_margin+e.left_margin_offset)
 			}
 			//row := e.rows[startRow+n-1]
-			row := e.rows[startRow+n-1]
+			row := e.rows[startRow+n]
 			row_len := len(row)
 
 			if row_len == 0 { //|| row_len < left {
@@ -704,7 +710,7 @@ func (e *Editor) draw_visual(pab *strings.Builder) {
 				}
 			}
 			//(*pab).WriteString(row[startCol-1:])
-			sess.showOrgMessage("%v; %v; %v; %v", startCol, endCol, startRow, endRow)
+			//sess.showEdMessage("%v; %v; %v; %v", startCol, endCol, startRow, endRow)
 		}
 	}
 
