@@ -62,7 +62,7 @@ func editorProcessKey(c int, messageBuf nvim.Buffer) bool { //bool returned is w
 		pos, _ := v.WindowCursor(w) //set screen cx and cy from pos
 		p.fr = pos[0] - 1
 		p.fc = pos[1]
-		p.showMessage("")
+		sess.showEdMessage("")
 		return true
 	}
 
@@ -106,7 +106,7 @@ func editorProcessKey(c int, messageBuf nvim.Buffer) bool { //bool returned is w
 		}
 
 		mode, _ := v.Mode()
-		p.showMessage("blocking = %t; mode = %v", mode.Blocking, mode.Mode) //debugging
+		sess.showEdMessage("blocking = %t; mode = %v", mode.Blocking, mode.Mode) //debugging
 		//Example of input that blocks is entering a number (eg, 4x) in NORMAL mode
 		//If blocked true you can't retrieve buffer with v.BufferLines (app just locks up)
 		if mode.Blocking {
@@ -116,7 +116,7 @@ func editorProcessKey(c int, messageBuf nvim.Buffer) bool { //bool returned is w
 			p.mode = COMMAND_LINE
 			p.command_line = ""
 			p.command = ""
-			p.showMessage(":")
+			sess.showEdMessage(":")
 
 			// below will put nvim back in NORMAL mode but listmango will be in COMMAND_LINE
 			// essentially park nvim in NORMAL mode and don't feed it any keys while
@@ -133,7 +133,7 @@ func editorProcessKey(c int, messageBuf nvim.Buffer) bool { //bool returned is w
 	if p.mode != COMMAND_LINE {
 		switch p.mode {
 		case INSERT:
-			p.showMessage("--INSERT--")
+			sess.showEdMessage("--INSERT--")
 		case NORMAL:
 			if cmd, found := e_lookup2[p.command]; found {
 				switch cmd := cmd.(type) {
@@ -193,7 +193,7 @@ func editorProcessKey(c int, messageBuf nvim.Buffer) bool { //bool returned is w
 					p.mode = NORMAL
 					p.command = ""
 					p.command_line = ""
-					p.showMessage("You can't save the contents of the Output Window")
+					sess.showEdMessage("You can't save the contents of the Output Window")
 					return false
 				}
 				updateNote() //should be p->E_write_C(); closing_editor = true;
@@ -231,7 +231,7 @@ func editorProcessKey(c int, messageBuf nvim.Buffer) bool { //bool returned is w
 				p.mode = NORMAL
 				p.command = ""
 				p.command_line = ""
-				p.showMessage("No write since last change")
+				sess.showEdMessage("No write since last change")
 				return false
 			}
 
@@ -298,7 +298,7 @@ func editorProcessKey(c int, messageBuf nvim.Buffer) bool { //bool returned is w
 		}
 
 		if cmd == "m" {
-			p.showMessage("buffer %v has been modified %v times", p.vbuf, p.dirty)
+			sess.showEdMessage("buffer %v has been modified %v times", p.vbuf, p.dirty)
 			p.command_line = ""
 			p.mode = NORMAL
 			return false
@@ -311,7 +311,7 @@ func editorProcessKey(c int, messageBuf nvim.Buffer) bool { //bool returned is w
 			return false
 		}
 
-		p.showMessage("\x1b[41mNot an editor command: %s\x1b[0m", cmd)
+		sess.showEdMessage("\x1b[41mNot an editor command: %s\x1b[0m", cmd)
 		p.mode = NORMAL
 		p.command_line = ""
 		return false
@@ -325,6 +325,6 @@ func editorProcessKey(c int, messageBuf nvim.Buffer) bool { //bool returned is w
 		p.command_line += string(c)
 	}
 
-	p.showMessage(":%s", p.command_line)
+	sess.showEdMessage(":%s", p.command_line)
 	return false //end COMMAND_LINE
 }

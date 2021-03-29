@@ -23,7 +23,7 @@ func find_first_not_of(row *string, delimiters string, pos int) int {
 }
 
 // want to transition to Session showEdMessage
-func (e *Editor) showMessage(format string, a ...interface{}) {
+func (e *Editor) showMessage___(format string, a ...interface{}) {
 	fmt.Printf("\x1b[%d;%dH\x1b[K", sess.textLines+e.top_margin+1, sess.divider+1)
 	str := fmt.Sprintf(format, a...)
 	if len(str) > e.screencols {
@@ -57,7 +57,7 @@ func (e *Editor) find_match_for_left_brace(left_brace byte, back bool) bool {
 		if c >= len(row) {
 			r++
 			if r == max {
-				e.showMessage("Couldn't find matching brace")
+				sess.showEdMessage("Couldn't find matching brace")
 				return false
 			}
 			c = 0
@@ -87,7 +87,7 @@ func (e *Editor) find_match_for_left_brace(left_brace byte, back bool) bool {
 	x = e.getScreenXFromRowColWW(e.fr, e.fc-b) + e.left_margin + e.left_margin_offset + 1
 	y = e.getScreenYFromRowColWW(e.fr, e.fc-b) + e.top_margin - e.line_offset // added line offset 12-25-2019
 	fmt.Printf("\x1b[%d;%dH\x1b[48;5;244m%s\x1b[0m", y, x, string(left_brace))
-	e.showMessage("r = %d   c = %d", r, c)
+	sess.showEdMessage("r = %d   c = %d", r, c)
 	return true
 }
 
@@ -146,7 +146,7 @@ func (e *Editor) find_match_for_right_brace(right_brace byte, back bool) bool {
 		if c == -1 { //fc + 1 can be greater than row.size on first pass from INSERT if { at end of line
 			r--
 			if r == -1 {
-				e.showMessage("Couldn't find matching brace")
+				sess.showEdMessage("Couldn't find matching brace")
 				return false
 			}
 			row = e.rows[r]
@@ -177,7 +177,7 @@ func (e *Editor) find_match_for_right_brace(right_brace byte, back bool) bool {
 	x = e.getScreenXFromRowColWW(e.fr, e.fc-b) + e.left_margin + e.left_margin_offset + 1
 	y = e.getScreenYFromRowColWW(e.fr, e.fc-b) + e.top_margin - e.line_offset // added line offset 12-25-2019
 	fmt.Printf("\x1b[%d;%dH\x1b[48;5;244m%s\x1b[0m", y, x, string(right_brace))
-	e.showMessage("r = %d   c = %d", r, c)
+	sess.showEdMessage("r = %d   c = %d", r, c)
 	return true
 }
 

@@ -153,13 +153,13 @@ func controlH() {
 		}
 	}
 
-	p.showMessage("index: %d; length: %d", index, len(temp))
+	sess.showEdMessage("index: %d; length: %d", index, len(temp))
 
 	if index > 0 {
 		p = temp[index-1]
 		err := v.SetCurrentBuffer(p.vbuf)
 		if err != nil {
-			p.showMessage("Problem setting current buffer")
+			sess.showEdMessage("Problem setting current buffer")
 		}
 		p.mode = NORMAL
 		return
@@ -196,14 +196,14 @@ func controlL() {
 		}
 	}
 
-	p.showMessage("index: %d; length: %d", index, len(temp))
+	sess.showEdMessage("index: %d; length: %d", index, len(temp))
 
 	if index < len(temp)-1 {
 		p = temp[index+1]
 		p.mode = NORMAL
 		err := v.SetCurrentBuffer(p.vbuf)
 		if err != nil {
-			p.showMessage("Problem setting current buffer")
+			sess.showEdMessage("Problem setting current buffer")
 		}
 	}
 

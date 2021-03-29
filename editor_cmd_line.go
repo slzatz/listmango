@@ -47,7 +47,7 @@ const std::unordered_map<std::string, efunc> E_lookup_C {
 func (e *Editor) saveNoteToFile() {
 	pos := strings.Index(e.command_line, " ")
 	if pos == -1 {
-		e.showMessage("You need to provide a filename")
+		sess.showEdMessage("You need to provide a filename")
 		return
 	}
 	filename := e.command_line[pos+1:]
@@ -68,7 +68,7 @@ func (e *Editor) saveNoteToFile() {
 
 func (e *Editor) writeNote() {
 	if e.is_subeditor {
-		e.showMessage("You can't save the contents of the Output Window")
+		sess.showEdMessage("You can't save the contents of the Output Window")
 		return
 	}
 
@@ -86,23 +86,23 @@ func (e *Editor) writeNote() {
 	*/
 	e.dirty = 0
 	e.drawStatusBar() //need this since now refresh won't do it unless redraw =true
-	e.showMessage("")
+	sess.showEdMessage("")
 }
 
 func (e *Editor) readFile() {
 	pos := strings.Index(e.command_line, " ")
 	if pos == -1 {
-		e.showMessage("You need to provide a filename")
+		sess.showEdMessage("You need to provide a filename")
 		return
 	}
 
 	filename := e.command_line[pos+1:]
 	err := e.readFileIntoNote(filename)
 	if err != nil {
-		e.showMessage("%v", err)
+		sess.showEdMessage("%v", err)
 		return
 	}
-	e.showMessage("Note generated from file: %s", filename)
+	sess.showEdMessage("Note generated from file: %s", filename)
 }
 
 func (e *Editor) resize() {

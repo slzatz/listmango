@@ -81,11 +81,11 @@ func showMessage_(v *nvim.Nvim, buf nvim.Buffer) {
 	currentBuf, _ := v.CurrentBuffer()
 	if message != "" {
 		//sess.showOrgMessage("len bb: %v; i: %v; message: %v", len(bb), i, message)
-		p.showMessage("len bb: %v; i: %v; message: %v", len(bb), i, message)
+		sess.showEdMessage("len bb: %v; i: %v; message: %v", len(bb), i, message)
 	} else {
 		//sess.showOrgMessage("No message, %v %v %v", sess.p.vbuf, buf, currentBuf)
 		//sess.showOrgMessage("No message: len bb %v; Current Buf %v", len(bb), currentBuf)
-		p.showMessage("No message: len bb %v; Current Buf %v", len(bb), currentBuf)
+		sess.showEdMessage("No message: len bb %v; Current Buf %v", len(bb), currentBuf)
 	}
 }
 
