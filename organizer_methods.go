@@ -61,7 +61,7 @@ func (o *Organizer) moveCursor(key int) {
 		o.fc, o.coloff = 0, 0
 
 		if o.view == TASK {
-			sess.drawPreviewWindow(o.rows[o.fr].id) //if id == -1 does not try to retrieve note
+			o.drawPreviewWindow() //if id == -1 does not try to retrieve note
 		} else {
 			c := getContainerInfo(o.rows[o.fr].id)
 			if c.id != 0 {
@@ -76,7 +76,7 @@ func (o *Organizer) moveCursor(key int) {
 		}
 		o.fc, o.coloff = 0, 0
 		if o.view == TASK {
-			sess.drawPreviewWindow(o.rows[o.fr].id) //if id == -1 does not try to retrieve note
+			o.drawPreviewWindow() //if id == -1 does not try to retrieve note
 		} else {
 			c := getContainerInfo(o.rows[o.fr].id)
 			if c.id != 0 {

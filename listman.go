@@ -29,6 +29,8 @@ func ctrlKey(b byte) rune {
 
 var sess Session
 var org = Organizer{Session: &sess}
+var p *Editor
+var editors []*Editor
 
 var v *nvim.Nvim
 var w nvim.Window
@@ -75,15 +77,15 @@ func showMessage_(v *nvim.Nvim, buf nvim.Buffer) {
 		}
 	}
 	//_ = v.SetBufferLines(buf, 0, 0, true, [][]byte{})
-	v.SetCurrentBuffer(sess.p.vbuf)
+	v.SetCurrentBuffer(p.vbuf)
 	currentBuf, _ := v.CurrentBuffer()
 	if message != "" {
 		//sess.showOrgMessage("len bb: %v; i: %v; message: %v", len(bb), i, message)
-		sess.p.showMessage("len bb: %v; i: %v; message: %v", len(bb), i, message)
+		p.showMessage("len bb: %v; i: %v; message: %v", len(bb), i, message)
 	} else {
 		//sess.showOrgMessage("No message, %v %v %v", sess.p.vbuf, buf, currentBuf)
 		//sess.showOrgMessage("No message: len bb %v; Current Buf %v", len(bb), currentBuf)
-		sess.p.showMessage("No message: len bb %v; Current Buf %v", len(bb), currentBuf)
+		p.showMessage("No message: len bb %v; Current Buf %v", len(bb), currentBuf)
 	}
 }
 
@@ -199,7 +201,7 @@ func main() {
 				}
 			*/
 			case b := <-bufLinesChan:
-				for _, e := range sess.editors {
+				for _, e := range editors {
 					if b.Buffer == e.vbuf {
 						e.dirty++
 						break
@@ -300,9 +302,9 @@ func main() {
 				continue
 			}
 
-			scroll := sess.p.scroll()
-			redraw := textChange || scroll || sess.p.redraw
-			sess.p.refreshScreen(redraw)
+			scroll := p.scroll()
+			redraw := textChange || scroll || p.redraw
+			p.refreshScreen(redraw)
 		} else {
 			organizerProcessKey(k)
 			org.scroll()

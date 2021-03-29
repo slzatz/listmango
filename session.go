@@ -11,17 +11,17 @@ import (
 )
 
 type Session struct {
-	screenCols       int
-	screenLines      int
-	textLines        int
-	divider          int
-	totaleditorcols  int
-	initialFileRow   int
-	temporaryTID     int
-	lmBrowser        bool
-	run              bool
-	editors          []*Editor
-	p                *Editor
+	screenCols      int
+	screenLines     int
+	textLines       int
+	divider         int
+	totaleditorcols int
+	initialFileRow  int
+	temporaryTID    int
+	lmBrowser       bool
+	run             bool
+	//editors          []*Editor
+	//p                *Editor
 	editorMode       bool
 	fts_search_terms string
 	//cfg config
@@ -117,7 +117,7 @@ func (s *Session) eraseRightScreen() {
 
 func (s *Session) positionEditors() {
 	editorSlots := 0
-	for _, z := range s.editors {
+	for _, z := range editors {
 		if !z.is_below {
 			editorSlots++
 		}
@@ -125,7 +125,7 @@ func (s *Session) positionEditors() {
 
 	cols := -1 + (s.screenCols-s.divider)/editorSlots
 	i := -1 //i = number of columns of editors -1
-	for _, e := range s.editors {
+	for _, e := range editors {
 		if !e.is_below {
 			i++
 		}
@@ -385,7 +385,7 @@ func (s *Session) drawOrgAltRows2_() {
 
 func (s *Session) drawEditors() {
 	var ab strings.Builder
-	for _, e := range s.editors {
+	for _, e := range editors {
 		//for (size_t i=0, max=editors.size(); i!=max; ++i) {
 		//Editor *&e = editors.at(i);
 		e.refreshScreen(true)
@@ -638,12 +638,12 @@ func (s *Session) returnCursor() {
 	var ab strings.Builder
 	if s.editorMode {
 		// the lines below position the cursor where it should go
-		if s.p.mode != COMMAND_LINE {
+		if p.mode != COMMAND_LINE {
 			//ab.WriteString(fmt.Sprintf("\x1b[%d;%dH", s.p.cy+s.p.top_margin, s.p.cx+s.p.left_margin+s.p.left_margin_offset+1))
-			fmt.Fprintf(&ab, "\x1b[%d;%dH", s.p.cy+s.p.top_margin, s.p.cx+s.p.left_margin+s.p.left_margin_offset+1)
+			fmt.Fprintf(&ab, "\x1b[%d;%dH", p.cy+p.top_margin, p.cx+p.left_margin+p.left_margin_offset+1)
 		} else { //E.mode == COMMAND_LINE
 			//ab.WriteString(fmt.Sprintf("\x1b[%d;%dH", s.textLines+TOP_MARGIN+2, len(s.p.command_line)+s.divider+2))
-			fmt.Fprintf(&ab, "\x1b[%d;%dH", s.textLines+TOP_MARGIN+2, len(s.p.command_line)+s.divider+2)
+			fmt.Fprintf(&ab, "\x1b[%d;%dH", s.textLines+TOP_MARGIN+2, len(p.command_line)+s.divider+2)
 			ab.WriteString("\x1b[?25h") // show cursor
 		}
 	} else {

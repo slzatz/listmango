@@ -382,3 +382,22 @@ func (o *Organizer) drawSearchRows() {
 	}
 	fmt.Print(ab.String())
 }
+
+func (o *Organizer) drawPreviewWindow() { //get_preview
+	id := o.rows[o.fr].id
+
+	if o.taskview != BY_FIND {
+		sess.drawPreviewText(id)
+	} else {
+		sess.drawSearchPreview()
+	}
+	sess.drawPreviewBox()
+
+	/*
+	  if (lm_browser) {
+	    int folder_tid = getFolderTid(org.rows.at(org.fr).id);
+	    if (!(folder_tid == 18 || folder_tid == 14)) updateHTMLFile("assets/" + CURRENT_NOTE_FILE);
+	    else updateHTMLCodeFile("assets/" + CURRENT_NOTE_FILE);
+	  }
+	*/
+}

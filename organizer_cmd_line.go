@@ -248,30 +248,30 @@ func (o *Organizer) editNote(id int) {
 	sess.editorMode = true
 
 	active := false
-	for _, e := range sess.editors {
+	for _, e := range editors {
 		if e.id == id {
 			active = true
-			sess.p = e
+			p = e
 			break
 		}
 	}
 
 	if !active {
-		sess.p = &Editor{}
-		sess.editors = append(sess.editors, sess.p)
-		sess.p.id = id
-		sess.p.top_margin = TOP_MARGIN + 1
+		p = &Editor{}
+		editors = append(editors, p)
+		p.id = id
+		p.top_margin = TOP_MARGIN + 1
 
 		folder_tid := getFolderTid(o.rows[o.fr].id)
 		if folder_tid == 18 || folder_tid == 14 {
-			sess.p.linked_editor = &Editor{}
-			sess.editors = append(sess.editors, sess.p.linked_editor)
-			sess.p.linked_editor.id = id
-			sess.p.linked_editor.is_subeditor = true
-			sess.p.linked_editor.is_below = true
-			sess.p.linked_editor.linked_editor = sess.p
-			sess.p.linked_editor.rows = []string{" "}
-			sess.p.left_margin_offset = LEFT_MARGIN_OFFSET
+			p.linked_editor = &Editor{}
+			editors = append(editors, p.linked_editor)
+			p.linked_editor.id = id
+			p.linked_editor.is_subeditor = true
+			p.linked_editor.is_below = true
+			p.linked_editor.linked_editor = p
+			p.linked_editor.rows = []string{" "}
+			p.left_margin_offset = LEFT_MARGIN_OFFSET
 		}
 		readNoteIntoEditor(id)
 
@@ -287,7 +287,7 @@ func (o *Organizer) editNote(id int) {
 	sess.positionEditors()
 	sess.eraseRightScreen() //erases editor area + statusbar + msg
 	sess.drawEditors()
-	sess.p.mode = NORMAL
+	p.mode = NORMAL
 
 	o.command = ""
 	o.mode = NORMAL

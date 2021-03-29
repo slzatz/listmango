@@ -80,7 +80,7 @@ func organizerProcessKey(c int) {
 
 		if c == '\x1b' {
 			if org.view == TASK {
-				sess.drawPreviewWindow(org.rows[org.fr].id)
+				org.drawPreviewWindow()
 			}
 			sess.showOrgMessage("")
 			org.command = ""
