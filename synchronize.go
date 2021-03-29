@@ -777,7 +777,7 @@ func synchronize(reportOnly bool) {
 				fmt.Fprintf(&lg, "Error inserting into fts_db for entry with id: %v: %w\n", client_id, err2)
 				break
 			}
-			fmt.Fprintf(&lg, "Created new local entry: %v with local id: %v and tid: %v\n", e.title, client_id, e.id)
+			fmt.Fprintf(&lg, "Created new local entry: %v with local id: %v and tid: %v\n", truncate(e.title, 15), client_id, e.id)
 		case err != nil:
 			fmt.Fprintf(&lg, "Error querying sqlite for a entry with tid: %v: %w\n", e.id, err)
 			continue
@@ -790,11 +790,11 @@ func synchronize(reportOnly bool) {
 			}
 			_, err4 := fts_db.Exec("UPDATE fts SET title=?, note=? WHERE lm_id=?;", e.title, e.note, client_id)
 			if err4 != nil {
-				fmt.Fprintf(&lg, "Error updating fts_db for entry %s; id: %d; %v\n", e.title, client_id, err4)
+				fmt.Fprintf(&lg, "Error updating fts_db for entry %s; id: %d; %v\n", truncate(e.title, 15), client_id, err4)
 			} else {
-				fmt.Fprintf(&lg, "fts_db updated for entry %s; id: %d; tid: %d\n", e.title, client_id, e.id)
+				fmt.Fprintf(&lg, "fts_db updated for entry %q with id %d and tid: %d\n", truncate(e.title, 15), client_id, e.id)
 			}
-			fmt.Fprintf(&lg, "Updated local entry: %s with id %d and tid: %d\n", e.title, client_id, e.id)
+			fmt.Fprintf(&lg, "Updated local entry: %s with id %d and tid: %d\n", truncate(e.title, 15), client_id, e.id)
 		}
 		// Update the client entry's keywords
 		_, err5 := db.Exec("DELETE FROM task_keyword WHERE task_id=?;", client_id)
@@ -837,9 +837,9 @@ func synchronize(reportOnly bool) {
 			_, err3 := pdb.Exec("UPDATE task SET title=$1, star=$2, context_tid=$3, folder_tid=$4, note=$5, completed=$6, modified=now() WHERE id=$7;",
 				e.title, e.star, e.context_tid, e.folder_tid, e.note, e.completed, e.tid)
 			if err3 != nil {
-				fmt.Fprintf(&lg, "Error updating server entry: %s with id: %d; %v", e.title, e.tid, err3)
+				fmt.Fprintf(&lg, "Error updating server entry %q with id %d: %v", truncate(e.title, 15), e.tid, err3)
 			} else {
-				fmt.Fprintf(&lg, "Updated server entry: %s with id: %d\n", e.title, e.tid)
+				fmt.Fprintf(&lg, "Updated server entry %q with id %d\n", truncate(e.title, 15), e.tid)
 			}
 			server_id = e.tid // needed below for keywords
 		case !exists:
