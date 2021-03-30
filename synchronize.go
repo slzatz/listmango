@@ -532,11 +532,17 @@ func synchronize(reportOnly bool) {
 	var client_deleted_entries []Entry
 	for rows.Next() {
 		var e Entry
+		var tid sql.NullInt64
 		rows.Scan(
 			&e.id,
-			&e.tid,
+			&tid,
 			&e.title,
 		)
+		if tid.Valid {
+			e.tid = int(tid.Int64)
+		} else {
+			e.tid = 0
+		}
 		//fmt.Printf("%v\n", e)
 		client_deleted_entries = append(client_deleted_entries, e)
 	}
@@ -891,6 +897,11 @@ func synchronize(reportOnly bool) {
 	for _, e := range client_deleted_entries {
 		// since on server, we just set deleted to true
 		// since may have to sync with other clients
+		if e.tid == 0 {
+			fmt.Fprintf(&lg, "There is no server entry to delete for client id %d", e.id)
+			continue
+		}
+
 		_, err := pdb.Exec("UPDATE task SET deleted=true, modified=now() WHERE id=$1", e.tid) /**************/
 		if err != nil {
 			fmt.Fprintf(&lg, "Error setting server entry with id %d to deleted: %v\n", e.tid, err)
