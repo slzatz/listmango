@@ -314,7 +314,7 @@ func synchronize(reportOnly bool) {
 	}
 	//sess.showEdMessage("Number of changes that server needs to transmit to client: %v", len(server_updated_entries))
 	for _, e := range server_updated_entries {
-		fmt.Fprintf(&lg, "id: %v; title: %v; star: %v, created: %v; modified; %v\n", e.id, e.title, e.star, e.created, e.modified)
+		fmt.Fprintf(&lg, "id: %d; title: %q; star: %t; modified; %v\n", e.id, truncate(e.title, 15), e.star, e.modified)
 	}
 
 	//server deleted entries
@@ -520,7 +520,7 @@ func synchronize(reportOnly bool) {
 	}
 	//sess.showEdMessage("Number of changes that client needs to transmit to client: %v", len(client_updated_entries))
 	for _, e := range client_updated_entries {
-		fmt.Fprintf(&lg, "id: %v; tid: %v; title: %v; star: %v, created: %v; modified; %v\n", e.id, e.tid, e.title, e.star, e.created, e.modified)
+		fmt.Fprintf(&lg, "id: %d; tid: %d; title: %q; star: %t; modified; %v\n", e.id, e.tid, truncate(e.title, 15), e.star, e.modified)
 	}
 
 	//client deleted entries
@@ -774,10 +774,10 @@ func synchronize(reportOnly bool) {
 			client_id = int(id)
 			_, err2 := fts_db.Exec("INSERT INTO fts (title, note, lm_id) VALUES (?, ?, ?);", e.title, e.note, client_id)
 			if err2 != nil {
-				fmt.Fprintf(&lg, "Error inserting into fts_db for entry with id: %v: %w\n", client_id, err2)
+				fmt.Fprintf(&lg, "Error inserting into fts_db for entry with id %d: %v\n", client_id, err2)
 				break
 			}
-			fmt.Fprintf(&lg, "Created new local entry: %v with local id: %v and tid: %v\n", truncate(e.title, 15), client_id, e.id)
+			fmt.Fprintf(&lg, "Created new local entry %q with id %d and tid %d\n", truncate(e.title, 15), client_id, e.id)
 		case err != nil:
 			fmt.Fprintf(&lg, "Error querying sqlite for a entry with tid: %v: %w\n", e.id, err)
 			continue
@@ -792,7 +792,7 @@ func synchronize(reportOnly bool) {
 			if err4 != nil {
 				fmt.Fprintf(&lg, "Error updating fts_db for entry %s; id: %d; %v\n", truncate(e.title, 15), client_id, err4)
 			} else {
-				fmt.Fprintf(&lg, "fts_db updated for entry %q with id %d and tid: %d\n", truncate(e.title, 15), client_id, e.id)
+				fmt.Fprintf(&lg, "fts_db updated for entry %q with id %d and tid %d\n", truncate(e.title, 15), client_id, e.id)
 			}
 			fmt.Fprintf(&lg, "Updated local entry: %s with id %d and tid: %d\n", truncate(e.title, 15), client_id, e.id)
 		}
@@ -879,14 +879,9 @@ func synchronize(reportOnly bool) {
 
 	// server deleted entries
 	for _, e := range server_deleted_entries {
-		res, err := db.Exec("DELETE FROM task WHERE tid=?;", e.id)
+		_, err := db.Exec("DELETE FROM task WHERE tid=?;", e.id)
 		if err != nil {
-			fmt.Fprintf(&lg, "Error deleting local entry with tid = %d\n", e.id)
-			continue
-		}
-		rowsAffected, _ := res.RowsAffected()
-		if rowsAffected != 1 {
-			fmt.Fprintf(&lg, "(rowsAffected != 1) Error deleting local entry with tid = %d\n", e.id)
+			fmt.Fprintf(&lg, "Error deleting local entry with tid %d: %v\n", e.id, err)
 			continue
 		}
 		fmt.Fprintf(&lg, "Deleted client entry %q with tid %d\n", truncate(e.title, 15), e.id)
@@ -896,17 +891,12 @@ func synchronize(reportOnly bool) {
 	for _, e := range client_deleted_entries {
 		// since on server, we just set deleted to true
 		// since may have to sync with other clients
-		res, err := pdb.Exec("UPDATE task SET deleted=true, modified=now() WHERE id=$1", e.tid) /**************/
+		_, err := pdb.Exec("UPDATE task SET deleted=true, modified=now() WHERE id=$1", e.tid) /**************/
 		if err != nil {
-			fmt.Fprintf(&lg, "Problem (pdb.Exec) setting server entry with id = %d to deleted\n", e.tid)
+			fmt.Fprintf(&lg, "Error setting server entry with id %d to deleted: %v\n", e.tid, err)
 			continue
 		}
-		rowsAffected, _ := res.RowsAffected()
-		if rowsAffected != 1 {
-			fmt.Fprintf(&lg, "(rowsAffected != 1) Problem setting server entry with id = %v to deleted; rowsAffected = %v\n", e.tid, rowsAffected)
-			continue
-		}
-		fmt.Fprintf(&lg, "Updated server entry %s: id %d to deleted = true\n", e.title, e.tid)
+		fmt.Fprintf(&lg, "Updated server entry %q with id %d to deleted = true\n", truncate(e.title, 15), e.tid)
 	}
 
 	//server_deleted_contexts
