@@ -229,41 +229,47 @@ func (o *Organizer) drawStatusBar() {
 	ab.WriteString("\x1b[7m") //switches to reversed colors
 
 	var str string
-	switch o.view {
-	case TASK:
-		e := getEntryInfo(getId())
-		switch o.taskview {
-		case BY_FIND:
-			str = "search - " + o.fts_search_terms
-		case BY_FOLDER:
-			str = fmt.Sprintf("%s[f] (%s[c])", o.folder, o.idToContext[e.context_tid])
-			//str = org.folder + "[f]" + " (" + org.context
-		case BY_CONTEXT:
-			//str = org.context + "[c]"
-			str = fmt.Sprintf("%s[c] (%s[f])", o.context, o.idToFolder[e.folder_tid])
-		case BY_RECENT:
-			str = fmt.Sprintf("Recent: %s[c] %s[f]",
-				o.idToContext[e.context_tid], o.idToFolder[e.folder_tid])
-			//str = "recent"
-		//case BY_JOIN:
-		//	str = org.context + "[c] + " + org.folder + "[f]"
-		case BY_KEYWORD:
-			str = o.keyword + "[k]"
-		}
-	case CONTEXT:
-		str = "Contexts"
-	case FOLDER:
-		str = "Folders"
-	case KEYWORD:
-		str = "Keywords"
-	case SYNC_LOG_VIEW:
-		str = "Sync Log"
-	}
-
 	var id int
 	var title string
 	var keywords string
 	if len(o.rows) > 0 {
+		switch o.view {
+		case TASK:
+			e := getEntryInfo(getId())
+			switch o.taskview {
+			case BY_FIND:
+				str = "search - " + o.fts_search_terms
+			case BY_FOLDER:
+				str = fmt.Sprintf("%s[f] (%s[c])", o.folder, o.idToContext[e.context_tid])
+				//str = org.folder + "[f]" + " (" + org.context
+			case BY_CONTEXT:
+				//str = org.context + "[c]"
+				str = fmt.Sprintf("%s[c] (%s[f])", o.context, o.idToFolder[e.folder_tid])
+			case BY_RECENT:
+				str = fmt.Sprintf("Recent: %s[c] %s[f]",
+					o.idToContext[e.context_tid], o.idToFolder[e.folder_tid])
+				//str = "recent"
+			//case BY_JOIN:
+			//	str = org.context + "[c] + " + org.folder + "[f]"
+			case BY_KEYWORD:
+				str = o.keyword + "[k]"
+			}
+		case CONTEXT:
+			str = "Contexts"
+		case FOLDER:
+			str = "Folders"
+		case KEYWORD:
+			str = "Keywords"
+		case SYNC_LOG_VIEW:
+			str = "Sync Log"
+		}
+
+		/*
+			var id int
+			var title string
+			var keywords string
+			if len(o.rows) > 0 {
+		*/
 
 		row := &o.rows[o.fr]
 
