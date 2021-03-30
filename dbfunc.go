@@ -257,6 +257,15 @@ func getSyncItems(max int) {
 	}
 }
 
+func deleteSyncItem(id int) {
+	_, err := db.Exec("DELETE FROM sync_log  WHERE id=?;", id)
+	if err != nil {
+		sess.showOrgMessage("Error deleting sync_log entry with id %d: %v", id, err)
+		return
+	}
+	sess.showOrgMessage("Deleted sync_log entry with id %d", id)
+}
+
 func getItems(max int) {
 
 	org.rows = nil

@@ -305,6 +305,17 @@ func organizerProcessKey(c int) {
 			org.altR = 0
 			sess.eraseRightScreen()
 			org.drawAltRows2()
+		case ctrlKey('d'):
+			if len(org.marked_entries) == 0 {
+				deleteSyncItem(org.rows[org.fr].id)
+			} else {
+				for id := range org.marked_entries {
+					deleteSyncItem(id)
+				}
+			}
+			org.log(0)
+		case 'm':
+			m_N()
 		}
 	} // end switch o.mode
 } // end func organizerProcessKey(c int)

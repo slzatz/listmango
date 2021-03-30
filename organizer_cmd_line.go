@@ -97,6 +97,7 @@ func (o *Organizer) log(unused int) {
 	o.eraseRightScreen()
 	//o.drawOrgAltRows2()
 	o.drawAltRows2()
+	o.clearMarkedEntries()
 	o.showOrgMessage("")
 }
 
