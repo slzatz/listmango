@@ -183,6 +183,11 @@ func (e *Editor) find_match_for_right_brace(right_brace byte, back bool) bool {
 
 func (e *Editor) draw_highlighted_braces() {
 
+	// this guard is necessary
+	if len(e.rows) == 0 || len(e.rows[e.fr]) == 0 {
+		return
+	}
+
 	braces := "{}()" //? intentionally exclusing [] from auto drawing
 	var c byte
 	var back bool
@@ -199,10 +204,12 @@ func (e *Editor) draw_highlighted_braces() {
 	if pos != -1 {
 		switch c {
 		case '{', '(':
-			e.redraw = e.find_match_for_left_brace(c, back)
+			//e.redraw = e.find_match_for_left_brace(c, back)
+			e.find_match_for_left_brace(c, back)
 			return
 		case '}', ')':
-			e.redraw = e.find_match_for_right_brace(c, back)
+			//e.redraw = e.find_match_for_right_brace(c, back)
+			e.find_match_for_right_brace(c, back)
 			return
 		//case '(':
 		default: //should not need this
@@ -214,21 +221,23 @@ func (e *Editor) draw_highlighted_braces() {
 		if pos != -1 {
 			switch e.rows[e.fr][e.fc-1] {
 			case '{', '(':
-				e.redraw = e.find_match_for_left_brace(c, true)
+				//e.redraw = e.find_match_for_left_brace(c, true)
+				e.find_match_for_left_brace(c, true)
 				return
 			case '}', ')':
-				e.redraw = e.find_match_for_right_brace(c, true)
+				//e.redraw = e.find_match_for_right_brace(c, true)
+				e.find_match_for_right_brace(c, true)
 				return
 			//case '(':
 			default: //should not need this
 				return
 			}
-		} else {
-			e.redraw = false
-		}
-	} else {
-		e.redraw = false
-	}
+		} //else {
+		//e.redraw = false
+		//}
+	} //else {
+	//e.redraw = false
+	//}
 }
 
 func (e *Editor) setLinesMargins() { //also sets top margin
@@ -497,58 +506,37 @@ func (e *Editor) getLineInRowWW(r, c int) int {
 }
 
 // if draw is false this only draws cursor
-func (e *Editor) refreshScreen(draw bool) {
+// looks like it doesn't need boolean
+//func (e *Editor) refreshScreen(draw bool) {
+func (e *Editor) refreshScreen() {
 	var ab strings.Builder
 	var tid int
 
-	if draw {
-		// \x1b[?25l hides cursor
-		fmt.Fprintf(&ab, "\x1b[?25l\x1b[%d;%dH", e.top_margin, e.left_margin+1)
-		// \x1b[NC moves cursor forward by N columns
-		lf_ret := fmt.Sprintf("\r\n\x1b[%dC", e.left_margin)
-		erase_chars := fmt.Sprintf("\x1b[%dX", e.screencols)
-		for i := 0; i < e.screenlines; i++ {
-			ab.WriteString(erase_chars)
-			ab.WriteString(lf_ret)
-		}
-
-		tid = getFolderTid(e.id)
-		if tid == 18 || tid == 14 { //&& !e.is_subeditor {
-			if e.is_subeditor {
-				e.drawRows(&ab) // doesn't use buffer; uses rows
-			} else {
-				e.drawCodeRows(&ab) //uaing pointer so drawing is smoother
-			}
+	//if draw {
+	// \x1b[?25l hides cursor
+	fmt.Fprintf(&ab, "\x1b[?25l\x1b[%d;%dH", e.top_margin, e.left_margin+1)
+	// \x1b[NC moves cursor forward by N columns
+	lf_ret := fmt.Sprintf("\r\n\x1b[%dC", e.left_margin)
+	erase_chars := fmt.Sprintf("\x1b[%dX", e.screencols)
+	for i := 0; i < e.screenlines; i++ {
+		ab.WriteString(erase_chars)
+		ab.WriteString(lf_ret)
+	}
+	tid = getFolderTid(e.id)
+	if tid == 18 || tid == 14 { //&& !e.is_subeditor {
+		if e.is_subeditor {
+			e.drawRows(&ab) // doesn't use buffer; uses rows
 		} else {
-			e.drawRows2(&ab) //2 -> uses nvim buffer
+			e.drawCodeRows(&ab) //uaing pointer so drawing is smoother
 		}
 		fmt.Print(ab.String())
-		e.drawStatusBar()
+		e.draw_highlighted_braces() //has to come after draw
+	} else {
+		e.drawRows2(&ab) //2 -> uses nvim buffer
+		fmt.Print(ab.String())
 	}
+	e.drawStatusBar()
 
-	// the lines below position the cursor where it should go
-	// ? if we're every in COMMAND_LINE when we are drawing rows??
-	//if e.mode != COMMAND_LINE {
-	if true {
-		fmt.Fprintf(&ab, "\x1b[%d;%dH", e.cy+e.top_margin, e.cx+e.left_margin+e.left_margin_offset+1)
-	}
-
-	if len(e.rows) == 0 || len(e.rows[e.fr]) == 0 {
-		return
-	}
-
-	if tid == 18 || tid == 14 { //&& !e.is_subeditor {
-		e.draw_highlighted_braces()
-	}
-	//fmt.Print(ab.String())
-	//if draw {
-	//	e.drawStatusBar()
-	//	}
-
-	/*
-	  // can't do the below until ab is written or will just overwite highlights
-	  if (draw && spellcheck) editorSpellCheck();
-	*/
 }
 
 func (e *Editor) drawRows(pab *strings.Builder) {
@@ -748,8 +736,9 @@ func (e *Editor) draw_visual(pab *strings.Builder) {
 }
 
 func (e *Editor) getLineCharCountWW(r, line int) int {
-	b, _ := v.BufferLines(0, r, r+1, true)
-	row := string(b[0])
+	//b, _ := v.BufferLines(0, r, r+1, true)
+	bb, _ := v.BufferLines(e.vbuf, r, r+1, true)
+	row := string(bb[0])
 	//row := e.rows[r]
 
 	if len(row) == 0 {
@@ -1133,36 +1122,13 @@ func (e *Editor) drawMessageBar() {
 	fmt.Print(ab.String())
 }
 
-func (e *Editor) scroll() bool {
+//func (e *Editor) scroll() bool {
+func (e *Editor) scroll() {
 
 	if e.fc == 0 && e.fr == 0 {
 		e.cy, e.cx, e.line_offset, e.prev_line_offset, e.first_visible_row, e.last_visible_row = 0, 0, 0, 0, 0, 0
-		return false // blocking issue with bb, err := v.BufferLines(0, 0, -1, true) in drawRows2
+		return //false // blocking issue with bb, err := v.BufferLines(0, 0, -1, true) in drawRows2
 	}
-
-	/*
-		if len(e.rows) == 0 {
-			e.fr, e.fc, e.cy, e.cx, e.line_offset, e.prev_line_offset, e.first_visible_row, e.last_visible_row = 0, 0, 0, 0, 0, 0, 0, 0
-			return true
-		}
-
-		if e.fr >= len(e.rows) {
-			e.fr = len(e.rows) - 1
-		}
-
-		row_size := len(e.rows[e.fr])
-		if e.fc >= row_size {
-			if e.mode != INSERT {
-				e.fc = row_size - 1
-			} else {
-				e.fc = row_size
-			}
-		}
-
-		if e.fc < 0 {
-			e.fc = 0
-		}
-	*/
 
 	e.cx = e.getScreenXFromRowColWW(e.fr, e.fc)
 	cy_ := e.getScreenYFromRowColWW(e.fr, e.fc)
@@ -1202,12 +1168,15 @@ func (e *Editor) scroll() bool {
 
 	// returns true if display needs to scroll and false if it doesn't
 	// could just be redraw = true or do nothing since don't want to override if already true.
-	if e.line_offset == e.prev_line_offset {
-		return false
-	} else {
-		e.prev_line_offset = e.line_offset
-		return true
-	}
+	/*
+		if e.line_offset == e.prev_line_offset {
+			return false
+		} else {
+			e.prev_line_offset = e.line_offset
+			return true
+		}
+	*/
+	e.prev_line_offset = e.line_offset
 }
 
 func (e *Editor) getInitialRow(line_offset int) (int, int) {
@@ -1263,6 +1232,6 @@ func (e *Editor) readFileIntoNote(filename string) error {
 
 	e.dirty++
 	//sess.editor_mode = true;
-	e.refreshScreen(true)
+	e.refreshScreen()
 	return nil
 }

@@ -388,7 +388,7 @@ func (s *Session) drawEditors() {
 	for _, e := range editors {
 		//for (size_t i=0, max=editors.size(); i!=max; ++i) {
 		//Editor *&e = editors.at(i);
-		e.refreshScreen(true)
+		e.refreshScreen()
 		ab.WriteString("\x1b(0") // Enter line drawing mode
 
 		for j := 1; j < e.screenlines+1; j++ {

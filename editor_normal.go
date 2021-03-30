@@ -41,8 +41,8 @@ func (e *Editor) changeSplit(flag int) {
 		e.screenlines = subnote_height
 		e.top_margin = sess.textLines - subnote_height + 2
 	}
-	le.refreshScreen(true)
-	e.refreshScreen(true)
+	le.refreshScreen()
+	e.refreshScreen()
 }
 
 func (e *Editor) moveOutputWindowRight() {

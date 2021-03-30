@@ -190,7 +190,7 @@ func (e *Editor) compile() {
 	e.linked_editor.last_visible_row = 0
 	// added 02092021
 
-	e.linked_editor.refreshScreen(true)
+	e.linked_editor.refreshScreen()
 }
 
 func (e *Editor) runLocal() {
@@ -269,7 +269,7 @@ func (e *Editor) runLocal() {
 	le.first_visible_row = 0
 	le.last_visible_row = 0
 
-	le.refreshScreen(true)
+	le.refreshScreen()
 	/*
 		e.linked_editor.fr = 0
 		e.linked_editor.fc = 0

@@ -49,7 +49,7 @@ func editorProcessKey(c int, messageBuf nvim.Buffer) bool { //bool returned is w
 	if c == '\x1b' {
 		_, err := v.Input("\x1b")
 		if err != nil {
-			fmt.Printf("Error input escape: %v\n", err)
+			sess.showEdMessage("Error input escape: %v", err)
 			return false
 		}
 		p.command = ""
@@ -101,7 +101,7 @@ func editorProcessKey(c int, messageBuf nvim.Buffer) bool { //bool returned is w
 		} else {
 			_, err := v.Input(string(c))
 			if err != nil {
-				fmt.Printf("%v\n", err)
+				sess.showEdMessage("Error in nvim.Input: %v", err)
 			}
 		}
 
@@ -123,7 +123,7 @@ func editorProcessKey(c int, messageBuf nvim.Buffer) bool { //bool returned is w
 			// in COMMAND_LINE mode
 			_, err := v.Input("\x1b")
 			if err != nil {
-				fmt.Printf("%v\n", err)
+				sess.showEdMessage("Error input escape: %v", err)
 			}
 			return false
 		}
@@ -293,7 +293,7 @@ func editorProcessKey(c int, messageBuf nvim.Buffer) bool { //bool returned is w
 			}
 			p.command_line = ""
 			p.mode = NORMAL
-			p.refreshScreen(true)
+			p.refreshScreen()
 			return true
 		}
 

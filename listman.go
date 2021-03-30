@@ -58,14 +58,11 @@ func highlightInfo_(v *nvim.Nvim) [2][4]int {
 	return z
 }
 
+/*
 func showMessage_(v *nvim.Nvim, buf nvim.Buffer) {
-	//currentBuf, _ := v.CurrentBuffer()
 	_ = v.SetCurrentBuffer(buf)
-	//_ = v.FeedKeys("\x1bgg\"apqaq", "t", false)
-	//_ = v.FeedKeys("\x1b\"apqaq\x1bi\r\x1b", "t", false)
 
 	_ = v.SetBufferLines(buf, 0, -1, true, [][]byte{})
-	//_ = v.FeedKeys("\x1bG\"apqaq", "t", false)
 	_ = v.FeedKeys("\x1b\"apqaq", "t", false)
 	bb, _ := v.BufferLines(buf, 0, -1, true)
 	var message string
@@ -80,14 +77,12 @@ func showMessage_(v *nvim.Nvim, buf nvim.Buffer) {
 	v.SetCurrentBuffer(p.vbuf)
 	currentBuf, _ := v.CurrentBuffer()
 	if message != "" {
-		//sess.showOrgMessage("len bb: %v; i: %v; message: %v", len(bb), i, message)
 		sess.showEdMessage("len bb: %v; i: %v; message: %v", len(bb), i, message)
 	} else {
-		//sess.showOrgMessage("No message, %v %v %v", sess.p.vbuf, buf, currentBuf)
-		//sess.showOrgMessage("No message: len bb %v; Current Buf %v", len(bb), currentBuf)
 		sess.showEdMessage("No message: len bb %v; Current Buf %v", len(bb), currentBuf)
 	}
 }
+*/
 
 func redirectMessages(v *nvim.Nvim) {
 	//_, err := v.Input("\x1b:redir >> listman_messages.txt")
@@ -302,9 +297,13 @@ func main() {
 				continue
 			}
 
-			scroll := p.scroll()
-			redraw := textChange || scroll || p.redraw
-			p.refreshScreen(redraw)
+			if textChange {
+				//scroll := p.scroll()
+				p.scroll()
+				//redraw := textChange || scroll || p.redraw
+				//p.refreshScreen(redraw)
+				p.refreshScreen()
+			}
 		} else {
 			organizerProcessKey(k)
 			org.scroll()
