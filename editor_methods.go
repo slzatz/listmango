@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"bytes"
 	"fmt"
 	"io"
 	"os"
@@ -735,7 +736,8 @@ func (e *Editor) drawRows2(pab *strings.Builder) {
 			break
 		}
 
-		row := string(p.bb[filerow])
+		//row := string(p.bb[filerow])
+		row := p.bb[filerow] // a []byte
 
 		if len(row) == 0 {
 			if y == e.screenlines-1 {
@@ -752,7 +754,8 @@ func (e *Editor) drawRows2(pab *strings.Builder) {
 		for {
 			/* this is needed because it deals where the end of the line doesn't have a space*/
 			if prev_pos+e.screencols-e.left_margin_offset > len(row)-1 { //? if need -1;cpp
-				(*pab).WriteString(row[prev_pos:])
+				//(*pab).WriteString(row[prev_pos:])
+				(*pab).Write(row[prev_pos:])
 				if y == e.screenlines-1 {
 					flag = true
 					break
@@ -763,13 +766,15 @@ func (e *Editor) drawRows2(pab *strings.Builder) {
 				break
 			}
 
-			pos = strings.LastIndex(row[:prev_pos+e.screencols-e.left_margin_offset], " ")
+			//pos = strings.LastIndex(row[:prev_pos+e.screencols-e.left_margin_offset], " ")
+			pos = bytes.LastIndex(row[:prev_pos+e.screencols-e.left_margin_offset], []byte(" "))
 
 			if pos == -1 || pos == prev_pos-1 {
 				pos = prev_pos + e.screencols - e.left_margin_offset - 1
 			}
 
-			(*pab).WriteString(row[prev_pos : pos+1]) //? pos+1
+			//(*pab).WriteString(row[prev_pos : pos+1]) //? pos+1
+			(*pab).Write(row[prev_pos : pos+1]) //? pos+1
 			if y == e.screenlines-1 {
 				flag = true
 				break
