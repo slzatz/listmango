@@ -1,7 +1,7 @@
 package main
 
 import (
-	"fmt"
+	//"fmt"
 	"github.com/neovim/go-client/nvim"
 	"strings"
 )
@@ -27,14 +27,14 @@ func highlightInfo(v *nvim.Nvim) [2][4]int {
 
 	err := v.Eval("getpos(\"'<\")", []*int{&bufnum, &lnum, &col, &off})
 	if err != nil {
-		fmt.Printf("getpos error: %v", err)
+		sess.showOrgMessage("getpos error: %v", err)
 	}
 	//fmt.Printf("beginning: bufnum = %v; lnum = %v; col = %v; off = %v\n", bufnum, lnum, col, off)
 	z[0] = [4]int{bufnum, lnum, col, off}
 
 	err = v.Eval("getpos(\"'>\")", []*int{&bufnum, &lnum, &col, &off})
 	if err != nil {
-		fmt.Printf("getpos error: %v\n", err)
+		sess.showOrgMessage("getpos error: %v", err)
 	}
 	//fmt.Printf("end: bufnum = %v; lnum = %v; col = %v; off = %v\n", bufnum, lnum, col, off)
 	z[1] = [4]int{bufnum, lnum, col, off}
@@ -42,8 +42,10 @@ func highlightInfo(v *nvim.Nvim) [2][4]int {
 	return z
 }
 
-func editorProcessKey(c int, messageBuf nvim.Buffer) bool { //bool returned is whether to redraw
+//func editorProcessKey(c int, messageBuf nvim.Buffer) bool { //bool returned is whether to redraw
+func editorProcessKey(c int) bool { //bool returned is whether to redraw
 	// editors are instantiated with sess.p.mode == NORMAL
+	//p.bufChanged = falsea //using mode = 'no' (operator-pending) instead
 
 	//No matter what mode you are in an escape puts you in NORMAL mode
 	if c == '\x1b' {
@@ -106,7 +108,7 @@ func editorProcessKey(c int, messageBuf nvim.Buffer) bool { //bool returned is w
 		}
 
 		mode, _ := v.Mode()
-		sess.showEdMessage("blocking = %t; mode = %v", mode.Blocking, mode.Mode) //debugging
+		sess.showEdMessage("blocking: %t; mode: %s; dirty: %d", mode.Blocking, mode.Mode, p.dirty) //debugging
 		//Example of input that blocks is entering a number (eg, 4x) in NORMAL mode
 		//If blocked true you can't retrieve buffer with v.BufferLines (app just locks up)
 		if mode.Blocking {
@@ -149,7 +151,7 @@ func editorProcessKey(c int, messageBuf nvim.Buffer) bool { //bool returned is w
 
 				_, err := v.Input("\x1b")
 				if err != nil {
-					fmt.Printf("%v\n", err)
+					sess.showEdMessage("%v", err)
 				}
 				p.command = ""
 				return true
@@ -157,11 +159,16 @@ func editorProcessKey(c int, messageBuf nvim.Buffer) bool { //bool returned is w
 		case VISUAL, VISUAL_LINE, VISUAL_BLOCK:
 			p.vb_highlight = highlightInfo(v)
 		}
-		p.rows = nil
-		bb, _ := v.BufferLines(p.vbuf, 0, -1, true)
-		for _, b := range bb {
-			p.rows = append(p.rows, string(b))
-		}
+
+		p.bb, _ = v.BufferLines(p.vbuf, 0, -1, true) //reading updated buffer
+
+		/*
+			p.rows = nil
+			for _, b := range p.bb {
+				p.rows = append(p.rows, string(b))
+			}
+		*/
+
 		pos, _ := v.WindowCursor(w) //set screen cx and cy from pos
 		p.fr = pos[0] - 1
 		p.fc = pos[1]
@@ -169,7 +176,14 @@ func editorProcessKey(c int, messageBuf nvim.Buffer) bool { //bool returned is w
 		if c == 'u' && p.mode == NORMAL {
 			showVimMessage()
 		}
-		return true
+
+		//showVimMessage() // doesn't work to show this all the time - ? why
+
+		if p.mode == PENDING { // -> operator pending (eg. typed 'd')
+			return false
+		} else {
+			return true
+		}
 	}
 
 	/************Everything below is for COMMAND_LINE**************/
@@ -282,7 +296,7 @@ func editorProcessKey(c int, messageBuf nvim.Buffer) bool { //bool returned is w
 			return false
 		} //end quit_cmds
 
-		if cmd == "s" { //switch bufferd
+		if cmd == "s" { //switch buffer
 			bufs, _ := v.Buffers()
 			if int(p.vbuf) == 2 {
 				_ = v.SetCurrentBuffer(bufs[len(bufs)-1])

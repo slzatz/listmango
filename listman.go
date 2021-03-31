@@ -36,54 +36,6 @@ var v *nvim.Nvim
 var w nvim.Window
 var messageBuf nvim.Buffer
 
-func highlightInfo_(v *nvim.Nvim) [2][4]int {
-	var bufnum, lnum, col, off int
-	var z [2][4]int
-	v.Input("\x1bgv") //I need to send this but may be a problem
-
-	err := v.Eval("getpos(\"'<\")", []*int{&bufnum, &lnum, &col, &off})
-	if err != nil {
-		fmt.Printf("getpos error: %v", err)
-	}
-	//fmt.Printf("beginning: bufnum = %v; lnum = %v; col = %v; off = %v\n", bufnum, lnum, col, off)
-	z[0] = [4]int{bufnum, lnum, col, off}
-
-	err = v.Eval("getpos(\"'>\")", []*int{&bufnum, &lnum, &col, &off})
-	if err != nil {
-		fmt.Printf("getpos error: %v\n", err)
-	}
-	//fmt.Printf("end: bufnum = %v; lnum = %v; col = %v; off = %v\n", bufnum, lnum, col, off)
-	z[1] = [4]int{bufnum, lnum, col, off}
-
-	return z
-}
-
-/*
-func showMessage_(v *nvim.Nvim, buf nvim.Buffer) {
-	_ = v.SetCurrentBuffer(buf)
-
-	_ = v.SetBufferLines(buf, 0, -1, true, [][]byte{})
-	_ = v.FeedKeys("\x1b\"apqaq", "t", false)
-	bb, _ := v.BufferLines(buf, 0, -1, true)
-	var message string
-	var i int
-	for i = len(bb) - 1; i >= 0; i-- {
-		message = string(bb[i])
-		if message != "" {
-			break
-		}
-	}
-	//_ = v.SetBufferLines(buf, 0, 0, true, [][]byte{})
-	v.SetCurrentBuffer(p.vbuf)
-	currentBuf, _ := v.CurrentBuffer()
-	if message != "" {
-		sess.showEdMessage("len bb: %v; i: %v; message: %v", len(bb), i, message)
-	} else {
-		sess.showEdMessage("No message: len bb %v; Current Buf %v", len(bb), currentBuf)
-	}
-}
-*/
-
 func redirectMessages(v *nvim.Nvim) {
 	//_, err := v.Input("\x1b:redir >> listman_messages.txt")
 	//err := v.FeedKeys("\x1b:redir >> listman_messages.txt\r", "t", false)
@@ -150,7 +102,6 @@ func main() {
 	w = wins[0]
 
 	redirectMessages(v)
-	//messageBuf, _ := v.CurrentBuffer()
 	messageBuf, _ = v.CreateBuffer(true, true)
 
 	////////////////////////////////////////////////
@@ -188,20 +139,23 @@ func main() {
 			//case c := <-changedtickChan:
 			//do nothing - these are not text changes
 			/*
-				for _, e := range sess.editors {
-					if c.Buffer == e.vbuf {
-						e.dirty++
-						break
+					for _, e := range sess.editors {
+						if c.Buffer == e.vbuf {
+							e.dirty++
+							break
+						}
 					}
-				}
+				case b := <-bufLinesChan:
+						for _, e := range editors { // why isn't this just p.dirty++??????
+							if b.Buffer == e.vbuf {
+								e.dirty++
+								break
+							}
+						}
 			*/
-			case b := <-bufLinesChan:
-				for _, e := range editors {
-					if b.Buffer == e.vbuf {
-						e.dirty++
-						break
-					}
-				}
+			case <-bufLinesChan:
+				p.dirty++
+				//p.bufChanged = true
 			case <-quit:
 				return
 
@@ -291,7 +245,8 @@ func main() {
 		}
 
 		if sess.editorMode {
-			textChange := editorProcessKey(k, messageBuf)
+			//textChange := editorProcessKey(k, messageBuf)
+			textChange := editorProcessKey(k)
 
 			if !sess.editorMode {
 				continue

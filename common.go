@@ -8,7 +8,8 @@ import (
 var z0 = struct{}{}
 
 var modeMap = map[string]Mode{
-	"n": NORMAL,
+	"n":  NORMAL,
+	"no": PENDING,
 	//"c":    COMMAND_LINE
 	//"R":    REPLACE
 	"i":    INSERT,
@@ -122,6 +123,7 @@ type Mode int
 
 const (
 	NORMAL Mode = iota
+	PENDING
 	INSERT
 	COMMAND_LINE
 	VISUAL_LINE // only editor mode

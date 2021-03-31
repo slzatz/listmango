@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"fmt"
 	"io"
-	"log"
 	"os"
 	"os/exec"
 	"strings"
@@ -38,7 +37,7 @@ func (e *Editor) find_match_for_left_brace(left_brace byte, back bool) bool {
 	r := e.fr
 	c := e.fc + 1
 	count := 1
-	max := len(e.rows)
+	max := len(e.bb)
 	var b int
 	if back {
 		b = 1
@@ -49,7 +48,8 @@ func (e *Editor) find_match_for_left_brace(left_brace byte, back bool) bool {
 
 	for {
 
-		row := e.rows[r]
+		//row := e.rows[r]
+		row := string(e.bb[r])
 
 		// need >= because brace could be at end of line and in INSERT mode
 		// fc could be row.size() [ie beyond the last char in the line
@@ -136,7 +136,8 @@ func (e *Editor) find_match_for_right_brace(right_brace byte, back bool) bool {
 	c := e.fc - 1 - b
 	count := 1
 
-	row := e.rows[r]
+	//row := e.rows[r]
+	row := string(e.bb[r])
 
 	m := map[byte]byte{'}': '{', ')': '(', ']': '['}
 	left_brace := m[right_brace]
@@ -149,7 +150,8 @@ func (e *Editor) find_match_for_right_brace(right_brace byte, back bool) bool {
 				sess.showEdMessage("Couldn't find matching brace")
 				return false
 			}
-			row = e.rows[r]
+			//row = e.rows[r]
+			row = string(e.bb[r])
 			c = len(row) - 1
 			continue
 		}
@@ -184,7 +186,7 @@ func (e *Editor) find_match_for_right_brace(right_brace byte, back bool) bool {
 func (e *Editor) draw_highlighted_braces() {
 
 	// this guard is necessary
-	if len(e.rows) == 0 || len(e.rows[e.fr]) == 0 {
+	if len(e.bb) == 0 || len(e.bb[e.fr]) == 0 {
 		return
 	}
 
@@ -193,11 +195,11 @@ func (e *Editor) draw_highlighted_braces() {
 	var back bool
 	//if below handles case when in insert mode and brace is last char
 	//in a row and cursor is beyond that last char (which is a brace)
-	if e.fc == len(e.rows[e.fr]) {
-		c = e.rows[e.fr][e.fc-1]
+	if e.fc == len(e.bb[e.fr]) {
+		c = e.bb[e.fr][e.fc-1]
 		back = true
 	} else {
-		c = e.rows[e.fr][e.fc]
+		c = e.bb[e.fr][e.fc]
 		back = false
 	}
 	pos := strings.Index(braces, string(c))
@@ -216,10 +218,10 @@ func (e *Editor) draw_highlighted_braces() {
 			return
 		}
 	} else if e.fc > 0 && e.mode == INSERT {
-		c := e.rows[e.fr][e.fc-1]
+		c := e.bb[e.fr][e.fc-1]
 		pos := strings.Index(braces, string(c))
 		if pos != -1 {
-			switch e.rows[e.fr][e.fc-1] {
+			switch e.bb[e.fr][e.fc-1] {
 			case '{', '(':
 				//e.redraw = e.find_match_for_left_brace(c, true)
 				e.find_match_for_left_brace(c, true)
@@ -266,107 +268,28 @@ func (e *Editor) setLinesMargins() { //also sets top margin
 	}
 }
 
-// normal mode 'e'
-func (e *Editor) moveEndWord_() {
-
-	if len(e.rows) == 0 {
-		return
-	}
-
-	if len(e.rows[e.fr]) == 0 || e.fc == len(e.rows[e.fr])-1 {
-		if e.fr+1 > len(e.rows)-1 {
-			return
-		}
-		e.fr++
-		e.fc = 0
-	} else {
-		e.fc++
-	}
-
-	r := e.fr
-	c := e.fc
-	var pos int
-	delimiters := " *%!^<>,.;?:()[]{}&#~'\""
-	delimiters_without_space := "*%!^<>,.;?:()[]{}&#~'\""
-
-	for {
-
-		if r > len(e.rows)-1 {
-			return
-		}
-
-		row := &e.rows[r]
-
-		if len(*row) == 0 {
-			r++
-			c = 0
-			continue
-		}
-
-		if strings.Index(delimiters, string((*row)[c])) == -1 {
-			if c == len(*row)-1 || strings.Index(delimiters, string((*row)[c+1])) != -1 {
-				e.fc = c
-				e.fr = r
-				return
-			}
-
-			pos = strings.IndexAny(string((*row)[c]), delimiters)
-			if pos == -1 {
-				e.fc = len(*row) - 1
-				return
-			} else {
-				e.fr = r
-				e.fc = pos - 1
-				return
-			}
-
-			// we started on punct or space
-		} else {
-			if (*row)[c] == ' ' {
-				if c == len(*row)-1 {
-					r++
-					c = 0
-					continue
-				} else {
-					c++
-					continue
-				}
-			} else {
-				pos = find_first_not_of(row, delimiters_without_space, c)
-				if pos != -1 {
-					e.fc = pos - 1
-					return
-				} else {
-					e.fc = len(*row) - 1
-					return
-				}
-			}
-		}
-	}
-}
-
 func (e *Editor) rowsToString() string {
 
-	numRows := len(e.rows)
-	if numRows == 0 {
+	numrows := len(e.bb)
+	if numrows == 0 {
 		return ""
 	}
 
 	var sb strings.Builder
-	for i := 0; i < numRows-1; i++ {
+	for i := 0; i < numrows-1; i++ {
 		sb.WriteString(e.rows[i] + "\n")
 	}
-	sb.WriteString(e.rows[numRows-1])
+	sb.WriteString(string(e.bb[numrows-1]))
 	return sb.String()
 }
 
 func (e *Editor) getScreenXFromRowColWW(r, c int) int {
 	// can't use reference to row because replacing blanks to handle corner case
-	//bb, _ := v.BufferLines(e.vbuf, 0, -1, true)
-	bb, _ := v.BufferLines(e.vbuf, r, r+1, true)
-	//sess.showOrgMessage("r = %d", r)
+	//bb, _ := v.bufferlines(e.vbuf, 0, -1, true)
+	//bb, _ := v.bufferlines(e.vbuf, r, r+1, true)
+	//sess.showorgmessage("r = %d", r)
 	//row := string(bb[r])
-	row := string(bb[0])
+	row := string(p.bb[r])
 
 	//row := e.rows[r]
 
@@ -422,7 +345,8 @@ func (e *Editor) getScreenYFromRowColWW(r, c int) int {
 }
 
 func (e *Editor) getLinesInRowWW(r int) int {
-	row := e.rows[r]
+	//row := e.rows[r]
+	row := string(e.bb[r])
 
 	if len(row) <= e.screencols-e.left_margin_offset {
 		return 1
@@ -459,7 +383,7 @@ func (e *Editor) getLinesInRowWW(r int) int {
 
 func (e *Editor) getLineInRowWW(r, c int) int {
 	// can't use reference to row because replacing blanks to handle corner case
-	row := e.rows[r]
+	row := string(e.bb[r])
 
 	if len(row) <= e.screencols-e.left_margin_offset {
 		return 1
@@ -505,17 +429,12 @@ func (e *Editor) getLineInRowWW(r, c int) int {
 	return lines
 }
 
-// if draw is false this only draws cursor
-// looks like it doesn't need boolean
-//func (e *Editor) refreshScreen(draw bool) {
 func (e *Editor) refreshScreen() {
 	var ab strings.Builder
 	var tid int
 
-	//if draw {
-	// \x1b[?25l hides cursor
 	fmt.Fprintf(&ab, "\x1b[?25l\x1b[%d;%dH", e.top_margin, e.left_margin+1)
-	// \x1b[NC moves cursor forward by N columns
+	// \x1b[NC moves cursor forward by n columns
 	lf_ret := fmt.Sprintf("\r\n\x1b[%dC", e.left_margin)
 	erase_chars := fmt.Sprintf("\x1b[%dX", e.screencols)
 	for i := 0; i < e.screenlines; i++ {
@@ -527,7 +446,7 @@ func (e *Editor) refreshScreen() {
 		if e.is_subeditor {
 			e.drawRows(&ab) // doesn't use buffer; uses rows
 		} else {
-			e.drawCodeRows(&ab) //uaing pointer so drawing is smoother
+			e.drawCodeRows(&ab) // indirectly uses nvim buffer
 		}
 		fmt.Print(ab.String())
 		e.draw_highlighted_braces() //has to come after draw
@@ -536,20 +455,20 @@ func (e *Editor) refreshScreen() {
 		fmt.Print(ab.String())
 	}
 	e.drawStatusBar()
-
 }
 
 func (e *Editor) drawRows(pab *strings.Builder) {
 
+	// we want e.rows here
 	if len(e.rows) == 0 {
 		return
 	}
-	//var ab strings.Builder
+	//var ab strings.builder
 
 	lf_ret := fmt.Sprintf("\r\n\x1b[%dC", e.left_margin)
 	(*pab).WriteString("\x1b[?25l") //hides the cursor
 
-	// format for positioning cursor is "\x1b[%d;%dH"
+	// format for positioning cursor is "\x1b[%d;%dh"
 	fmt.Fprintf(pab, "\x1b[%d;%dH", e.top_margin, e.left_margin+1)
 
 	y := 0
@@ -583,7 +502,7 @@ func (e *Editor) drawRows(pab *strings.Builder) {
 		prev_pos := 0 //except for start -> pos + 1
 		for {
 			/* this is needed because it deals where the end of the line doesn't have a space*/
-			if prev_pos+e.screencols-e.left_margin_offset > len(row)-1 { //? if need -1;cpp generateWWString had it
+			if prev_pos+e.screencols-e.left_margin_offset > len(row)-1 { //? if need -1;cpp generatewwstring had it
 				(*pab).WriteString(row[prev_pos:])
 				if y == e.screenlines-1 {
 					flag = true
@@ -623,15 +542,15 @@ func (e *Editor) draw_visual(pab *strings.Builder) {
 	lf_ret := fmt.Sprintf("\r\n\x1b[%dC", e.left_margin+e.left_margin_offset)
 
 	if e.mode == VISUAL_LINE {
-		startRow := e.vb_highlight[0][1] - 1 // I think better to subtract one here
-		endRow := e.vb_highlight[1][1] - 1   //ditto - done differently for VISUAL and V_BLOCK
+		startrow := e.vb_highlight[0][1] - 1 // i think better to subtract one here
+		endrow := e.vb_highlight[1][1] - 1   //ditto - done differently for visual and v_block
 
-		// \x1b[NC moves cursor forward by N columns
-		// snprintf(lf_ret, sizeof(lf_ret), "\r\n\x1b[%dC", left_margin + left_margin_offset);
+		// \x1b[nc moves cursor forward by n columns
+		// snprintf(lf_ret, sizeof(lf_ret), "\r\n\x1b[%dc", left_margin + left_margin_offset);
 
 		x := e.left_margin + e.left_margin_offset + 1
-		//int y = editorGetScreenYFromRowColWW(h_light[0], 0) + top_margin - line_offset;
-		y := e.getScreenYFromRowColWW(startRow, 0) - e.line_offset
+		//int y = editorgetscreenyfromrowcolww(h_light[0], 0) + top_margin - line_offset;
+		y := e.getScreenYFromRowColWW(startrow, 0) - e.line_offset
 
 		if y >= 0 {
 			fmt.Fprintf(pab, "\x1b[%d;%dH\x1b[48;5;244m", y+e.top_margin, x)
@@ -639,8 +558,8 @@ func (e *Editor) draw_visual(pab *strings.Builder) {
 			fmt.Fprintf(pab, "\x1b[%d;%dH\x1b[48;5;244m", e.top_margin, x)
 		}
 
-		for n := 0; n < (endRow - startRow + 1); n++ { //++n
-			row_num := startRow + n
+		for n := 0; n < (endrow - startrow + 1); n++ { //++n
+			row_num := startrow + n
 			pos := 0
 			for line := 1; line <= e.getLinesInRowWW(row_num); line++ { //++line
 				if y < 0 {
@@ -651,7 +570,7 @@ func (e *Editor) draw_visual(pab *strings.Builder) {
 					break //out for should be done (theoretically) - 1
 				}
 				line_char_count := e.getLineCharCountWW(row_num, line)
-				(*pab).WriteString(e.rows[row_num][pos : pos+line_char_count])
+				(*pab).WriteString(string(e.bb[row_num][pos : pos+line_char_count]))
 				(*pab).WriteString(lf_ret)
 				y += 1
 				pos += line_char_count
@@ -660,45 +579,45 @@ func (e *Editor) draw_visual(pab *strings.Builder) {
 	}
 
 	if e.mode == VISUAL {
-		startCol, endCol := e.vb_highlight[0][2], e.vb_highlight[1][2]
+		startcol, endcol := e.vb_highlight[0][2], e.vb_highlight[1][2]
 
-		// startRow always <= endRow and need to subtract 1 since counting starts at 1 not zero
-		startRow, endRow := e.vb_highlight[0][1]-1, e.vb_highlight[1][1]-1 //startRow always <= endRow
-		numRows := endRow - startRow + 1
+		// startrow always <= endrow and need to subtract 1 since counting starts at 1 not zero
+		startrow, endrow := e.vb_highlight[0][1]-1, e.vb_highlight[1][1]-1 //startrow always <= endrow
+		numrows := endrow - startrow + 1
 
-		x := e.getScreenXFromRowColWW(startRow, startCol) + e.left_margin + e.left_margin_offset
-		y := e.getScreenYFromRowColWW(startRow, startCol) + e.top_margin - e.line_offset // - 1
+		x := e.getScreenXFromRowColWW(startrow, startcol) + e.left_margin + e.left_margin_offset
+		y := e.getScreenYFromRowColWW(startrow, startcol) + e.top_margin - e.line_offset // - 1
 
 		(*pab).WriteString("\x1b[48;5;244m")
-		for n := 0; n < numRows; n++ {
-			// I think would check here to see if a row has multiple lines (ie wraps)
+		for n := 0; n < numrows; n++ {
+			// i think would check here to see if a row has multiple lines (ie wraps)
 			if n == 0 {
 				fmt.Fprintf(pab, "\x1b[%d;%dH", y+n, x)
 			} else {
 				fmt.Fprintf(pab, "\x1b[%d;%dH", y+n, 1+e.left_margin+e.left_margin_offset)
 			}
-			//row := e.rows[startRow+n-1]
-			row := e.rows[startRow+n]
+			//row := e.rows[startrow+n-1]
+			row := string(e.bb[startrow+n])
 			row_len := len(row)
 
 			if row_len == 0 { //|| row_len < left {
 				continue
 			}
-			if numRows == 1 {
-				(*pab).WriteString(row[startCol-1 : endCol])
+			if numrows == 1 {
+				(*pab).WriteString(row[startcol-1 : endcol])
 			} else if n == 0 {
-				(*pab).WriteString(row[startCol-1:])
-			} else if n < numRows-1 {
+				(*pab).WriteString(row[startcol-1:])
+			} else if n < numrows-1 {
 				(*pab).WriteString(row)
 			} else {
-				if len(row) < endCol {
+				if len(row) < endcol {
 					(*pab).WriteString(row)
 				} else {
-					(*pab).WriteString(row[:endCol])
+					(*pab).WriteString(row[:endcol])
 				}
 			}
-			//(*pab).WriteString(row[startCol-1:])
-			//sess.showEdMessage("%v; %v; %v; %v", startCol, endCol, startRow, endRow)
+			//(*pab).writestring(row[startcol-1:])
+			//sess.showedmessage("%v; %v; %v; %v", startcol, endcol, startrow, endrow)
 		}
 	}
 
@@ -717,7 +636,7 @@ func (e *Editor) draw_visual(pab *strings.Builder) {
 		(*pab).WriteString("\x1b[48;5;244m")
 		for n := 0; n < (e.vb_highlight[1][1] - e.vb_highlight[0][1] + 1); n++ {
 			fmt.Fprintf(pab, "\x1b[%d;%dH", y+n, x)
-			row := e.rows[e.vb_highlight[0][1]+n-1]
+			row := string(e.bb[e.vb_highlight[0][1]+n-1])
 			row_len := len(row)
 
 			if row_len == 0 || row_len < left {
@@ -736,9 +655,9 @@ func (e *Editor) draw_visual(pab *strings.Builder) {
 }
 
 func (e *Editor) getLineCharCountWW(r, line int) int {
-	//b, _ := v.BufferLines(0, r, r+1, true)
-	bb, _ := v.BufferLines(e.vbuf, r, r+1, true)
-	row := string(bb[0])
+	//b, _ := v.bufferlines(0, r, r+1, true)
+	//bb, _ := v.bufferlines(e.vbuf, r, r+1, true)
+	row := string(p.bb[r])
 	//row := e.rows[r]
 
 	if len(row) == 0 {
@@ -784,12 +703,13 @@ func (e *Editor) getLineCharCountWW(r, line int) int {
 
 // not in use -- was attempt to draw rows without e.rows just nvim buffer
 func (e *Editor) drawRows2(pab *strings.Builder) {
-	// v.BufferLines appears to die if in blocking mode
+	// v.bufferlines appears to die if in blocking mode
 	// so probably should protect it directly and not rely on redraw bool
-	// Also v.Bufferlines doesn't return an err when in blocking mode - just dies so checking for err not useful
-	bb, _ := v.BufferLines(e.vbuf, 0, -1, true)
+	// also v.bufferlines doesn't return an err when in blocking mode - just dies so checking for err not useful
+	//bb, _ := v.bufferlines(e.vbuf, 0, -1, true)
 
-	if len(bb) == 0 {
+	numlines := len(p.bb)
+	if numlines == 0 {
 		return
 	}
 
@@ -810,12 +730,12 @@ func (e *Editor) drawRows2(pab *strings.Builder) {
 			break
 		}
 
-		if filerow == len(bb) {
+		if filerow == numlines {
 			e.last_visible_row = filerow - 1
 			break
 		}
 
-		row := string(bb[filerow])
+		row := string(p.bb[filerow])
 
 		if len(row) == 0 {
 			if y == e.screenlines-1 {
@@ -879,9 +799,9 @@ func (e *Editor) drawCodeRows(pab *strings.Builder) {
 		sess.showEdMessage("Error writing code_file: %v", err)
 		return
 	}
-	//f.Close()
+	//f.close()
 
-	//var ab strings.Builder
+	//var ab strings.builder
 
 	var syntax string
 	if getFolderTid(e.id) == 18 {
@@ -892,19 +812,19 @@ func (e *Editor) drawCodeRows(pab *strings.Builder) {
 	cmd := exec.Command("highlight", "code_file", "--out-format=xterm256", "--style=gruvbox-dark-hard-slz", syntax)
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
-		log.Fatal(err)
+		sess.showEdMessage("Error creating pipe for highlighting file: %v", err)
 	}
 
 	err = cmd.Start()
 	if err != nil {
-		log.Fatal(err)
+		sess.showEdMessage("Error highlighting file: %v", err)
 	}
 	buffer := bufio.NewReader(stdout)
 
-	/* alternative is to use a Scanner
-	scanner := bufio.NewScanner(stdout)
-	for scanner.Scan() {
-	 z = scanner.Text()
+	/* alternative is to use a scanner
+	scanner := bufio.newscanner(stdout)
+	for scanner.scan() {
+	 z = scanner.text()
 	*/
 
 	lf_ret := fmt.Sprintf("\r\n\x1b[%dC", e.left_margin)
@@ -914,7 +834,7 @@ func (e *Editor) drawCodeRows(pab *strings.Builder) {
 	fmt.Fprintf(pab, "\x1b[2*x\x1b[%d;%d;%d;%d;48;5;235$r\x1b[*x",
 		e.top_margin, e.left_margin, e.top_margin+e.screenlines, e.left_margin+e.left_margin_offset)
 	n := 0
-	//func (b *Reader) ReadLine() (line []byte, isPrefix bool, err)
+	//func (b *reader) readline() (line []byte, isprefix bool, err)
 	for {
 		bytes, _, err := buffer.ReadLine()
 		if err == io.EOF {
@@ -937,15 +857,16 @@ func (e *Editor) drawCodeRows(pab *strings.Builder) {
 
 /* below exists to create a text file that has the proper
  * line breaks based on screen width for syntax highlighters
- * that are utilized by drawCodeRows
- * Produces a text string that starts at the first line of the
+ * that are utilized by drawcoderows
+ * produces a text string that starts at the first line of the
  * file (need to deal with comments where start of comment might be scrolled
- * and ends on the last visible linei. Also multilines are indicated by \t
- * so highlighter deals with them correctly and converted to \n in drawCodeRows
- * Only used by editorDrawCodeRows
+ * and ends on the last visible linei. also multilines are indicated by \t
+ * so highlighter deals with them correctly and converted to \n in drawcoderows
+ * only used by editordrawcoderows
  */
 func (e *Editor) generateWWString() string {
-	if len(e.rows) == 0 {
+	numRows := len(e.bb)
+	if numRows == 0 {
 		return ""
 	}
 
@@ -954,14 +875,14 @@ func (e *Editor) generateWWString() string {
 	filerow := 0
 
 	for {
-		if filerow == len(e.rows) {
+		if filerow == numRows {
 			e.last_visible_row = filerow - 1
 			return ab.String()
 		}
 
 		//char ret = '\n';
 		ret := "\t"
-		row := e.rows[filerow]
+		row := string(e.bb[filerow])
 		// if you put a \n in the middle of a comment the wrapped portion won't be italic
 		//if (row.find("//") != std::string::npos) ret = '\t';
 		//ret = '\t';
@@ -1013,8 +934,8 @@ func (e *Editor) generateWWString() string {
 
 func (e *Editor) generateWWStringFromBuffer() string {
 
-	bb, _ := v.BufferLines(e.vbuf, 0, -1, true)
-	numLines := len(bb)
+	//bb, _ := v.BufferLines(e.vbuf, 0, -1, true)
+	numLines := len(p.bb)
 	if numLines == 0 {
 		return ""
 	}
@@ -1030,7 +951,7 @@ func (e *Editor) generateWWStringFromBuffer() string {
 
 		//char ret = '\n';
 		ret := "\t"
-		row := string(bb[filerow])
+		row := string(p.bb[filerow])
 		// if you put a \n in the middle of a comment the wrapped portion won't be italic
 		//if (row.find("//") != std::string::npos) ret = '\t';
 		//ret = '\t';
@@ -1214,18 +1135,25 @@ func (e *Editor) readFileIntoNote(filename string) error {
 
 	r, err := os.Open(filename)
 	if err != nil {
-		return fmt.Errorf("error opening file %s: %w", filename, err)
+		return fmt.Errorf("Error opening file %s: %w", filename, err)
 	}
 	defer r.Close()
 
-	e.rows = nil
+	/*
+		e.rows = nil
+		scanner := bufio.NewScanner(r)
+		for scanner.Scan() {
+			e.rows = append(e.rows, strings.ReplaceAll(scanner.Text(), "\t", " "))
+		}
+	*/
+	e.bb = nil
 	scanner := bufio.NewScanner(r)
 	for scanner.Scan() {
-		e.rows = append(e.rows, strings.ReplaceAll(scanner.Text(), "\t", " "))
+		e.bb = append(e.bb, scanner.Bytes()) // not dealing with tabs for the moment
 	}
 
 	if err := scanner.Err(); err != nil {
-		return fmt.Errorf("error reading file %s: %w", filename, err)
+		return fmt.Errorf("Error reading file %q: %v", filename, err)
 	}
 
 	e.fr, e.fc, e.cy, e.cx, e.line_offset, e.prev_line_offset, e.first_visible_row, e.last_visible_row = 0, 0, 0, 0, 0, 0, 0, 0

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"database/sql"
 	"fmt"
 	_ "github.com/mattn/go-sqlite3"
@@ -510,13 +511,17 @@ func readNoteIntoEditor(id int) {
 
 	// there should not be "\r" in notes
 	//note = strings.ReplaceAll(note, "\r", "")
-	p.rows = strings.Split(note, "\n")
+	//p.rows = strings.Split(note, "\n") //////////////////////////////////////////////////////////////
+	p.bb = bytes.Split([]byte(note), []byte("\n")) // yes, you need to do it this way
 
 	// send note to nvim
-	var bb [][]byte
-	for _, s := range p.rows {
-		bb = append(bb, []byte(s))
-	}
+	/*
+		//var bb [][]byte
+		for _, s := range p.rows {
+			p.bb = append(p.bb, []byte(s))
+		}
+	*/
+
 	//func (v *Nvim) CreateBuffer(listed bool, scratch bool) (buffer Buffer, err error) {
 	//sess.p.vbuf, err = v.CreateBuffer(true, false)
 	p.vbuf, err = v.CreateBuffer(true, true)
@@ -529,7 +534,7 @@ func readNoteIntoEditor(id int) {
 	} else {
 		sess.showOrgMessage("%v", p.vbuf)
 	}
-	v.SetBufferLines(p.vbuf, 0, -1, true, bb)
+	v.SetBufferLines(p.vbuf, 0, -1, true, p.bb)
 
 }
 
