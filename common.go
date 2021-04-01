@@ -56,6 +56,18 @@ func truncate(s string, length int) string {
 	}
 }
 
+func tc(s string, l int, b bool) string {
+	if len(s) > l {
+		e := ""
+		if b {
+			e = "..."
+		}
+		return s[:l] + e
+	} else {
+		return s
+	}
+}
+
 type Row struct {
 	id        int
 	title     string

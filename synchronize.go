@@ -314,7 +314,7 @@ func synchronize(reportOnly bool) {
 	}
 	//sess.showEdMessage("Number of changes that server needs to transmit to client: %v", len(server_updated_entries))
 	for _, e := range server_updated_entries {
-		fmt.Fprintf(&lg, "id: %d; title: %q; star: %t; modified; %v\n", e.id, truncate(e.title, 15), e.star, e.modified)
+		fmt.Fprintf(&lg, "id: %d %q; star: %t; modified: %v\n", e.id, truncate(e.title, 15), e.star, tc(e.modified, 18, false))
 	}
 
 	//server deleted entries
@@ -520,7 +520,7 @@ func synchronize(reportOnly bool) {
 	}
 	//sess.showEdMessage("Number of changes that client needs to transmit to client: %v", len(client_updated_entries))
 	for _, e := range client_updated_entries {
-		fmt.Fprintf(&lg, "id: %d; tid: %d; title: %q; star: %t; modified; %v\n", e.id, e.tid, truncate(e.title, 15), e.star, e.modified)
+		fmt.Fprintf(&lg, "id: %d; tid: %d %q; star: %t; modified: %v\n", e.id, e.tid, tc(e.title, 15, true), e.star, tc(e.modified, 18, false))
 	}
 
 	//client deleted entries
@@ -543,7 +543,6 @@ func synchronize(reportOnly bool) {
 		} else {
 			e.tid = 0
 		}
-		//fmt.Printf("%v\n", e)
 		client_deleted_entries = append(client_deleted_entries, e)
 	}
 	if len(client_deleted_entries) > 0 {
@@ -887,7 +886,7 @@ func synchronize(reportOnly bool) {
 	for _, e := range server_deleted_entries {
 		_, err := db.Exec("DELETE FROM task WHERE tid=?;", e.id)
 		if err != nil {
-			fmt.Fprintf(&lg, "Error deleting local entry with tid %d: %v\n", e.id, err)
+			fmt.Fprintf(&lg, "Error deleting client entry %q with tid %d: %v\n", tc(e.title, 15, true), e.id, err)
 			continue
 		}
 		fmt.Fprintf(&lg, "Deleted client entry %q with tid %d\n", truncate(e.title, 15), e.id)
@@ -898,7 +897,7 @@ func synchronize(reportOnly bool) {
 		// since on server, we just set deleted to true
 		// since may have to sync with other clients
 		if e.tid == 0 {
-			fmt.Fprintf(&lg, "There is no server entry to delete for client id %d", e.id)
+			fmt.Fprintf(&lg, "There is no server entry to delete for client id %d\n", e.id)
 			continue
 		}
 
@@ -908,6 +907,12 @@ func synchronize(reportOnly bool) {
 			continue
 		}
 		fmt.Fprintf(&lg, "Updated server entry %q with id %d to deleted = true\n", truncate(e.title, 15), e.tid)
+		_, err = db.Exec("DELETE FROM task WHERE id=?", e.id)
+		if err != nil {
+			fmt.Fprintf(&lg, "Error deleting client entry %q with id %d: %v\n", tc(e.title, 15, true), e.id, err)
+			continue
+		}
+		fmt.Fprintf(&lg, "Deleted client entry %q with id %d\n", tc(e.title, 15, true), e.id)
 	}
 
 	//server_deleted_contexts
