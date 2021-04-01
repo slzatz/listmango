@@ -280,7 +280,7 @@ func (e *Editor) bufferToString() string {
 }
 
 func (e *Editor) getScreenXFromRowColWW(r, c int) int {
-	row := p.bb[r]
+	row := e.bb[r]
 
 	/* pos is the position of the last char in the line
 	 * and pos+1 is the position of first character of the next row
@@ -588,8 +588,6 @@ func (e *Editor) draw_visual(pab *strings.Builder) {
 			} else {
 				fmt.Fprintf(pab, "\x1b[%d;%dH", y+n, 1+e.left_margin+e.left_margin_offset)
 			}
-			//row := e.rows[startRow+n-1]
-			//row := string(e.bb[startRow+n])
 			row := e.bb[startRow+n]
 
 			if len(row) == 0 { //|| row_len < left {
@@ -647,10 +645,7 @@ func (e *Editor) draw_visual(pab *strings.Builder) {
 }
 
 func (e *Editor) getLineCharCountWW(r, line int) int {
-	//b, _ := v.bufferlines(0, r, r+1, true)
-	//bb, _ := v.bufferlines(e.vbuf, r, r+1, true)
-	row := string(p.bb[r])
-	//row := e.rows[r]
+	row := e.bb[r]
 
 	if len(row) == 0 {
 		return 0
@@ -660,7 +655,7 @@ func (e *Editor) getLineCharCountWW(r, line int) int {
 		return len(row)
 	}
 
-	lines := 0 //1
+	lines := 0
 	pos := -1
 	prev_pos := 0
 	for {
@@ -672,7 +667,7 @@ func (e *Editor) getLineCharCountWW(r, line int) int {
 		}
 
 		prev_pos = pos
-		pos = strings.LastIndex(row[:pos+e.screencols-e.left_margin_offset], " ")
+		pos = bytes.LastIndex(row[:pos+e.screencols-e.left_margin_offset], []byte(" "))
 
 		if pos == -1 {
 			pos = prev_pos + e.screencols - e.left_margin_offset
@@ -681,7 +676,8 @@ func (e *Editor) getLineCharCountWW(r, line int) int {
 			// need to start at the beginning each time you hit this
 			// unless you want to save the position which doesn't seem worth it
 		} else if pos == prev_pos {
-			row = strings.ReplaceAll(row[:pos+1], " ", "+") + row[pos+1:]
+			row = bytes.ReplaceAll(row[:pos+1], []byte(" "), []byte("+")) // + row[pos+1:]
+			row = append(row, row[pos+1:]...)
 			pos = prev_pos + e.screencols - e.left_margin_offset
 		}
 
@@ -695,13 +691,9 @@ func (e *Editor) getLineCharCountWW(r, line int) int {
 
 // not in use -- was attempt to draw rows without e.rows just nvim buffer
 func (e *Editor) drawBuffer(pab *strings.Builder) {
-	// v.bufferlines appears to die if in blocking mode
-	// so probably should protect it directly and not rely on redraw bool
-	// also v.bufferlines doesn't return an err when in blocking mode - just dies so checking for err not useful
-	//bb, _ := v.bufferlines(e.vbuf, 0, -1, true)
 
-	numlines := len(p.bb)
-	if numlines == 0 {
+	numLines := len(e.bb)
+	if numLines == 0 {
 		return
 	}
 
@@ -709,7 +701,7 @@ func (e *Editor) drawBuffer(pab *strings.Builder) {
 	// hides the cursor
 	pab.WriteString("\x1b[?25l") //hides the cursor
 
-	// position the cursor"
+	// position the cursor
 	fmt.Fprintf(pab, "\x1b[%d;%dH", e.top_margin, e.left_margin+1)
 
 	y := 0
@@ -722,13 +714,12 @@ func (e *Editor) drawBuffer(pab *strings.Builder) {
 			break
 		}
 
-		if filerow == numlines {
+		if filerow == numLines {
 			e.last_visible_row = filerow - 1
 			break
 		}
 
-		//row := string(p.bb[filerow])
-		row := p.bb[filerow] // a []byte
+		row := e.bb[filerow]
 
 		if len(row) == 0 {
 			if y == e.screenlines-1 {
@@ -792,9 +783,6 @@ func (e *Editor) drawCodeRows(pab *strings.Builder) {
 		sess.showEdMessage("Error writing code_file: %v", err)
 		return
 	}
-	//f.close()
-
-	//var ab strings.builder
 
 	var syntax string
 	if getFolderTid(e.id) == 18 {
@@ -873,11 +861,9 @@ func (e *Editor) generateWWStringFromBuffer() string {
 			return ab.String()
 		}
 
-		//char ret = '\n';
-		//ret := "\t"
 		ret := []byte("\t")
-		//row := string(e.bb[filerow])
 		row := e.bb[filerow]
+
 		// if you put a \n in the middle of a comment the wrapped portion won't be italic
 		//if (row.find("//") != std::string::npos) ret = '\t';
 		//ret = '\t';
@@ -933,7 +919,6 @@ func (e *Editor) drawStatusBar() {
 	fmt.Fprintf(&ab, "\x1b[%d;%dH", e.screenlines+e.top_margin, e.left_margin+1)
 
 	//erase from start of an Editor's status bar to the end of the Editor's status bar
-	//ab.append("\x1b[K"); //erases from cursor to end of screen on right - not what we want
 	fmt.Fprintf(&ab, "\x1b[%dX", e.screencols)
 
 	ab.WriteString("\x1b[7m ") //switches to inverted colors
@@ -966,29 +951,16 @@ func (e *Editor) scroll() {
 	}
 
 	e.cx = e.getScreenXFromRowColWW(e.fr, e.fc)
-	cy_ := e.getScreenYFromRowColWW(e.fr, e.fc)
-
-	//my guess is that if you wanted to adjust line_offset to take into account that you wanted
-	// to only have full rows at the top (easier for drawing code) you would do it here.
-	// something like screenlines goes from 4 to 5 so that adjusts cy
-	// it's complicated and may not be worth it.
+	cy := e.getScreenYFromRowColWW(e.fr, e.fc)
 
 	//deal with scroll insufficient to include the current line
-	if cy_ > e.screenlines+e.line_offset-1 {
-		e.line_offset = cy_ - e.screenlines + 1 ////
+	if cy > e.screenlines+e.line_offset-1 {
+		e.line_offset = cy - e.screenlines + 1 ////
 		e.first_visible_row, e.line_offset = e.getInitialRow(e.line_offset)
 	}
 
-	//let's check if the current line_offset is causing there to be an incomplete row at the top
-
-	// this may further increase line_offset so we can start
-	// at the top with the first line of some row
-	// and not start mid-row which complicates drawing the rows
-
-	//deal with scrol where current line wouldn't be visible because we're scrolled too far
-	if cy_ < e.line_offset {
-		e.line_offset = cy_
-		//e.first_visible_row = e.getInitialRow(e.line_offset, SCROLL_UP); ????????????????????????????? 2 getInitialRow
+	if cy < e.line_offset {
+		e.line_offset = cy
 		e.first_visible_row, e.line_offset = e.getInitialRow(e.line_offset)
 	}
 
@@ -996,21 +968,7 @@ func (e *Editor) scroll() {
 		e.first_visible_row = 0
 	}
 
-	e.cy = cy_ - e.line_offset
-
-	// vim seems to want full rows to be displayed although I am not sure
-	// it's either helpful or worth it but this is a placeholder for the idea
-
-	// returns true if display needs to scroll and false if it doesn't
-	// could just be redraw = true or do nothing since don't want to override if already true.
-	/*
-		if e.line_offset == e.prev_line_offset {
-			return false
-		} else {
-			e.prev_line_offset = e.line_offset
-			return true
-		}
-	*/
+	e.cy = cy - e.line_offset
 	e.prev_line_offset = e.line_offset
 }
 
@@ -1073,7 +1031,6 @@ func (e *Editor) readFileIntoNote(filename string) error {
 	e.fr, e.fc, e.cy, e.cx, e.line_offset, e.prev_line_offset, e.first_visible_row, e.last_visible_row = 0, 0, 0, 0, 0, 0, 0, 0
 
 	e.dirty++
-	//sess.editor_mode = true;
 	e.refreshScreen()
 	return nil
 }

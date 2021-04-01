@@ -180,8 +180,6 @@ func (e *Editor) compile() {
 	le := e.linked_editor
 	le.fr = 0
 	le.fc = 0
-
-	// added 02092021
 	le.cy = 0
 	le.cx = 0
 	le.line_offset = 0
@@ -258,8 +256,6 @@ func (e *Editor) runLocal() {
 	le := e.linked_editor
 	le.fr = 0
 	le.fc = 0
-
-	// added 02092021
 	le.cy = 0
 	le.cx = 0
 	le.line_offset = 0
@@ -267,22 +263,7 @@ func (e *Editor) runLocal() {
 	le.first_visible_row = 0
 	le.last_visible_row = 0
 
-	//le.refreshScreen()
 	le.drawOutputWinText(rows)
-	/*
-		e.linked_editor.fr = 0
-		e.linked_editor.fc = 0
-
-		// added 02092021
-		e.linked_editor.cy = 0
-		e.linked_editor.cx = 0
-		e.linked_editor.line_offset = 0
-		e.linked_editor.prev_line_offset = 0
-		e.linked_editor.first_visible_row = 0
-		e.linked_editor.last_visible_row = 0
-
-		e.linked_editor.refreshScreen(true)
-	*/
 }
 
 func (e *Editor) sync() {
