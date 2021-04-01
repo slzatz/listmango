@@ -76,7 +76,7 @@ func (e *Editor) writeNote() {
 
 	folder_tid := getFolderTid(e.id)
 	if folder_tid == 18 || folder_tid == 14 {
-		e.code = e.rowsToString()
+		e.code = e.bufferToString()
 		updateCodeFile()
 	}
 	/*

@@ -161,15 +161,7 @@ func editorProcessKey(c int) bool { //bool returned is whether to redraw
 		}
 
 		p.bb, _ = v.BufferLines(p.vbuf, 0, -1, true) //reading updated buffer
-
-		/*
-			p.rows = nil
-			for _, b := range p.bb {
-				p.rows = append(p.rows, string(b))
-			}
-		*/
-
-		pos, _ := v.WindowCursor(w) //set screen cx and cy from pos
+		pos, _ := v.WindowCursor(w)                  //set screen cx and cy from pos
 		p.fr = pos[0] - 1
 		p.fc = pos[1]
 

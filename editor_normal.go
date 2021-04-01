@@ -215,7 +215,7 @@ func (e *Editor) decorateWord(c int) {
 		return
 	}
 
-	//row := e.rows[e.fr]
+	// here probably easier to convert to string
 	row := string(e.bb[e.fr])
 	if row[e.fc] == ' ' {
 		return
@@ -266,7 +266,6 @@ func (e *Editor) decorateWord(c int) {
 		}
 	}
 	if undo {
-		//e.rows[e.fr] = row
 		v.SetBufferLines(e.vbuf, e.fr, e.fr+1, false, [][]byte{})          //true - out of bounds indexes are not clamped
 		v.SetBufferLines(e.vbuf, e.fr, e.fr, false, [][]byte{[]byte(row)}) //true - out of bounds indexes are not clamped
 		v.SetWindowCursor(w, [2]int{e.fr + 1, e.fc})                       //set screen cx and cy from pos
@@ -290,7 +289,6 @@ func (e *Editor) decorateWord(c int) {
 		e.fc++
 	}
 
-	//e.rows[e.fr] = row
 	v.SetBufferLines(e.vbuf, e.fr, e.fr+1, false, [][]byte{})          //true - out of bounds indexes are not clamped
 	v.SetBufferLines(e.vbuf, e.fr, e.fr, false, [][]byte{[]byte(row)}) //true - out of bounds indexes are not clamped
 	v.SetWindowCursor(w, [2]int{e.fr + 1, e.fc})                       //set screen cx and cy from pos

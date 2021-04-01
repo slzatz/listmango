@@ -209,7 +209,7 @@ func updateTaskFolder(new_folder string, id int) {
 
 func updateNote() {
 
-	text := p.rowsToString()
+	text := p.bufferToString()
 
 	_, err := db.Exec("UPDATE task SET note=?, modified=datetime('now') WHERE id=?;",
 		text, p.id)
@@ -509,21 +509,9 @@ func readNoteIntoEditor(id int) {
 		return
 	}
 
-	// there should not be "\r" in notes
-	//note = strings.ReplaceAll(note, "\r", "")
-	//p.rows = strings.Split(note, "\n") //////////////////////////////////////////////////////////////
 	p.bb = bytes.Split([]byte(note), []byte("\n")) // yes, you need to do it this way
 
-	// send note to nvim
-	/*
-		//var bb [][]byte
-		for _, s := range p.rows {
-			p.bb = append(p.bb, []byte(s))
-		}
-	*/
-
 	//func (v *Nvim) CreateBuffer(listed bool, scratch bool) (buffer Buffer, err error) {
-	//sess.p.vbuf, err = v.CreateBuffer(true, false)
 	p.vbuf, err = v.CreateBuffer(true, true)
 	if err != nil {
 		sess.showOrgMessage("%v", err)
