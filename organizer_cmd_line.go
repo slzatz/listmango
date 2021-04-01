@@ -271,7 +271,7 @@ func (o *Organizer) editNote(id int) {
 			p.linked_editor.is_subeditor = true
 			p.linked_editor.is_below = true
 			p.linked_editor.linked_editor = p
-			p.linked_editor.rows = []string{" "}
+			//p.linked_editor.rows = []string{" "}
 			p.left_margin_offset = LEFT_MARGIN_OFFSET
 		}
 		readNoteIntoEditor(id)

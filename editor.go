@@ -15,14 +15,14 @@ type Editor struct {
 	left_margin        int //can vary (so could TOP_MARGIN - will do that later
 	left_margin_offset int // 0 if no line numbers
 	top_margin         int
-	rows               []string
-	code               string //used by lsp thread and intended to avoid unnecessary calls to editorRowsToString
-	dirty              int64  //file changes since last save
-	vb_highlight       [2][4]int
-	mode               Mode
-	command_line       string //for commands on the command line; string doesn't include ':'
-	command            string // right now includes normal mode commands and command line commands
-	last_command       string
+	//rows               []string
+	code         string //used by lsp thread and intended to avoid unnecessary calls to editorRowsToString
+	dirty        int64  //file changes since last save
+	vb_highlight [2][4]int
+	mode         Mode
+	command_line string //for commands on the command line; string doesn't include ':'
+	command      string // right now includes normal mode commands and command line commands
+	last_command string
 	/*
 		repeat             int
 		last_repeat        int
@@ -38,9 +38,9 @@ type Editor struct {
 	highlight_syntax    bool
 	redraw              bool
 	pos_mispelled_words [][2]int
-	message             string //status msg is a character array max 80 char
-	string_buffer       string //yanking chars
-	line_buffer         []string
+	//message             string //status msg is a character array max 80 char
+	//string_buffer       string //yanking chars
+	//line_buffer         []string
 	//static int total_screenlines; //total screenlines available to Editors vertically
 	//static int origin; //x column of Editor section
 	search_string string //word under cursor works with *, n, N etc.
@@ -60,17 +60,17 @@ type Editor struct {
 
 func NewEditor() *Editor {
 	return &Editor{
-		cx:               0,  //actual cursor x position (takes into account any scroll/offset)
-		cy:               0,  //actual cursor y position ""
-		fc:               0,  //'file' x position as defined by reading sqlite text into rows vector
-		fr:               0,  //'file' y position ""
-		line_offset:      0,  //the number of lines of text at the top scrolled off the screen
-		prev_line_offset: 0,  //the prev number of lines of text at the top scrolled off the screen
-		dirty:            0,  //has filed changed since last save
-		message:          "", //very bottom of screen, ex. -- INSERT --
-		mode:             0,  //0=normal, 1=insert, 2=command line, 3=visual line, 4=visual, 5='r'
-		command:          "",
-		command_line:     "",
+		cx:               0, //actual cursor x position (takes into account any scroll/offset)
+		cy:               0, //actual cursor y position ""
+		fc:               0, //'file' x position as defined by reading sqlite text into rows vector
+		fr:               0, //'file' y position ""
+		line_offset:      0, //the number of lines of text at the top scrolled off the screen
+		prev_line_offset: 0, //the prev number of lines of text at the top scrolled off the screen
+		dirty:            0, //has filed changed since last save
+		//message:          "", //very bottom of screen, ex. -- INSERT --
+		mode:         0, //0=normal, 1=insert, 2=command line, 3=visual line, 4=visual, 5='r'
+		command:      "",
+		command_line: "",
 		/*
 			repeat:            0, //number of times to repeat commands like x,s,yy also used for visual line mode x,y
 			indent:            4,

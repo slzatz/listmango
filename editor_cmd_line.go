@@ -153,16 +153,15 @@ func (e *Editor) compile() {
 	buffer_out := bufio.NewReader(stdout)
 	buffer_err := bufio.NewReader(stderr)
 
-	rows := &e.linked_editor.rows
-	*rows = nil
-	*rows = append(*rows, "------------------------")
+	var rows []string
+	rows = append(rows, "------------------------")
 
 	for {
 		bytes, _, err := buffer_out.ReadLine()
 		if err == io.EOF {
 			break
 		}
-		*rows = append(*rows, string(bytes))
+		rows = append(rows, string(bytes))
 	}
 
 	for {
@@ -170,27 +169,27 @@ func (e *Editor) compile() {
 		if err == io.EOF {
 			break
 		}
-		*rows = append(*rows, string(bytes))
+		rows = append(rows, string(bytes))
 	}
-	if len(*rows) == 1 {
-		*rows = append(*rows, "The code compiled successfully")
+	if len(rows) == 1 {
+		rows = append(rows, "The code compiled successfully")
 	}
 
-	*rows = append(*rows, "------------------------")
+	rows = append(rows, "------------------------")
 
-	e.linked_editor.fr = 0
-	e.linked_editor.fc = 0
+	le := e.linked_editor
+	le.fr = 0
+	le.fc = 0
 
 	// added 02092021
-	e.linked_editor.cy = 0
-	e.linked_editor.cx = 0
-	e.linked_editor.line_offset = 0
-	e.linked_editor.prev_line_offset = 0
-	e.linked_editor.first_visible_row = 0
-	e.linked_editor.last_visible_row = 0
-	// added 02092021
-
-	e.linked_editor.refreshScreen()
+	le.cy = 0
+	le.cx = 0
+	le.line_offset = 0
+	le.prev_line_offset = 0
+	le.first_visible_row = 0
+	le.last_visible_row = 0
+	le.drawOutputWinText(rows)
+	//e.linked_editor.refreshScreen()
 }
 
 func (e *Editor) runLocal() {
@@ -235,16 +234,15 @@ func (e *Editor) runLocal() {
 	buffer_out := bufio.NewReader(stdout)
 	buffer_err := bufio.NewReader(stderr)
 
-	rows := &e.linked_editor.rows
-	*rows = nil
-	*rows = append(*rows, "------------------------")
+	var rows []string
+	rows = append(rows, "------------------------")
 
 	for {
 		bytes, _, err := buffer_out.ReadLine()
 		if err == io.EOF {
 			break
 		}
-		*rows = append(*rows, string(bytes))
+		rows = append(rows, string(bytes))
 	}
 
 	for {
@@ -252,10 +250,10 @@ func (e *Editor) runLocal() {
 		if err == io.EOF {
 			break
 		}
-		*rows = append(*rows, string(bytes))
+		rows = append(rows, string(bytes))
 	}
 
-	*rows = append(*rows, "------------------------")
+	rows = append(rows, "------------------------")
 
 	le := e.linked_editor
 	le.fr = 0
@@ -269,7 +267,8 @@ func (e *Editor) runLocal() {
 	le.first_visible_row = 0
 	le.last_visible_row = 0
 
-	le.refreshScreen()
+	//le.refreshScreen()
+	le.drawOutputWinText(rows)
 	/*
 		e.linked_editor.fr = 0
 		e.linked_editor.fc = 0

@@ -434,34 +434,34 @@ func (e *Editor) refreshScreen() {
 	}
 	tid = getFolderTid(e.id)
 	if tid == 18 || tid == 14 { //&& !e.is_subeditor {
-		if e.is_subeditor {
-			e.drawRows(&ab) // doesn't use buffer; uses rows
-		} else {
-			e.drawCodeRows(&ab) // indirectly uses nvim buffer
-		}
+		e.drawCodeRows(&ab) // indirectly uses nvim buffer
 		fmt.Print(ab.String())
 		e.draw_highlighted_braces() //has to come after draw
 	} else {
-		e.drawRows2(&ab) //2 -> uses nvim buffer
+		e.drawBuffer(&ab) //2 -> uses nvim buffer
 		fmt.Print(ab.String())
 	}
 	e.drawStatusBar()
 }
 
-// ? only used by subeditor uses editor.rows
-func (e *Editor) drawRows(pab *strings.Builder) {
-
-	// we want e.rows here
-	if len(e.rows) == 0 {
+func (e *Editor) drawOutputWinText(rows []string) {
+	// probably unnecessary
+	if len(rows) == 0 {
 		return
 	}
-	//var ab strings.builder
+	var ab strings.Builder
 
+	fmt.Fprintf(&ab, "\x1b[?25l\x1b[%d;%dH", e.top_margin, e.left_margin+1)
+	// \x1b[NC moves cursor forward by n columns
 	lf_ret := fmt.Sprintf("\r\n\x1b[%dC", e.left_margin)
-	pab.WriteString("\x1b[?25l") //hides the cursor
+	erase_chars := fmt.Sprintf("\x1b[%dX", e.screencols)
+	for i := 0; i < e.screenlines; i++ {
+		ab.WriteString(erase_chars)
+		ab.WriteString(lf_ret)
+	}
 
 	// format for positioning cursor is "\x1b[%d;%dh"
-	fmt.Fprintf(pab, "\x1b[%d;%dH", e.top_margin, e.left_margin+1)
+	fmt.Fprintf(&ab, "\x1b[%d;%dH", e.top_margin, e.left_margin+1)
 
 	y := 0
 	filerow := e.first_visible_row
@@ -473,19 +473,19 @@ func (e *Editor) drawRows(pab *strings.Builder) {
 			break
 		}
 
-		if filerow == len(e.rows) {
-			e.last_visible_row = filerow - 1
+		if filerow == len(rows) {
+			//e.last_visible_row = filerow - 1
 			break
 		}
 
 		// keep e.rows for subeditor/outputwindow
-		row := e.rows[filerow]
+		row := rows[filerow]
 
 		if len(row) == 0 {
 			if y == e.screenlines-1 {
 				break
 			}
-			pab.WriteString(lf_ret)
+			ab.WriteString(lf_ret)
 			filerow++
 			y++
 			continue
@@ -496,12 +496,12 @@ func (e *Editor) drawRows(pab *strings.Builder) {
 		for {
 			/* this is needed because it deals where the end of the line doesn't have a space*/
 			if prev_pos+e.screencols-e.left_margin_offset > len(row)-1 { //? if need -1;cpp generatewwstring had it
-				pab.WriteString(row[prev_pos:])
+				ab.WriteString(row[prev_pos:])
 				if y == e.screenlines-1 {
 					flag = true
 					break
 				}
-				pab.WriteString(lf_ret)
+				ab.WriteString(lf_ret)
 				y++
 				filerow++
 				break
@@ -514,22 +514,21 @@ func (e *Editor) drawRows(pab *strings.Builder) {
 				pos = prev_pos + e.screencols - e.left_margin_offset - 1
 			}
 
-			pab.WriteString(row[prev_pos : pos+1]) //? pos+1
+			ab.WriteString(row[prev_pos : pos+1]) //? pos+1
 			if y == e.screenlines-1 {
 				flag = true
 				break
 			}
-			pab.WriteString(lf_ret)
+			ab.WriteString(lf_ret)
 			prev_pos = pos + 1
 			y++
 		}
 	}
-	// ? only used so spellcheck stops at end of visible note
-	e.last_visible_row = filerow - 1 // note that this is not exactly true - could be the whole last row is visible
-
-	//e.draw_visual(pab) // cannot edit subeditor/output window
+	//e.last_visible_row = filerow - 1
+	fmt.Print(ab.String())
 }
 
+// ? only used by subeditor uses editor.rows
 func (e *Editor) draw_visual(pab *strings.Builder) {
 
 	lf_ret := fmt.Sprintf("\r\n\x1b[%dC", e.left_margin+e.left_margin_offset)
@@ -695,7 +694,7 @@ func (e *Editor) getLineCharCountWW(r, line int) int {
 }
 
 // not in use -- was attempt to draw rows without e.rows just nvim buffer
-func (e *Editor) drawRows2(pab *strings.Builder) {
+func (e *Editor) drawBuffer(pab *strings.Builder) {
 	// v.bufferlines appears to die if in blocking mode
 	// so probably should protect it directly and not rely on redraw bool
 	// also v.bufferlines doesn't return an err when in blocking mode - just dies so checking for err not useful
@@ -959,24 +958,11 @@ func (e *Editor) drawStatusBar() {
 	fmt.Print(ab.String())
 }
 
-func (e *Editor) drawMessageBar() {
-	var ab strings.Builder
-	fmt.Fprintf(&ab, "\x1b[%d;%dH", sess.textLines+e.top_margin+1, sess.divider+1)
-
-	ab.WriteString("\x1b[K") // will erase midscreen -> R; cursor doesn't move after erase
-	if len(e.message) > e.screencols {
-		e.message = e.message[:e.screencols]
-	}
-	ab.WriteString(e.message)
-	fmt.Print(ab.String())
-}
-
-//func (e *Editor) scroll() bool {
 func (e *Editor) scroll() {
 
 	if e.fc == 0 && e.fr == 0 {
 		e.cy, e.cx, e.line_offset, e.prev_line_offset, e.first_visible_row, e.last_visible_row = 0, 0, 0, 0, 0, 0
-		return //false // blocking issue with bb, err := v.BufferLines(0, 0, -1, true) in drawRows2
+		return //false // blocking issue with bb, err := v.BufferLines(0, 0, -1, true) in drawBuffer
 	}
 
 	e.cx = e.getScreenXFromRowColWW(e.fr, e.fc)
