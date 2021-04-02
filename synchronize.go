@@ -90,6 +90,16 @@ func getTaskKeywordsS(dbase *sql.DB, plg io.Writer, id int) []string {
 	return kk
 }
 
+func writeLog(plg *strings.Builder, nn int, reportOnly bool) {
+	log := plg.String()
+	sess.drawPreviewText2(log)
+	sess.drawPreviewBox()
+	if !reportOnly {
+		log_title := fmt.Sprintf("%v - %d change(s)", time.Now().Format("Mon Jan 2 15:04:05"), nn)
+		insertSyncEntry(log_title, log)
+	}
+}
+
 func synchronize(reportOnly bool) {
 	config, err := FromFile("/home/slzatz/listmango/config.json")
 	if err != nil {
@@ -107,7 +117,7 @@ func synchronize(reportOnly bool) {
 
 	pdb, err := sql.Open("postgres", connect)
 	if err != nil {
-		sess.showOrgMessage("Problem opening postgres db: %w", err)
+		sess.showOrgMessage("Error opening postgres db: %w", err)
 		return
 	}
 
@@ -118,15 +128,16 @@ func synchronize(reportOnly bool) {
 		return
 	}
 
-	nn := 0
+	nn := 0 //number of changes
 	var lg strings.Builder
+	defer writeLog(&lg, nn, reportOnly)
 	lg.WriteString("****************************** BEGIN SYNC *******************************************\n\n")
 
 	row := db.QueryRow("SELECT timestamp FROM sync WHERE machine=$1;", "client")
 	var raw_client_t string
 	err = row.Scan(&raw_client_t)
 	if err != nil {
-		sess.showOrgMessage("Error retrieving last client sync: %w", err)
+		fmt.Fprintf(&lg, "Error retrieving last client sync: %v", err)
 		return
 	}
 	//last_client_sync, _ := time.Parse("2006-01-02T15:04:05Z", client_t)
@@ -138,11 +149,9 @@ func synchronize(reportOnly bool) {
 	row = db.QueryRow("SELECT timestamp FROM sync WHERE machine=$1;", "server")
 	err = row.Scan(&server_t)
 	if err != nil {
-		sess.showOrgMessage("Error retrieving last server sync: %w", err)
+		fmt.Fprintf(&lg, "Error retrieving last server sync: %v", err)
 		return
 	}
-	//last_server_sync, _ := time.Parse("2006-01-02T15:04:05Z", server_t)
-	//sess.showOrgMessage("last_client_sync = %v; last_server_sync = %v\n", last_client_sync, last_server_sync)
 
 	fmt.Fprintf(&lg, "Local time is %v\n", time.Now())
 	fmt.Fprintf(&lg, "UTC time is %v\n", time.Now().UTC())
@@ -153,6 +162,10 @@ func synchronize(reportOnly bool) {
 
 	//server updated contexts
 	rows, err := pdb.Query("SELECT id, title, \"default\", created, modified FROM context WHERE context.modified > $1 AND context.deleted = $2;", server_t, false)
+	if err != nil {
+		fmt.Fprintf(&lg, "Error in SELECT for server_updated_contexts: %v", err)
+		return
+	}
 
 	defer rows.Close()
 
@@ -178,6 +191,11 @@ func synchronize(reportOnly bool) {
 	//server deleted contexts
 	//rows, err = pdb.Query("SELECT id, title, \"default\", created, modified FROM context WHERE context.modified > $1 AND context.deleted = $2;", server_t, true)
 	rows, err = pdb.Query("SELECT id, title FROM context WHERE context.modified > $1 AND context.deleted = $2;", server_t, true)
+	if err != nil {
+		fmt.Fprintf(&lg, "Error in SELECT for server_deleted_contexts: %v\n", err)
+		return
+	}
+
 	var server_deleted_contexts []Container
 	for rows.Next() {
 		var c Container
@@ -199,6 +217,10 @@ func synchronize(reportOnly bool) {
 
 	//server updated folders
 	rows, err = pdb.Query("SELECT id, title, private, created, modified FROM folder WHERE folder.modified > $1 AND folder.deleted = $2;", server_t, false)
+	if err != nil {
+		fmt.Fprintf(&lg, "Error in SELECT for server_updated_folders: %v", err)
+		return
+	}
 
 	//defer rows.Close()
 
@@ -224,6 +246,11 @@ func synchronize(reportOnly bool) {
 	//server deleted folders
 	//rows, err = pdb.Query("SELECT id, title, private, created, modified FROM folder WHERE folder.modified > $1 AND folder.deleted = $2;", server_t, true)
 	rows, err = pdb.Query("SELECT id, title FROM folder WHERE folder.modified > $1 AND folder.deleted = $2;", server_t, true)
+	if err != nil {
+		fmt.Fprintf(&lg, "Error in SELECT for server_deleted_folders: %v", err)
+		return
+	}
+
 	var server_deleted_folders []Container
 	for rows.Next() {
 		var c Container
@@ -245,6 +272,10 @@ func synchronize(reportOnly bool) {
 
 	//server updated keywords
 	rows, err = pdb.Query("SELECT id, name, star, modified FROM keyword WHERE keyword.modified > $1 AND keyword.deleted = $2;", server_t, false)
+	if err != nil {
+		fmt.Fprintf(&lg, "Error in SELECT for server_updated_keywords: %v", err)
+		return
+	}
 
 	//defer rows.Close()
 
@@ -269,6 +300,11 @@ func synchronize(reportOnly bool) {
 	//server deleted keywords
 	//rows, err = pdb.Query("SELECT id, name, star, modified FROM keyword WHERE keyword.modified > $1 AND keyword.deleted = $2;", server_t, true)
 	rows, err = pdb.Query("SELECT id, name FROM keyword WHERE keyword.modified > $1 AND keyword.deleted = $2;", server_t, true)
+	if err != nil {
+		fmt.Fprintf(&lg, "Error in SELECT for server_deleted_keywords: %v", err)
+		return
+	}
+
 	var server_deleted_keywords []Container
 	for rows.Next() {
 		var c Container
@@ -289,6 +325,11 @@ func synchronize(reportOnly bool) {
 	//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	//server updated entries
 	rows, err = pdb.Query("SELECT id, title, star, note, created, modified, added, completed, context_tid, folder_tid FROM task WHERE modified > $1 AND deleted = $2;", server_t, false)
+	if err != nil {
+		fmt.Fprintf(&lg, "Error in SELECT for server_updated_entries: %v", err)
+		return
+	}
+
 	var server_updated_entries []Entry
 	for rows.Next() {
 		var e Entry
@@ -314,12 +355,17 @@ func synchronize(reportOnly bool) {
 	}
 	//sess.showEdMessage("Number of changes that server needs to transmit to client: %v", len(server_updated_entries))
 	for _, e := range server_updated_entries {
-		fmt.Fprintf(&lg, "id: %d %q; star: %t; modified: %v\n", e.id, truncate(e.title, 15), e.star, tc(e.modified, 18, false))
+		fmt.Fprintf(&lg, "id: %d %q; star: %t; modified: %v\n", e.id, truncate(e.title, 15), e.star, tc(e.modified, 19, false))
 	}
 
 	//server deleted entries
 	//rows, err = pdb.Query("SELECT id,title,star,created,modified FROM task WHERE task.modified > $1 AND task.deleted = $2;", server_t, true)
 	rows, err = pdb.Query("SELECT id, title FROM task WHERE modified > $1 AND deleted = $2;", server_t, true)
+	if err != nil {
+		fmt.Fprintf(&lg, "Error in SELECT for server_deleted_entries: %v", err)
+		return
+	}
+
 	var server_deleted_entries []Entry
 	for rows.Next() {
 		var e Entry
@@ -343,6 +389,10 @@ func synchronize(reportOnly bool) {
 
 	//client updated contexts
 	rows, err = db.Query("SELECT id, tid, title, \"default\", created, modified FROM context WHERE substr(context.modified, 1, 19) > $1 AND context.deleted = $2;", client_t, false)
+	if err != nil {
+		fmt.Fprintf(&lg, "Error in SELECT for client_updated_contexts: %v", err)
+		return
+	}
 
 	//defer rows.Close()
 
@@ -369,6 +419,11 @@ func synchronize(reportOnly bool) {
 	//client deleted contexts
 	//rows, err = db.Query("SELECT id, title, \"default\", created, modified FROM context WHERE context.modified > $1 AND context.deleted = $2;", client_t, true)
 	rows, err = db.Query("SELECT id, tid, title FROM context WHERE substr(context.modified, 1, 19) > $1 AND context.deleted = $2;", client_t, true)
+	if err != nil {
+		fmt.Fprintf(&lg, "Error in SELECT for client_deleted_contexts: %v", err)
+		return
+	}
+
 	var client_deleted_contexts []Container
 	for rows.Next() {
 		var c Container
@@ -391,8 +446,12 @@ func synchronize(reportOnly bool) {
 
 	//client updated folders
 	rows, err = db.Query("SELECT id, tid, title, private, created, modified FROM folder WHERE substr(folder.modified, 1, 19) > $1 AND folder.deleted = $2;", client_t, false)
+	if err != nil {
+		fmt.Fprintf(&lg, "Error in SELECT for client_updated_folders: %v", err)
+		return
+	}
 
-	defer rows.Close()
+	//defer rows.Close()
 
 	var client_updated_folders []Container
 	for rows.Next() {
@@ -417,6 +476,11 @@ func synchronize(reportOnly bool) {
 	//client deleted folders
 	//rows, err = db.Query("SELECT id, tid, title, private, created, modified FROM folder WHERE folder.modified > $1 AND folder.deleted = $2;", client_t, true)
 	rows, err = db.Query("SELECT id, tid, title FROM folder WHERE substr(folder.modified, 1, 19) > $1 AND folder.deleted = $2;", client_t, true)
+	if err != nil {
+		fmt.Fprintf(&lg, "Error in SELECT for client_deleted_folders: %v", err)
+		return
+	}
+
 	var client_deleted_folders []Container
 	for rows.Next() {
 		var c Container
@@ -439,8 +503,12 @@ func synchronize(reportOnly bool) {
 
 	//client updated keywords
 	rows, err = db.Query("SELECT id, tid, name, star, modified FROM keyword WHERE substr(keyword.modified, 1, 19)  > $1 AND keyword.deleted = $2;", client_t, false)
+	if err != nil {
+		fmt.Fprintf(&lg, "Error in SELECT for client_updated_keywords: %v", err)
+		return
+	}
 
-	defer rows.Close()
+	//defer rows.Close()
 
 	var client_updated_keywords []Container
 	for rows.Next() {
@@ -464,6 +532,11 @@ func synchronize(reportOnly bool) {
 	//client deleted keywords
 	//rows, err = db.Query("SELECT id, tid, name, star, modified FROM keyword WHERE keyword.modified > $1 AND keyword.deleted = $2;", client_t, true)
 	rows, err = db.Query("SELECT id, tid, name FROM keyword WHERE substr(keyword.modified, 1, 19) > $1 AND keyword.deleted = $2;", client_t, true)
+	if err != nil {
+		fmt.Fprintf(&lg, "Error in SELECT for client_deleted_keywords: %v", err)
+		return
+	}
+
 	var client_deleted_keywords []Container
 	for rows.Next() {
 		var c Container
@@ -487,6 +560,11 @@ func synchronize(reportOnly bool) {
 	//rows, err = db.Query("SELECT id, tid, title, star, created, modified, added, completed, context_tid, folder_tid FROM task WHERE task.modified > ? AND task.deleted = ?;", client_t, false)
 	//rows, err = db.Query("SELECT id, tid, title, star, created, modified, added, completed, context_tid, folder_tid FROM task WHERE task.modified > ? AND task.deleted = ?;", client_t, "false")
 	rows, err = db.Query("SELECT id, tid, title, star, note, created, modified, added, completed, context_tid, folder_tid FROM task WHERE substr(modified, 1, 19)  > ? AND deleted = ?;", client_t, false)
+	if err != nil {
+		fmt.Fprintf(&lg, "Error in SELECT for client_updated_entries: %v", err)
+		return
+	}
+
 	var client_updated_entries []Entry
 	for rows.Next() {
 		var e Entry
@@ -520,13 +598,13 @@ func synchronize(reportOnly bool) {
 	}
 	//sess.showEdMessage("Number of changes that client needs to transmit to client: %v", len(client_updated_entries))
 	for _, e := range client_updated_entries {
-		fmt.Fprintf(&lg, "id: %d; tid: %d %q; star: %t; modified: %v\n", e.id, e.tid, tc(e.title, 15, true), e.star, tc(e.modified, 18, false))
+		fmt.Fprintf(&lg, "id: %d; tid: %d %q; star: %t; modified: %v\n", e.id, e.tid, tc(e.title, 15, true), e.star, tc(e.modified, 19, false))
 	}
 
 	//client deleted entries
 	rows, err = db.Query("SELECT id, tid, title FROM task WHERE substr(modified, 1, 19) > $1 AND deleted = $2;", client_t, true) //not sure need task.modified??
 	if err != nil {
-		sess.showOrgMessage("Problem with retrieving client deleted entries: %v", err)
+		fmt.Fprintf(&lg, "Error with retrieving client deleted entries: %v", err)
 		return
 	}
 	var client_deleted_entries []Entry
@@ -554,8 +632,9 @@ func synchronize(reportOnly bool) {
 
 	fmt.Fprintf(&lg, "Number of changes (before accounting for server/client conflicts) is: %d\n\n", nn)
 	if reportOnly {
-		sess.drawPreviewText2(lg.String())
-		sess.drawPreviewBox()
+		//sess.drawPreviewText2(lg.String())
+		//sess.drawPreviewBox()
+		// note there is a defer writeLog
 		return
 	}
 
@@ -1081,34 +1160,38 @@ func synchronize(reportOnly bool) {
 	row = pdb.QueryRow("SELECT now();")
 	err = row.Scan(&server_ts)
 	if err != nil {
-		sess.showOrgMessage("Problem with getting current time from server: %w", err)
+		sess.showOrgMessage("Error with getting current time from server: %w", err)
 		return
 	}
 	_, err = db.Exec("UPDATE sync SET timestamp=$1 WHERE machine='server';", server_ts)
 	if err != nil {
-		sess.showOrgMessage("Problem updating client with server timestamp: %w", err)
+		sess.showOrgMessage("Error updating client with server timestamp: %w", err)
 		return
 	}
 	_, err = db.Exec("UPDATE sync SET timestamp=datetime('now') WHERE machine='client';")
 	if err != nil {
-		sess.showOrgMessage("Problem updating client with client timestamp: %w", err)
+		sess.showOrgMessage("Error updating client with client timestamp: %w", err)
 		return
 	}
 	var client_ts string
 	row = db.QueryRow("SELECT datetime('now');")
 	err = row.Scan(&client_ts)
 	if err != nil {
-		sess.showOrgMessage("Problem with getting current time from client: %w", err)
+		sess.showOrgMessage("Error with getting current time from client: %w", err)
 		return
 	}
 	fmt.Fprintf(&lg, "\nClient UTC timestamp: %s\n", client_ts)
-	fmt.Fprintf(&lg, "Server UTC timestamp: %s", server_ts)
+	fmt.Fprintf(&lg, "Server UTC timestamp: %s", tc(server_ts, 19, false))
 
-	log := lg.String()
-	sess.drawPreviewText2(log)
-	sess.drawPreviewBox()
-	log_title := fmt.Sprintf("%v - %d change(s)", time.Now().Format("Mon Jan 2 15:04:05"), nn)
-	insertSyncEntry(log_title, log)
+	/*
+		log := lg.String()
+		sess.drawPreviewText2(log)
+		sess.drawPreviewBox()
+		log_title := fmt.Sprintf("%v - %d change(s)", time.Now().Format("Mon Jan 2 15:04:05"), nn)
+		insertSyncEntry(log_title, log)
+	*/
+
+	//note the defer writeLog(...)
 }
 
 /* Task
