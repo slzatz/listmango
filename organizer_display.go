@@ -5,6 +5,7 @@ import (
 	"strings"
 )
 
+// should probably be named drawOrgRows
 func (o *Organizer) refreshScreen() {
 	var ab strings.Builder
 	titlecols := o.divider - TIME_COL_WIDTH - LEFT_MARGIN
@@ -390,6 +391,10 @@ func (o *Organizer) drawSearchRows() {
 }
 
 func (o *Organizer) drawPreviewWindow() { //get_preview
+	if org.mode == NO_ROWS {
+		sess.eraseRightScreen()
+		return
+	}
 	id := o.rows[o.fr].id
 
 	if o.taskview != BY_FIND {

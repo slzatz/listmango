@@ -118,6 +118,7 @@ func organizerProcessKey(c int) {
 				sess.showOrgMessage("'%s' will be opened", org.keyword)
 			}
 			getItems(MAX)
+			org.drawPreviewWindow()
 			return
 		}
 

@@ -346,15 +346,21 @@ func getItems(max int) {
 	}
 
 	org.view = TASK
-
 	if len(org.rows) == 0 {
 		sess.showOrgMessage("No results were returned")
 		org.mode = NO_ROWS
-		sess.eraseRightScreen() // in case there was a note displayed in previous view
-	} else {
-		org.mode = org.last_mode
-		org.drawPreviewWindow() // will it be zero ??if id == -1 does not try to retrieve note
 	}
+
+	/*
+		if len(org.rows) == 0 {
+			sess.showOrgMessage("No results were returned")
+			org.mode = NO_ROWS
+			sess.eraseRightScreen() // in case there was a note displayed in previous view
+		} else {
+			org.mode = org.last_mode
+			org.drawPreviewWindow() // will it be zero ??if id == -1 does not try to retrieve note
+		}
+	*/
 }
 
 func updateTitle() {

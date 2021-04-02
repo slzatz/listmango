@@ -178,7 +178,7 @@ func gg_N() {
 	org.rowoff = 0
 	org.fr = org.repeat - 1 //this needs to take into account O.rowoff
 	if org.view == TASK {
-		sess.drawPreviewWindow(org.rows[org.fr].id)
+		org.drawPreviewWindow()
 	}
 	// } else {
 	//   c := getContainerInfo(org.rows[org.fr].id)
@@ -193,7 +193,7 @@ func G_N() {
 	org.fc = 0
 	org.fr = len(org.rows) - 1
 	if org.view == TASK {
-		sess.drawPreviewWindow(org.rows[org.fr].id)
+		org.drawPreviewWindow()
 	}
 	// } else {
 	//   c := getContainerInfo(org.rows[org.fr].id)

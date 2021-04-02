@@ -223,6 +223,7 @@ func main() {
 	generateFolderMap()
 	sess.eraseScreenRedrawLines()
 	getItems(MAX)
+	org.drawPreviewWindow()
 
 	org.refreshScreen()
 	org.drawStatusBar()

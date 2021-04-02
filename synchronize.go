@@ -90,14 +90,15 @@ func getTaskKeywordsS(dbase *sql.DB, plg io.Writer, id int) []string {
 	return kk
 }
 
-func writeLog(plg *strings.Builder, nn int, reportOnly bool) {
+func writeLog(plg *strings.Builder, n *int, reportOnly bool) {
 	log := plg.String()
-	sess.drawPreviewText2(log)
-	sess.drawPreviewBox()
 	if !reportOnly {
-		log_title := fmt.Sprintf("%v - %d change(s)", time.Now().Format("Mon Jan 2 15:04:05"), nn)
+		log_title := fmt.Sprintf("%v - %d change(s)", time.Now().Format("Mon Jan 2 15:04:05"), *n)
 		insertSyncEntry(log_title, log)
 	}
+	sess.drawPreviewText2(log)
+	sess.drawPreviewBox()
+	org.refresh(-1)
 }
 
 func synchronize(reportOnly bool) {
@@ -130,7 +131,7 @@ func synchronize(reportOnly bool) {
 
 	nn := 0 //number of changes
 	var lg strings.Builder
-	defer writeLog(&lg, nn, reportOnly)
+	defer writeLog(&lg, &nn, reportOnly)
 	lg.WriteString("****************************** BEGIN SYNC *******************************************\n\n")
 
 	row := db.QueryRow("SELECT timestamp FROM sync WHERE machine=$1;", "client")

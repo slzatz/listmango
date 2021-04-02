@@ -130,8 +130,9 @@ func (o *Organizer) openContext(pos int) {
 	o.clearMarkedEntries()
 	o.folder = ""
 	o.taskview = BY_CONTEXT
+	o.mode = NORMAL //needs to be before getItems b/o NO_ROWS
 	getItems(MAX)
-	o.mode = NORMAL
+	o.drawPreviewWindow()
 	return
 }
 
@@ -164,8 +165,9 @@ func (o *Organizer) openFolder(pos int) {
 	o.clearMarkedEntries()
 	o.context = ""
 	o.taskview = BY_FOLDER
-	getItems(MAX)
 	o.mode = NORMAL
+	getItems(MAX)
+	o.drawPreviewWindow()
 	return
 }
 
@@ -188,9 +190,10 @@ func (o *Organizer) openKeyword(pos int) {
 	o.clearMarkedEntries()
 	o.context = ""
 	o.folder = ""
+	o.mode = NORMAL
 	o.taskview = BY_KEYWORD
 	getItems(MAX)
-	o.mode = NORMAL
+	o.drawPreviewWindow()
 	return
 }
 
@@ -367,11 +370,14 @@ func (o *Organizer) refresh(unused int) {
 			o.searchDB(sess.fts_search_terms, false)
 		} else {
 			getItems(MAX)
+			if unused != -1 {
+				o.drawPreviewWindow()
+			}
 		}
 		sess.showOrgMessage("Entries will be refreshed")
 	} else {
 		getContainers()
-		if org.mode != NO_ROWS {
+		if org.mode != NO_ROWS && unused != -1 {
 			c := getContainerInfo(o.rows[o.fr].id)
 			sess.displayContainerInfo(&c)
 			sess.drawPreviewBox()
@@ -407,16 +413,14 @@ func (o *Organizer) find(pos int) {
 }
 
 func (o *Organizer) sync(unused int) {
-	var reportOnly bool
 	if o.command_line == "test" {
-		reportOnly = true
+		synchronize(true)
+	} else {
+		//o.refresh(0) //param is unused
+		synchronize(false)
 	}
-	synchronize(reportOnly)
 	o.mode = NORMAL
 	o.command_line = ""
-	if !reportOnly {
-		o.refresh(0) //param is unused
-	}
 }
 
 func (o *Organizer) contexts(pos int) {
@@ -562,9 +566,10 @@ func (o *Organizer) recent(unused int) {
 	sess.showOrgMessage("Will retrieve recent items")
 	o.clearMarkedEntries()
 	o.context = "No Context"
-	o.taskview = BY_RECENT
 	o.folder = "No Folder"
+	o.taskview = BY_RECENT
 	getItems(MAX)
+	o.drawPreviewWindow()
 }
 
 func (o *Organizer) deleteKeywords(unused int) {
@@ -584,6 +589,7 @@ func (o *Organizer) showAll(unused int) {
 			//search_db();
 		} else {
 			getItems(MAX)
+			o.drawPreviewWindow()
 		}
 	}
 	if o.show_deleted {

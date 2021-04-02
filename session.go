@@ -669,7 +669,8 @@ func (s *Session) returnCursor() {
 	fmt.Print(ab.String())
 }
 
-func (s *Session) drawPreviewWindow(id int) { //get_preview
+// can be removed but want to check out the lm_browser code
+func (s *Session) drawPreviewWindow__(id int) { //get_preview
 
 	if org.taskview != BY_FIND {
 		s.drawPreviewText(id)
