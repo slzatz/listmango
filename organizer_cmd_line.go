@@ -414,6 +414,9 @@ func (o *Organizer) sync(unused int) {
 	synchronize(reportOnly)
 	o.mode = NORMAL
 	o.command_line = ""
+	if !reportOnly {
+		o.refresh(0) //param is unused
+	}
 }
 
 func (o *Organizer) contexts(pos int) {
