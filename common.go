@@ -153,6 +153,7 @@ const (
 func (m Mode) String() string {
 	return [...]string{
 		"NORMAL",
+		"PENDING",
 		"INSERT",
 		"COMMAND LINE",
 		"VISUAL LINE",
