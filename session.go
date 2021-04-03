@@ -11,22 +11,19 @@ import (
 )
 
 type Session struct {
-	screenCols      int
-	screenLines     int
-	textLines       int
-	divider         int
-	totaleditorcols int
-	initialFileRow  int
-	temporaryTID    int
-	lmBrowser       bool
-	run             bool
-	//editors          []*Editor
-	//p                *Editor
+	screenCols       int
+	screenLines      int
+	textLines        int
+	divider          int
+	totaleditorcols  int
+	initialFileRow   int
+	temporaryTID     int
+	lmBrowser        bool
+	run              bool
 	editorMode       bool
 	fts_search_terms string
-	//cfg config
-	origTermCfg []byte //from GoKilo
-	cfg         Config
+	origTermCfg      []byte //from GoKilo
+	cfg              Config
 }
 
 type Config struct {
@@ -558,7 +555,7 @@ func (s *Session) quitApp() {
 	//PQfinish(conn);
 	//lsp_shutdown("all");
 
-	if err := rawmode.Restore(sess.origTermCfg); err != nil {
+	if err := rawmode.Restore(s.origTermCfg); err != nil {
 		fmt.Fprintf(os.Stderr, "Error: disabling raw mode: %s\r\n", err)
 		os.Exit(1)
 	}
