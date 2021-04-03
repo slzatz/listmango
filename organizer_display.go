@@ -342,7 +342,6 @@ func (o *Organizer) drawSearchRows() {
 		if fr > len(o.rows)-1 {
 			break
 		}
-		//orow& row = org.rows[fr];
 		var length int
 
 		if o.rows[fr].star {
@@ -380,9 +379,7 @@ func (o *Organizer) drawSearchRows() {
 		spaces := titlecols - length
 		ab.WriteString(strings.Repeat(" ", spaces))
 
-		//snprintf(buf, sizeof(buf), "\x1b[%d;%dH", y + 2, screencols/2 - TIME_COL_WIDTH + 2); //wouldn't need offset
 		ab.WriteString("\x1b[0m") // return background to normal
-		//ab.WriteString(fmt.Sprintf("\x1b[%d;%dH", y+2, s.divider-TIME_COL_WIDTH+2))
 		fmt.Fprintf(&ab, "\x1b[%d;%dH", y+2, o.divider-TIME_COL_WIDTH+2)
 		ab.WriteString(o.rows[fr].modified)
 		ab.WriteString(lf_ret)
@@ -390,7 +387,7 @@ func (o *Organizer) drawSearchRows() {
 	fmt.Print(ab.String())
 }
 
-func (o *Organizer) drawPreviewWindow() { //get_preview
+func (o *Organizer) drawPreviewWindow() {
 	if org.mode == NO_ROWS {
 		sess.eraseRightScreen()
 		return
