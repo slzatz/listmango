@@ -221,7 +221,7 @@ func main() {
 	generateContextMap()
 	generateFolderMap()
 	sess.eraseScreenRedrawLines()
-	getItems(MAX)
+	org.rows = filterEntries(org.taskview, org.folder, MAX)
 	org.drawPreviewWindow()
 
 	org.refreshScreen()

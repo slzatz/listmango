@@ -267,33 +267,26 @@ func deleteSyncItem(id int) {
 	sess.showOrgMessage("Deleted sync_log entry with id %d", id)
 }
 
-func getItems(max int) {
-
-	org.rows = nil
-	org.fc, org.fr, org.rowoff = 0, 0, 0
-
-	var arg string
+func filterEntries(taskView int, filter string, max int) []Row {
 
 	s := "SELECT task.id, task.title, task.star, task.deleted, task.completed, task.modified FROM task "
 
-	if org.taskview == BY_CONTEXT {
+	switch taskView {
+	case BY_CONTEXT:
 		s += "JOIN context ON context.tid=task.context_tid WHERE context.title=?"
-		arg = org.context
-	} else if org.taskview == BY_FOLDER {
+	case BY_FOLDER:
 		s += "JOIN folder ON folder.tid = task.folder_tid WHERE folder.title=?"
-		arg = org.folder
-	} else if org.taskview == BY_KEYWORD {
+	case BY_KEYWORD:
 		s += "JOIN task_keyword ON task.id=task_keyword.task_id " +
 			"JOIN keyword ON keyword.id=task_keyword.keyword_id " +
 			"WHERE task.id = task_keyword.task_id AND " +
 			"task_keyword.keyword_id = keyword.id AND keyword.name=?"
-		arg = org.keyword
-	} else if org.taskview == BY_RECENT {
+	case BY_RECENT:
 		s += "WHERE 1=1"
-		arg = ""
-	} else {
+		filter = "" // should be what was passed
+	default:
 		sess.showOrgMessage("You asked for an unsupported db query")
-		return
+		return []Row{}
 	}
 
 	if !org.show_deleted {
@@ -303,18 +296,19 @@ func getItems(max int) {
 	//int sortcolnum = org.sort_map[org.sort] //cpp
 	var rows *sql.Rows
 	var err error
-	if arg == "" { //Recent
+	if filter == "" { //Recent
 		rows, err = db.Query(s)
 	} else {
-		rows, err = db.Query(s, arg)
+		rows, err = db.Query(s, filter)
 	}
 	if err != nil {
 		sess.showOrgMessage("Error in getItems: %v", err)
-		return
+		return []Row{}
 	}
 
 	defer rows.Close()
 
+	var orgRows []Row
 	for rows.Next() {
 		var row Row
 		var completed sql.NullTime
@@ -329,8 +323,8 @@ func getItems(max int) {
 		)
 
 		if err != nil {
-			sess.showOrgMessage("Error in getItems: %v", err)
-			return
+			sess.showOrgMessage("Error in filterEntries: %v", err)
+			return orgRows
 		}
 
 		if completed.Valid {
@@ -341,15 +335,15 @@ func getItems(max int) {
 
 		row.modified = timeDelta(modified)
 
-		org.rows = append(org.rows, row)
+		orgRows = append(orgRows, row)
 
 	}
-
 	org.view = TASK
-	if len(org.rows) == 0 {
+	if len(orgRows) == 0 {
 		sess.showOrgMessage("No results were returned")
 		org.mode = NO_ROWS
 	}
+	return orgRows
 }
 
 func updateTitle() {

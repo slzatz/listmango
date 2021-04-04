@@ -1,8 +1,7 @@
 package main
 
 import (
-	"fmt"
-	"log"
+	//"fmt"
 	"strconv"
 	"strings"
 	"time"
@@ -120,18 +119,21 @@ func (o *Organizer) openContext(pos int) {
 	}
 
 	if !success {
-		sess.showOrgMessage(fmt.Sprintf("%s is not a valid  context!", cl[:pos]))
+		sess.showOrgMessage("%s is not a valid  context!", cl[:pos])
 		o.mode = NORMAL
 		return
 	}
 
-	o.showOrgMessage("'%s' will be opened", o.context)
+	sess.showOrgMessage("'%s' will be opened", o.context)
 
 	o.clearMarkedEntries()
 	o.folder = ""
+	o.keyword = ""
 	o.taskview = BY_CONTEXT
-	o.mode = NORMAL //needs to be before getItems b/o NO_ROWS
-	getItems(MAX)
+	org.view = TASK
+	o.mode = NORMAL //needs to be before filterEntries b/o NO_ROWS
+	o.fc, o.fr, o.rowoff = 0, 0, 0
+	o.rows = filterEntries(o.taskview, o.context, MAX)
 	o.drawPreviewWindow()
 	return
 }
@@ -164,9 +166,12 @@ func (o *Organizer) openFolder(pos int) {
 
 	o.clearMarkedEntries()
 	o.context = ""
+	o.keyword = ""
 	o.taskview = BY_FOLDER
+	org.view = TASK
 	o.mode = NORMAL
-	getItems(MAX)
+	o.fc, o.fr, o.rowoff = 0, 0, 0
+	o.rows = filterEntries(o.taskview, o.folder, MAX)
 	o.drawPreviewWindow()
 	return
 }
@@ -186,13 +191,17 @@ func (o *Organizer) openKeyword(pos int) {
 	}
 
 	o.keyword = keyword
+
 	sess.showOrgMessage("'%s' will be opened", o.keyword)
+
 	o.clearMarkedEntries()
+	o.taskview = BY_KEYWORD
 	o.context = ""
 	o.folder = ""
+	org.view = TASK
 	o.mode = NORMAL
-	o.taskview = BY_KEYWORD
-	getItems(MAX)
+	o.fc, o.fr, o.rowoff = 0, 0, 0
+	o.rows = filterEntries(o.taskview, o.keyword, MAX)
 	o.drawPreviewWindow()
 	return
 }
@@ -281,10 +290,10 @@ func (o *Organizer) editNote(id int) {
 
 		ok, err := v.AttachBuffer(0, false, make(map[string]interface{})) // 0 => current buffer
 		if err != nil {
-			log.Fatal(err)
+			sess.showOrgMessage("Error when attaching buffer: %v", err)
 		}
 		if !ok {
-			log.Fatal()
+			sess.showOrgMessage("Problem when attaching buffer")
 		}
 	}
 
@@ -374,7 +383,19 @@ func (o *Organizer) refresh(unused int) {
 				o.drawPreviewWindow()
 			}
 		} else {
-			getItems(MAX)
+			o.fc, o.fr, o.rowoff = 0, 0, 0
+			var filter string
+			switch o.taskview {
+			case BY_CONTEXT:
+				filter = o.context
+			case BY_FOLDER:
+				filter = o.folder
+			case BY_KEYWORD:
+				filter = o.keyword
+			case BY_RECENT:
+				filter = ""
+			}
+			o.rows = filterEntries(o.taskview, filter, MAX) //should be o.filter
 			if unused != -1 {
 				o.drawPreviewWindow()
 			}
@@ -573,10 +594,15 @@ func (o *Organizer) keywords(pos int) {
 func (o *Organizer) recent(unused int) {
 	sess.showOrgMessage("Will retrieve recent items")
 	o.clearMarkedEntries()
-	o.context = "No Context"
-	o.folder = "No Folder"
+	// should just be o.filter
+	o.context = ""
+	o.folder = ""
+	o.keyword = ""
 	o.taskview = BY_RECENT
-	getItems(MAX)
+	org.view = TASK
+	o.mode = NORMAL //needs to be before filterEntries b/o NO_ROWS
+	o.fc, o.fr, o.rowoff = 0, 0, 0
+	o.rows = filterEntries(o.taskview, "", MAX)
 	o.drawPreviewWindow()
 }
 
@@ -590,16 +616,13 @@ func (o *Organizer) deleteKeywords(unused int) {
 }
 
 func (o *Organizer) showAll(unused int) {
-	if o.view == TASK {
-		o.show_deleted = !o.show_deleted
-		o.show_completed = !o.show_completed
-		if o.taskview == BY_FIND {
-			//search_db();
-		} else {
-			getItems(MAX)
-			o.drawPreviewWindow()
-		}
+
+	if o.view != TASK {
+		return
 	}
+	o.show_deleted = !o.show_deleted
+	o.show_completed = !o.show_completed
+	o.refresh(0)
 	if o.show_deleted {
 		sess.showOrgMessage("Showing completed/deleted")
 	} else {
