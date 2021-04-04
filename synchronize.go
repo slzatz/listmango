@@ -964,12 +964,19 @@ func synchronize(reportOnly bool) {
 
 	// server deleted entries
 	for _, e := range server_deleted_entries {
-		_, err := db.Exec("DELETE FROM task WHERE tid=?;", e.id)
+		var id int
+		err := db.QueryRow("DELETE FROM task WHERE tid=? RETURNING id;", e.id).Scan(&id)
 		if err != nil {
 			fmt.Fprintf(&lg, "Error deleting client entry %q with tid %d: %v\n", tc(e.title, 15, true), e.id, err)
 			continue
 		}
 		fmt.Fprintf(&lg, "Deleted client entry %q with tid %d\n", truncate(e.title, 15), e.id)
+
+		_, err = db.Exec("DELETE FROM task_keyword WHERE task_id=?;", id)
+		if err != nil {
+			fmt.Fprintf(&lg, "Error deleting task_keyword client rows where entry id = %d: %v\n", e.id, err)
+			continue
+		}
 	}
 
 	// client deleted entries
@@ -992,6 +999,18 @@ func synchronize(reportOnly bool) {
 			fmt.Fprintf(&lg, "Error deleting client entry %q with id %d: %v\n", tc(e.title, 15, true), e.id, err)
 			continue
 		}
+
+		_, err = db.Exec("DELETE FROM task_keyword WHERE task_id=?;", e.id)
+		if err != nil {
+			fmt.Fprintf(&lg, "Error deleting task_keyword client rows where entry id = %d: %v\n", e.id, err)
+			continue
+		}
+		_, err = pdb.Exec("DELETE FROM task_keyword WHERE task_id=$1;", e.tid)
+		if err != nil {
+			fmt.Fprintf(&lg, "Error deleting task_keyword server rows where entry id = %d: %v\n", e.tid, err)
+			continue
+		}
+
 		fmt.Fprintf(&lg, "Deleted client entry %q with id %d\n", tc(e.title, 15, true), e.id)
 	}
 
