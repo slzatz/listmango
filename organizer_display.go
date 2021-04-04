@@ -28,8 +28,6 @@ func (o *Organizer) refreshScreen() {
 
 	if o.mode == FIND {
 		o.drawSearchRows()
-		//} else if org.mode == ADD_CHANGE_FILTER {
-		//  s.drawOrgFilters()
 	} else if o.mode == ADD_CHANGE_FILTER {
 		o.drawAltRows()
 	} else {
@@ -358,15 +356,15 @@ func (o *Organizer) drawSearchRows() {
 		}
 
 		if len(o.rows[fr].title) <= titlecols { // we know it fits
-			ab.WriteString(o.rows[fr].fts_title)
+			ab.WriteString(o.rows[fr].ftsTitle)
 			// note below doesn't handle two highlighted terms in same line
 			// and it might cause display issues if second highlight isn't fully escaped
 			// need to come back and deal with this
 			// coud check if LastIndex"\x1b[49m" or Index(fts_title[pos+1:titlecols+15] contained another escape
 		} else {
-			pos := strings.Index(o.rows[fr].fts_title, "\x1b[49m")                          //\x1b[48;5;31m', '\x1b[49m'
-			if pos > 0 && pos < titlecols+11 && len(o.rows[fr].fts_title) >= titlecols+15 { //length of highlight escape last check ? shouldn't be necessary added 04032021
-				ab.WriteString(o.rows[fr].fts_title[:titlecols+15]) //titlecols + 15); // length of highlight escape + remove formatting escape
+			pos := strings.Index(o.rows[fr].ftsTitle, "\x1b[49m")                          //\x1b[48;5;31m', '\x1b[49m'
+			if pos > 0 && pos < titlecols+11 && len(o.rows[fr].ftsTitle) >= titlecols+15 { //length of highlight escape last check ? shouldn't be necessary added 04032021
+				ab.WriteString(o.rows[fr].ftsTitle[:titlecols+15]) //titlecols + 15); // length of highlight escape + remove formatting escape
 			} else {
 				ab.WriteString(o.rows[fr].title[:titlecols])
 			}

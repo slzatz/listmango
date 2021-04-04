@@ -212,7 +212,6 @@ func main() {
 	org.idToFolder = make(map[int]string)
 	org.marked_entries = make(map[int]struct{})
 
-	org.fts_titles = make(map[int]string)
 	// ? where this should be.  Also in signal.
 	sess.textLines = sess.screenLines - 2 - TOP_MARGIN // -2 for status bar and message bar
 	//sess.divider = sess.screencols - sess.cfg.ed_pct * sess.screencols/100

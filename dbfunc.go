@@ -644,10 +644,7 @@ func getTaskKeywordIds(id int) []int {
 	return kk
 }
 
-func (o *Organizer) searchDB(st string, help bool) {
-
-	o.rows = nil
-	o.fc, o.fr, o.rowoff = 0, 0, 0
+func searchEntries(st string, help bool) []Row {
 
 	rows, err := fts_db.Query("SELECT lm_id, highlight(fts, 0, '\x1b[48;5;31m', '\x1b[49m') "+
 		"FROM fts WHERE fts MATCH ? ORDER BY bm25(fts, 2.0, 1.0, 5.0);",
@@ -655,34 +652,31 @@ func (o *Organizer) searchDB(st string, help bool) {
 
 	defer rows.Close()
 
-	o.fts_ids = nil
-
-	for k := range o.fts_titles {
-		delete(o.fts_titles, k)
-	}
+	var ftsIds []int
+	var ftsTitles = make(map[int]string)
 
 	for rows.Next() {
-		var fts_id int
-		var fts_title string
+		var ftsId int
+		var ftsTitle string
 
 		err = rows.Scan(
-			&fts_id,
-			&fts_title,
+			&ftsId,
+			&ftsTitle,
 		)
 
 		if err != nil {
 			sess.showOrgMessage("Error trying to retrieve search info from fts_db - term: %s; %v", st, err)
-			return
+			return []Row{}
 		}
-		o.fts_ids = append(o.fts_ids, fts_id)
-		o.fts_titles[fts_id] = fts_title
+		ftsIds = append(ftsIds, ftsId)
+		ftsTitles[ftsId] = ftsTitle
 	}
 
-	if len(o.fts_ids) == 0 {
+	if len(ftsIds) == 0 {
 		sess.showOrgMessage("No results were returned")
 		sess.eraseRightScreen() //note can still return no rows from get_items_by_id if we found rows above that were deleted
 		org.mode = NO_ROWS
-		return
+		return []Row{}
 	}
 
 	var stmt string
@@ -694,21 +688,22 @@ func (o *Organizer) searchDB(st string, help bool) {
 		stmt = "SELECT task.id, task.title, task.star, task.deleted, task.completed, task.modified FROM task WHERE task.id IN ("
 	}
 
-	max := len(o.fts_ids) - 1
+	max := len(ftsIds) - 1
 	for i := 0; i < max; i++ {
-		stmt += strconv.Itoa(o.fts_ids[i]) + ", "
+		stmt += strconv.Itoa(ftsIds[i]) + ", "
 	}
 
-	stmt += strconv.Itoa(o.fts_ids[max]) + ")"
+	stmt += strconv.Itoa(ftsIds[max]) + ")"
 	//stmt +=      << ((!org.show_deleted) ? " AND task.completed IS NULL AND task.deleted = False" : "")
 	stmt += " AND task.completed IS NULL AND task.deleted = False ORDER BY "
 
 	for i := 0; i < max; i++ {
-		stmt += "task.id = " + strconv.Itoa(o.fts_ids[i]) + " DESC, "
+		stmt += "task.id = " + strconv.Itoa(ftsIds[i]) + " DESC, "
 	}
-	stmt += "task.id = " + strconv.Itoa(o.fts_ids[max]) + " DESC"
+	stmt += "task.id = " + strconv.Itoa(ftsIds[max]) + " DESC"
 
 	rows, err = db.Query(stmt)
+	var orgRows []Row
 	for rows.Next() {
 		var row Row
 		var completed sql.NullString
@@ -724,8 +719,8 @@ func (o *Organizer) searchDB(st string, help bool) {
 		)
 
 		if err != nil {
-			sess.showOrgMessage("Error in searchDB()")
-			return
+			sess.showOrgMessage("Error in searchEntries reading rows")
+			return []Row{}
 		}
 
 		if completed.Valid {
@@ -735,17 +730,18 @@ func (o *Organizer) searchDB(st string, help bool) {
 		}
 
 		row.modified = timeDelta(modified)
-		row.fts_title = o.fts_titles[row.id]
+		row.ftsTitle = ftsTitles[row.id]
 
-		o.rows = append(o.rows, row)
+		orgRows = append(orgRows, row)
 	}
 
-	if len(o.rows) == 0 {
+	if len(orgRows) == 0 {
 		sess.showOrgMessage("No results were returned")
-		o.mode = NO_ROWS
+		org.mode = NO_ROWS
 	} else {
-		o.mode = FIND
+		org.mode = FIND
 	}
+	return orgRows
 }
 
 func getContainers() {

@@ -367,7 +367,9 @@ func (o *Organizer) newEntry(unused int) {
 func (o *Organizer) refresh(unused int) {
 	if o.view == TASK {
 		if o.taskview == BY_FIND {
-			o.searchDB(sess.fts_search_terms, false)
+			//o.rows = nil
+			o.fc, o.fr, o.rowoff = 0, 0, 0
+			o.rows = searchEntries(sess.fts_search_terms, false)
 			if unused != -1 {
 				o.drawPreviewWindow()
 			}
@@ -409,10 +411,12 @@ func (o *Organizer) find(pos int) {
 	o.context = ""
 	o.folder = ""
 	o.taskview = BY_FIND
+	//o.rows = nil
+	o.fc, o.fr, o.rowoff = 0, 0, 0
 
 	sess.showOrgMessage("Searching for '%s'", searchTerms)
 	//sess.fts_search_terms = searchTerms
-	o.searchDB(searchTerms, false)
+	o.rows = searchEntries(searchTerms, false)
 	o.drawPreviewWindow()
 }
 

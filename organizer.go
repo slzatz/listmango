@@ -31,7 +31,6 @@ type Organizer struct {
 	taskview        int
 	current_task_id int
 	string_buffer   string
-	fts_titles      map[int]string
 
 	context_map map[string]int
 	idToContext map[int]string
@@ -39,7 +38,6 @@ type Organizer struct {
 	idToFolder  map[int]string
 	sort_map    map[string]int
 
-	fts_ids        []int
 	marked_entries map[int]struct{} // map instead of list makes toggling a row easier
 
 	title_search_string string

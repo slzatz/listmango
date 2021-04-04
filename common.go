@@ -71,7 +71,7 @@ func tc(s string, l int, b bool) string {
 type Row struct {
 	id        int
 	title     string
-	fts_title string
+	ftsTitle  string
 	star      bool
 	deleted   bool
 	completed bool
