@@ -113,9 +113,13 @@ func organizerProcessKey(c int) {
 
 			org.clearMarkedEntries()
 			org.view = TASK
-			org.mode = NORMAL //needs to be before filterEntries b/o NO_ROWS
+			org.mode = NORMAL // can be changed to NO_ROWS below
 			org.fc, org.fr, org.rowoff = 0, 0, 0
-			org.rows = filterEntries(org.taskview, org.filter, MAX)
+			org.rows = filterEntries(org.taskview, org.filter, org.show_deleted, org.sort, MAX)
+			if len(org.rows) == 0 {
+				sess.showOrgMessage("No results were returned")
+				org.mode = NO_ROWS
+			}
 			org.drawPreviewWindow()
 			return
 		}

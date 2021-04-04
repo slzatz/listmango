@@ -267,7 +267,7 @@ func deleteSyncItem(id int) {
 	sess.showOrgMessage("Deleted sync_log entry with id %d", id)
 }
 
-func filterEntries(taskView int, filter string, max int) []Row {
+func filterEntries(taskView int, filter string, showDeleted bool, sort string, max int) []Row {
 
 	s := "SELECT task.id, task.title, task.star, task.deleted, task.completed, task.modified FROM task "
 
@@ -283,16 +283,15 @@ func filterEntries(taskView int, filter string, max int) []Row {
 			"task_keyword.keyword_id = keyword.id AND keyword.name=?"
 	case BY_RECENT:
 		s += "WHERE 1=1"
-		filter = "" // should be what was passed
 	default:
 		sess.showOrgMessage("You asked for an unsupported db query")
 		return []Row{}
 	}
 
-	if !org.show_deleted {
+	if !showDeleted {
 		s += " AND task.completed IS NULL AND task.deleted=false"
 	}
-	s += fmt.Sprintf(" ORDER BY task.star DESC, task.%s DESC LIMIT %d;", org.sort, max)
+	s += fmt.Sprintf(" ORDER BY task.star DESC, task.%s DESC LIMIT %d;", sort, max)
 	//int sortcolnum = org.sort_map[org.sort] //cpp
 	var rows *sql.Rows
 	var err error
@@ -337,11 +336,6 @@ func filterEntries(taskView int, filter string, max int) []Row {
 
 		orgRows = append(orgRows, row)
 
-	}
-	org.view = TASK
-	if len(orgRows) == 0 {
-		sess.showOrgMessage("No results were returned")
-		org.mode = NO_ROWS
 	}
 	return orgRows
 }

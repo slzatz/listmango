@@ -219,7 +219,11 @@ func main() {
 	generateContextMap()
 	generateFolderMap()
 	sess.eraseScreenRedrawLines()
-	org.rows = filterEntries(org.taskview, org.filter, MAX)
+	org.rows = filterEntries(org.taskview, org.filter, org.show_deleted, org.sort, MAX)
+	if len(org.rows) == 0 {
+		sess.showOrgMessage("No results were returned")
+		org.mode = NO_ROWS
+	}
 	org.drawPreviewWindow()
 
 	org.refreshScreen()

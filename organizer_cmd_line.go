@@ -132,9 +132,13 @@ func (o *Organizer) openContext(pos int) {
 	//o.keyword = ""
 	o.taskview = BY_CONTEXT
 	org.view = TASK
-	o.mode = NORMAL //needs to be before filterEntries b/o NO_ROWS
+	o.mode = NORMAL // can be changed to NO_ROWS below
 	o.fc, o.fr, o.rowoff = 0, 0, 0
-	o.rows = filterEntries(o.taskview, o.filter, MAX)
+	o.rows = filterEntries(o.taskview, o.filter, o.show_deleted, o.sort, MAX)
+	if len(o.rows) == 0 {
+		sess.showOrgMessage("No results were returned")
+		o.mode = NO_ROWS
+	}
 	o.drawPreviewWindow()
 	return
 }
@@ -167,13 +171,15 @@ func (o *Organizer) openFolder(pos int) {
 	sess.showOrgMessage("'%s' will be opened", o.filter)
 
 	o.clearMarkedEntries()
-	//o.context = ""
-	//o.keyword = ""
 	o.taskview = BY_FOLDER
 	org.view = TASK
-	o.mode = NORMAL
+	o.mode = NORMAL // can be changed to NO_ROWS below
 	o.fc, o.fr, o.rowoff = 0, 0, 0
-	o.rows = filterEntries(o.taskview, o.filter, MAX)
+	o.rows = filterEntries(o.taskview, o.filter, o.show_deleted, o.sort, MAX)
+	if len(o.rows) == 0 {
+		sess.showOrgMessage("No results were returned")
+		o.mode = NO_ROWS
+	}
 	o.drawPreviewWindow()
 	return
 }
@@ -184,7 +190,6 @@ func (o *Organizer) openKeyword(pos int) {
 		o.mode = NORMAL
 		return
 	}
-	//O.keyword = O.command_line.substr(pos+1);
 	keyword := o.command_line[pos+1:]
 	if keywordExists(keyword) == -1 {
 		o.mode = o.last_mode
@@ -192,19 +197,20 @@ func (o *Organizer) openKeyword(pos int) {
 		return
 	}
 
-	//o.keyword = keyword
 	o.filter = keyword
 
 	sess.showOrgMessage("'%s' will be opened", o.filter)
 
 	o.clearMarkedEntries()
 	o.taskview = BY_KEYWORD
-	//o.context = ""
-	//o.folder = ""
 	org.view = TASK
-	o.mode = NORMAL
+	o.mode = NORMAL // can be changed to NO_ROWS below
 	o.fc, o.fr, o.rowoff = 0, 0, 0
-	o.rows = filterEntries(o.taskview, o.filter, MAX)
+	o.rows = filterEntries(o.taskview, o.filter, o.show_deleted, o.sort, MAX)
+	if len(o.rows) == 0 {
+		sess.showOrgMessage("No results were returned")
+		o.mode = NO_ROWS
+	}
 	o.drawPreviewWindow()
 	return
 }
@@ -387,7 +393,11 @@ func (o *Organizer) refresh(unused int) {
 			}
 		} else {
 			o.fc, o.fr, o.rowoff = 0, 0, 0
-			o.rows = filterEntries(o.taskview, o.filter, MAX) //should be o.filter
+			o.rows = filterEntries(o.taskview, o.filter, o.show_deleted, o.sort, MAX)
+			if len(o.rows) == 0 {
+				sess.showOrgMessage("No results were returned")
+				o.mode = NO_ROWS
+			}
 			if unused != -1 {
 				o.drawPreviewWindow()
 			}
@@ -594,9 +604,13 @@ func (o *Organizer) recent(unused int) {
 	o.filter = ""
 	o.taskview = BY_RECENT
 	org.view = TASK
-	o.mode = NORMAL //needs to be before filterEntries b/o NO_ROWS
+	o.mode = NORMAL // can be changed to NO_ROWS below
 	o.fc, o.fr, o.rowoff = 0, 0, 0
-	o.rows = filterEntries(o.taskview, o.filter, MAX)
+	o.rows = filterEntries(o.taskview, o.filter, o.show_deleted, o.sort, MAX)
+	if len(o.rows) == 0 {
+		sess.showOrgMessage("No results were returned")
+		o.mode = NO_ROWS
+	}
 	o.drawPreviewWindow()
 }
 
