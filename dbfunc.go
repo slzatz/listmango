@@ -350,17 +350,6 @@ func getItems(max int) {
 		sess.showOrgMessage("No results were returned")
 		org.mode = NO_ROWS
 	}
-
-	/*
-		if len(org.rows) == 0 {
-			sess.showOrgMessage("No results were returned")
-			org.mode = NO_ROWS
-			sess.eraseRightScreen() // in case there was a note displayed in previous view
-		} else {
-			org.mode = org.last_mode
-			org.drawPreviewWindow() // will it be zero ??if id == -1 does not try to retrieve note
-		}
-	*/
 }
 
 func updateTitle() {
@@ -751,17 +740,11 @@ func (o *Organizer) searchDB(st string, help bool) {
 		o.rows = append(o.rows, row)
 	}
 
-	// think these are the initialized values
-	//row.dirty = false;
-	//row.mark = false;
-
 	if len(o.rows) == 0 {
 		sess.showOrgMessage("No results were returned")
 		o.mode = NO_ROWS
-		sess.eraseRightScreen() // in case there was a note displayed in previous view
 	} else {
 		o.mode = FIND
-		o.drawPreviewWindow() //if id == -1 does not try to retrieve note handle zero?
 	}
 }
 
