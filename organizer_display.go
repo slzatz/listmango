@@ -364,8 +364,8 @@ func (o *Organizer) drawSearchRows() {
 			// need to come back and deal with this
 			// coud check if LastIndex"\x1b[49m" or Index(fts_title[pos+1:titlecols+15] contained another escape
 		} else {
-			pos := strings.Index(o.rows[fr].fts_title, "\x1b[49m") //\x1b[48;5;31m', '\x1b[49m'
-			if pos > 0 && pos < titlecols+11 {                     //length of highlight escape
+			pos := strings.Index(o.rows[fr].fts_title, "\x1b[49m")                          //\x1b[48;5;31m', '\x1b[49m'
+			if pos > 0 && pos < titlecols+11 && len(o.rows[fr].fts_title) >= titlecols+15 { //length of highlight escape last check ? shouldn't be necessary added 04032021
 				ab.WriteString(o.rows[fr].fts_title[:titlecols+15]) //titlecols + 15); // length of highlight escape + remove formatting escape
 			} else {
 				ab.WriteString(o.rows[fr].title[:titlecols])
