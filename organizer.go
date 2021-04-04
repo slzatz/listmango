@@ -13,9 +13,7 @@ type Organizer struct {
 
 	rows         []Row
 	altRows      []AltRow
-	context      string
-	folder       string
-	keyword      string // could be multiple (comma separated)
+	filter       string
 	sort         string
 	command_line string
 	message      string

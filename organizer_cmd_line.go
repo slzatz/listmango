@@ -112,7 +112,8 @@ func (o *Organizer) openContext(pos int) {
 	success = false
 	for k, _ := range o.context_map {
 		if strings.HasPrefix(k, cl[pos+1:]) {
-			o.context = k
+			//o.context = k
+			o.filter = k
 			success = true
 			break
 		}
@@ -124,16 +125,16 @@ func (o *Organizer) openContext(pos int) {
 		return
 	}
 
-	sess.showOrgMessage("'%s' will be opened", o.context)
+	sess.showOrgMessage("'%s' will be opened", o.filter)
 
 	o.clearMarkedEntries()
-	o.folder = ""
-	o.keyword = ""
+	//o.folder = ""
+	//o.keyword = ""
 	o.taskview = BY_CONTEXT
 	org.view = TASK
 	o.mode = NORMAL //needs to be before filterEntries b/o NO_ROWS
 	o.fc, o.fr, o.rowoff = 0, 0, 0
-	o.rows = filterEntries(o.taskview, o.context, MAX)
+	o.rows = filterEntries(o.taskview, o.filter, MAX)
 	o.drawPreviewWindow()
 	return
 }
@@ -150,7 +151,8 @@ func (o *Organizer) openFolder(pos int) {
 	success = false
 	for k, _ := range o.folder_map {
 		if strings.HasPrefix(k, (*cl)[pos+1:]) {
-			o.folder = k
+			//o.folder = k
+			o.filter = k
 			success = true
 			break
 		}
@@ -162,16 +164,16 @@ func (o *Organizer) openFolder(pos int) {
 		return
 	}
 
-	sess.showOrgMessage("'%s' will be opened", o.folder)
+	sess.showOrgMessage("'%s' will be opened", o.filter)
 
 	o.clearMarkedEntries()
-	o.context = ""
-	o.keyword = ""
+	//o.context = ""
+	//o.keyword = ""
 	o.taskview = BY_FOLDER
 	org.view = TASK
 	o.mode = NORMAL
 	o.fc, o.fr, o.rowoff = 0, 0, 0
-	o.rows = filterEntries(o.taskview, o.folder, MAX)
+	o.rows = filterEntries(o.taskview, o.filter, MAX)
 	o.drawPreviewWindow()
 	return
 }
@@ -190,18 +192,19 @@ func (o *Organizer) openKeyword(pos int) {
 		return
 	}
 
-	o.keyword = keyword
+	//o.keyword = keyword
+	o.filter = keyword
 
-	sess.showOrgMessage("'%s' will be opened", o.keyword)
+	sess.showOrgMessage("'%s' will be opened", o.filter)
 
 	o.clearMarkedEntries()
 	o.taskview = BY_KEYWORD
-	o.context = ""
-	o.folder = ""
+	//o.context = ""
+	//o.folder = ""
 	org.view = TASK
 	o.mode = NORMAL
 	o.fc, o.fr, o.rowoff = 0, 0, 0
-	o.rows = filterEntries(o.taskview, o.keyword, MAX)
+	o.rows = filterEntries(o.taskview, o.filter, MAX)
 	o.drawPreviewWindow()
 	return
 }
@@ -384,18 +387,7 @@ func (o *Organizer) refresh(unused int) {
 			}
 		} else {
 			o.fc, o.fr, o.rowoff = 0, 0, 0
-			var filter string
-			switch o.taskview {
-			case BY_CONTEXT:
-				filter = o.context
-			case BY_FOLDER:
-				filter = o.folder
-			case BY_KEYWORD:
-				filter = o.keyword
-			case BY_RECENT:
-				filter = ""
-			}
-			o.rows = filterEntries(o.taskview, filter, MAX) //should be o.filter
+			o.rows = filterEntries(o.taskview, o.filter, MAX) //should be o.filter
 			if unused != -1 {
 				o.drawPreviewWindow()
 			}
@@ -429,8 +421,9 @@ func (o *Organizer) find(pos int) {
 		return
 	}
 
-	o.context = ""
-	o.folder = ""
+	//o.context = ""
+	//o.folder = ""
+	o.filter = ""
 	o.taskview = BY_FIND
 	//o.rows = nil
 	o.fc, o.fr, o.rowoff = 0, 0, 0
@@ -595,14 +588,15 @@ func (o *Organizer) recent(unused int) {
 	sess.showOrgMessage("Will retrieve recent items")
 	o.clearMarkedEntries()
 	// should just be o.filter
-	o.context = ""
-	o.folder = ""
-	o.keyword = ""
+	//o.context = ""
+	//o.folder = ""
+	//o.keyword = ""
+	o.filter = ""
 	o.taskview = BY_RECENT
 	org.view = TASK
 	o.mode = NORMAL //needs to be before filterEntries b/o NO_ROWS
 	o.fc, o.fr, o.rowoff = 0, 0, 0
-	o.rows = filterEntries(o.taskview, "", MAX)
+	o.rows = filterEntries(o.taskview, o.filter, MAX)
 	o.drawPreviewWindow()
 }
 

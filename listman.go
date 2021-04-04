@@ -203,9 +203,7 @@ func main() {
 
 	org.view = TASK
 	org.taskview = BY_FOLDER
-	org.folder = "todo"
-	org.context = "No Context"
-	org.keyword = ""
+	org.filter = "todo"
 	org.context_map = make(map[string]int)
 	org.idToContext = make(map[int]string)
 	org.folder_map = make(map[string]int)
@@ -221,7 +219,7 @@ func main() {
 	generateContextMap()
 	generateFolderMap()
 	sess.eraseScreenRedrawLines()
-	org.rows = filterEntries(org.taskview, org.folder, MAX)
+	org.rows = filterEntries(org.taskview, org.filter, MAX)
 	org.drawPreviewWindow()
 
 	org.refreshScreen()

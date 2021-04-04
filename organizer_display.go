@@ -239,19 +239,14 @@ func (o *Organizer) drawStatusBar() {
 			case BY_FIND:
 				str = "search - " + o.fts_search_terms
 			case BY_FOLDER:
-				str = fmt.Sprintf("%s[f] (%s[c])", o.folder, o.idToContext[e.context_tid])
-				//str = org.folder + "[f]" + " (" + org.context
+				str = fmt.Sprintf("%s[f] (%s[c])", o.filter, o.idToContext[e.context_tid])
 			case BY_CONTEXT:
-				//str = org.context + "[c]"
-				str = fmt.Sprintf("%s[c] (%s[f])", o.context, o.idToFolder[e.folder_tid])
+				str = fmt.Sprintf("%s[c] (%s[f])", o.filter, o.idToFolder[e.folder_tid])
 			case BY_RECENT:
 				str = fmt.Sprintf("Recent: %s[c] %s[f]",
 					o.idToContext[e.context_tid], o.idToFolder[e.folder_tid])
-				//str = "recent"
-			//case BY_JOIN:
-			//	str = org.context + "[c] + " + org.folder + "[f]"
 			case BY_KEYWORD:
-				str = o.keyword + "[k]"
+				str = o.filter + "[k]"
 			}
 		case CONTEXT:
 			str = "Contexts"

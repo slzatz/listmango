@@ -406,24 +406,21 @@ func updateRows() {
 
 func insertRow(row *Row) int {
 
-	var folder_tid int
-	var context_tid int
+	folder_tid := 1
+	context_tid := 1
 
-	if org.context == "" {
-		context_tid = 1
-	} else {
-		context_tid = org.context_map[org.context]
+	switch org.taskview {
+	case BY_CONTEXT:
+		context_tid = org.context_map[org.filter]
+	case BY_FOLDER:
+		folder_tid = org.folder_map[org.filter]
+	case BY_KEYWORD:
+	case BY_RECENT:
 	}
 
-	if org.folder == "" {
-		folder_tid = 1
-	} else {
-		folder_tid = org.folder_map[org.folder]
-	}
 	res, err := db.Exec("INSERT INTO task (priority, title, folder_tid, context_tid, "+
 		"star, added, note, deleted, created, modified) "+
 		"VALUES (3, ?, ?, ?, True, date(), '', False, "+
-		//fmt.Sprintf("datetime('now', '-%s hours'), ", TZ_OFFSET)+
 		"date(), datetime('now'));",
 		row.title, folder_tid, context_tid)
 
@@ -791,7 +788,7 @@ func getContainers() {
 
 	// below should be somewhere else
 	org.fc, org.fr, org.rowoff = 0, 0, 0
-	org.context, org.folder, org.keyword = "", "", "" // this makes sense if you are not in an O.view == TASK
+	org.filter = ""
 
 }
 

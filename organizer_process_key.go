@@ -101,30 +101,21 @@ func organizerProcessKey(c int) {
 			}
 			switch org.view {
 			case CONTEXT:
-				org.context = row.title
-				org.folder = ""
-				org.keyword = ""
 				org.taskview = BY_CONTEXT
-				sess.showOrgMessage("'%s' will be opened", org.context)
 			case FOLDER:
-				org.folder = row.title
-				org.context = ""
-				org.keyword = ""
 				org.taskview = BY_FOLDER
-				sess.showOrgMessage("'%s' will be opened", org.folder)
 			case KEYWORD:
-				org.keyword = row.title
-				org.folder = ""
-				org.context = ""
 				org.taskview = BY_KEYWORD
-				sess.showOrgMessage("'%s' will be opened", org.keyword)
 			}
+
+			org.filter = row.title
+			sess.showOrgMessage("'%s' will be opened", org.filter)
 
 			org.clearMarkedEntries()
 			org.view = TASK
 			org.mode = NORMAL //needs to be before filterEntries b/o NO_ROWS
 			org.fc, org.fr, org.rowoff = 0, 0, 0
-			org.rows = filterEntries(org.taskview, row.title, MAX)
+			org.rows = filterEntries(org.taskview, org.filter, MAX)
 			org.drawPreviewWindow()
 			return
 		}
