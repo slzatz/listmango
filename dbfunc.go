@@ -629,7 +629,7 @@ func getTaskKeywordIds(id int) []int {
 	return kk
 }
 
-func searchEntries(st string, help bool) []Row {
+func searchEntries(st string, showDeleted, help bool) []Row {
 
 	rows, err := fts_db.Query("SELECT lm_id, highlight(fts, 0, '\x1b[48;5;31m', '\x1b[49m') "+
 		"FROM fts WHERE fts MATCH ? ORDER BY bm25(fts, 2.0, 1.0, 5.0);",
@@ -658,9 +658,6 @@ func searchEntries(st string, help bool) []Row {
 	}
 
 	if len(ftsIds) == 0 {
-		sess.showOrgMessage("No results were returned")
-		sess.eraseRightScreen() //note can still return no rows from get_items_by_id if we found rows above that were deleted
-		org.mode = NO_ROWS
 		return []Row{}
 	}
 
@@ -679,8 +676,11 @@ func searchEntries(st string, help bool) []Row {
 	}
 
 	stmt += strconv.Itoa(ftsIds[max]) + ")"
-	//stmt +=      << ((!org.show_deleted) ? " AND task.completed IS NULL AND task.deleted = False" : "")
-	stmt += " AND task.completed IS NULL AND task.deleted = False ORDER BY "
+	if showDeleted {
+		stmt += " ORDER BY "
+	} else {
+		stmt += " AND task.completed IS NULL AND task.deleted = False ORDER BY "
+	}
 
 	for i := 0; i < max; i++ {
 		stmt += "task.id = " + strconv.Itoa(ftsIds[i]) + " DESC, "
@@ -718,13 +718,6 @@ func searchEntries(st string, help bool) []Row {
 		row.ftsTitle = ftsTitles[row.id]
 
 		orgRows = append(orgRows, row)
-	}
-
-	if len(orgRows) == 0 {
-		sess.showOrgMessage("No results were returned")
-		org.mode = NO_ROWS
-	} else {
-		org.mode = FIND
 	}
 	return orgRows
 }

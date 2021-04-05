@@ -387,8 +387,12 @@ func (o *Organizer) refresh(unused int) {
 		if o.taskview == BY_FIND {
 			//o.rows = nil
 			o.fc, o.fr, o.rowoff = 0, 0, 0
-			o.rows = searchEntries(sess.fts_search_terms, false)
-			if unused != -1 {
+			o.rows = searchEntries(sess.fts_search_terms, o.show_deleted, false)
+			if len(o.rows) == 0 {
+				sess.showOrgMessage("No results were returned")
+				o.mode = NO_ROWS
+			}
+			if unused != -1 { //complete kluge has to do with refreshing when syncing
 				o.drawPreviewWindow()
 			}
 		} else {
@@ -398,7 +402,7 @@ func (o *Organizer) refresh(unused int) {
 				sess.showOrgMessage("No results were returned")
 				o.mode = NO_ROWS
 			}
-			if unused != -1 {
+			if unused != -1 { //complete kluge has to do with refreshing when syncing
 				o.drawPreviewWindow()
 			}
 		}
@@ -439,8 +443,12 @@ func (o *Organizer) find(pos int) {
 	o.fc, o.fr, o.rowoff = 0, 0, 0
 
 	sess.showOrgMessage("Searching for '%s'", searchTerms)
-	//sess.fts_search_terms = searchTerms
-	o.rows = searchEntries(searchTerms, false)
+	org.mode = FIND
+	o.rows = searchEntries(searchTerms, o.show_deleted, false)
+	if len(o.rows) == 0 {
+		sess.showOrgMessage("No results were returned")
+		o.mode = NO_ROWS
+	}
 	o.drawPreviewWindow()
 }
 
