@@ -26,7 +26,7 @@ func (o *Organizer) refreshScreen() {
 	//fmt.Fprint(os.Stdout, ab.String())
 	fmt.Print(ab.String())
 
-	if o.mode == FIND {
+	if o.mode == FIND || o.last_mode == FIND {
 		o.drawSearchRows()
 	} else if o.mode == ADD_CHANGE_FILTER {
 		o.drawAltRows()

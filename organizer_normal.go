@@ -207,7 +207,7 @@ func G_N() {
 func colon_N() {
 	sess.showOrgMessage(":")
 	org.command_line = ""
-	org.last_mode = org.mode
+	org.last_mode = org.mode // one thing it does - keep display in FIND mode
 	org.mode = COMMAND_LINE
 }
 

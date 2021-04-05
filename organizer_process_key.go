@@ -21,31 +21,26 @@ func organizerProcessKey(c int) {
 		switch c {
 		case ':':
 			colon_N()
-			//return
 		case '\x1b':
 			org.command = ""
 			org.repeat = 0
-			//return
 		case 'i', 'I', 'a', 'A', 's':
 			org.insertRow(0, "", true, false, false, BASE_DATE)
 			org.mode = INSERT
 			org.command = ""
 			org.repeat = 0
-			//return
 		}
-		//return
 
 	case FIND:
 		switch c {
 		case ARROW_UP, ARROW_DOWN, ARROW_LEFT, ARROW_RIGHT:
 			org.moveCursor(c)
-			//return
-
+		case ':':
+			colon_N()
 		default:
 			org.mode = NORMAL
 			org.command = ""
 			organizerProcessKey(c)
-			//return
 		}
 
 	case INSERT:
