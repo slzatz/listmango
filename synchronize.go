@@ -965,53 +965,66 @@ func synchronize(reportOnly bool) {
 	// server deleted entries
 	for _, e := range server_deleted_entries {
 		var id int
-		err := db.QueryRow("DELETE FROM task WHERE tid=? RETURNING id;", e.id).Scan(&id)
+		err := db.QueryRow("SELECT id FROM task WHERE tid=?;", e.id).Scan(&id)
 		if err != nil {
-			fmt.Fprintf(&lg, "Error deleting client entry %q with tid %d: %v\n", tc(e.title, 15, true), e.id, err)
+			fmt.Fprintf(&lg, "Error selecting id for client entry %q with tid %d: %v\n", tc(e.title, 15, true), e.id, err)
 			continue
 		}
-		fmt.Fprintf(&lg, "Deleted client entry %q with tid %d\n", truncate(e.title, 15), e.id)
+		//err := db.QueryRow("DELETE FROM task WHERE tid=? RETURNING id;", e.id).Scan(&id) //appears mattn doesn't support RETURNING
+		_, err = db.Exec("DELETE FROM task WHERE id=?;", id) //appears mattn doesn't support RETURNING
+		if err != nil {
+			fmt.Fprintf(&lg, "Error deleting client entry %q with id %d and tid %d: %v\n", tc(e.title, 15, true), id, e.id, err)
+			continue
+		}
+		fmt.Fprintf(&lg, "Deleted client entry %q with id %d and tid %d\n", truncate(e.title, 15), id, e.id)
 
 		_, err = db.Exec("DELETE FROM task_keyword WHERE task_id=?;", id)
 		if err != nil {
-			fmt.Fprintf(&lg, "Error deleting task_keyword client rows where entry id = %d: %v\n", e.id, err)
+			fmt.Fprintf(&lg, "Error deleting task_keyword client rows where entry id = %d: %v\n", id, err)
 			continue
 		}
+		fmt.Fprintf(&lg, "and on client deleted task_id %d from task_keyword\n", id)
 	}
 
 	// client deleted entries
 	for _, e := range client_deleted_entries {
-		// since on server, we just set deleted to true
-		// since may have to sync with other clients
-		if e.tid == 0 {
-			fmt.Fprintf(&lg, "There is no server entry to delete for client id %d\n", e.id)
-			continue
-		}
 
-		_, err := pdb.Exec("UPDATE task SET deleted=true, modified=now() WHERE id=$1", e.tid) /**************/
-		if err != nil {
-			fmt.Fprintf(&lg, "Error setting server entry with id %d to deleted: %v\n", e.tid, err)
-			continue
-		}
-		fmt.Fprintf(&lg, "Updated server entry %q with id %d to deleted = true\n", truncate(e.title, 15), e.tid)
 		_, err = db.Exec("DELETE FROM task WHERE id=?", e.id)
 		if err != nil {
 			fmt.Fprintf(&lg, "Error deleting client entry %q with id %d: %v\n", tc(e.title, 15, true), e.id, err)
 			continue
 		}
+		fmt.Fprintf(&lg, "Deleted client entry %q with id %d\n", tc(e.title, 15, true), e.id)
 
 		_, err = db.Exec("DELETE FROM task_keyword WHERE task_id=?;", e.id)
 		if err != nil {
 			fmt.Fprintf(&lg, "Error deleting task_keyword client rows where entry id = %d: %v\n", e.id, err)
 			continue
 		}
+		fmt.Fprintf(&lg, "and on client deleted task_id %d from task_keyword\n", e.id)
+
+		// since on server, we just set deleted to true
+		// since may have to sync with other clients
+		// also client task may have been new (never synced) and deleted (tid=0)
+		if e.tid == 0 {
+			fmt.Fprintf(&lg, "There is no server entry to delete for client id %d\n", e.id)
+			continue
+		}
+
+		_, err := pdb.Exec("UPDATE task SET deleted=true, modified=now() WHERE id=$1", e.tid)
+		if err != nil {
+			fmt.Fprintf(&lg, "Error setting server entry with id %d to deleted: %v\n", e.tid, err)
+			continue
+		}
+		fmt.Fprintf(&lg, "Updated server entry %q with id %d to deleted = true\n", truncate(e.title, 15), e.tid)
+
 		_, err = pdb.Exec("DELETE FROM task_keyword WHERE task_id=$1;", e.tid)
 		if err != nil {
 			fmt.Fprintf(&lg, "Error deleting task_keyword server rows where entry id = %d: %v\n", e.tid, err)
 			continue
 		}
+		fmt.Fprintf(&lg, "and on server deleted task_id %d from task_keyword\n", e.tid)
 
-		fmt.Fprintf(&lg, "Deleted client entry %q with id %d\n", tc(e.title, 15, true), e.id)
 	}
 
 	//server_deleted_contexts
