@@ -900,7 +900,7 @@ func synchronize(reportOnly bool) {
 		if err != nil {
 			fmt.Fprintf(&lg, "Error in Update tag in fts: %v\n", err)
 		} else {
-			fmt.Fprintf(&lg, "Keywords %q updated in fts_db for client id %d\n", tag, client_id)
+			fmt.Fprintf(&lg, "Set fts_db tag(keywords) for client id %d to %q\n", client_id, tag)
 		}
 	}
 
