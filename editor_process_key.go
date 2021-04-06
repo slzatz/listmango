@@ -93,11 +93,11 @@ func editorProcessKey(c int) bool { //bool returned is whether to redraw
 
 	sess.showOrgMessage("char = %d; nop = %t", c, nop) //debugging
 
-	if nop || p.mode == COMMAND_LINE {
+	if nop || p.mode == COMMAND_LINE || p.mode == SEARCH {
 		//don't send keys to nvim - don't want it processing them
-		sess.showEdMessage("NOP or COMMAND_LINE")
+		sess.showEdMessage("NOP or COMMAND_LINE or SEARCH - %q", p.mode)
 	} else {
-
+		sess.showEdMessage("Not in NOP or COMMAND_LINE or SEARCH - %q", p.mode)
 		if z, found := termcodes[c]; found {
 			v.FeedKeys(z, "t", true)
 		} else {
@@ -108,25 +108,30 @@ func editorProcessKey(c int) bool { //bool returned is whether to redraw
 		}
 
 		mode, _ := v.Mode()
-		sess.showEdMessage("blocking: %t; mode: %s; dirty: %d", mode.Blocking, mode.Mode, p.dirty) //debugging
+		sess.showOrgMessage("blocking: %t; mode: %s; dirty: %d", mode.Blocking, mode.Mode, p.dirty) //debugging
 		//Example of input that blocks is entering a number (eg, 4x) in NORMAL mode
 		//If blocked true you can't retrieve buffer with v.BufferLines (app just locks up)
 		if mode.Blocking {
 			return false // don't draw rows - which calls v.BufferLines
 		}
 		if mode.Mode == "c" {
-			p.mode = COMMAND_LINE
+			//p.mode = COMMAND_LINE
 			p.command_line = ""
 			p.command = ""
-			sess.showEdMessage(":")
-
-			// below will put nvim back in NORMAL mode but listmango will be in COMMAND_LINE
-			// essentially park nvim in NORMAL mode and don't feed it any keys while
-			// in COMMAND_LINE mode
-			_, err := v.Input("\x1b")
-			if err != nil {
-				sess.showEdMessage("Error input escape: %v", err)
+			if c == ':' {
+				p.mode = COMMAND_LINE
+				// below will put nvim back in NORMAL mode but listmango will be in COMMAND_LINE
+				// essentially park nvim in NORMAL mode and don't feed it any keys while
+				// in COMMAND_LINE mode
+				_, err := v.Input("\x1b")
+				if err != nil {
+					sess.showEdMessage("Error input escape: %v", err)
+				}
+			} else {
+				p.mode = SEARCH
 			}
+			sess.showEdMessage(string(c))
+
 			return false
 		}
 		p.mode = modeMap[mode.Mode]
@@ -158,6 +163,32 @@ func editorProcessKey(c int) bool { //bool returned is whether to redraw
 			}
 		case VISUAL, VISUAL_LINE, VISUAL_BLOCK:
 			p.vb_highlight = highlightInfo(v)
+		case SEARCH:
+			if z, found := termcodes[c]; found {
+				v.FeedKeys(z, "t", true)
+			} else {
+				_, err := v.Input(string(c))
+				if err != nil {
+					sess.showEdMessage("Error in nvim.Input: %v", err)
+				}
+			}
+			if c == '\r' {
+				// note return puts nvim into normal mode
+				p.mode = NORMAL //gets reverted anyway
+				//sess.showEdMessage("%q", p.mode)
+				//mode, _ := v.Mode()
+				//sess.showOrgMessage("blocking: %t; mode: %s; dirty: %d", mode.Blocking, mode.Mode, p.dirty) //debugging
+				break
+			} else if c == DEL_KEY || c == BACKSPACE {
+				if len(p.command_line) > 0 {
+					p.command_line = p.command_line[:len(p.command_line)-1]
+				}
+			} else {
+				p.command_line += string(c)
+			}
+
+			sess.showEdMessage("/%s", p.command_line)
+			return false
 		}
 
 		p.bb, _ = v.BufferLines(p.vbuf, 0, -1, true) //reading updated buffer
@@ -168,8 +199,6 @@ func editorProcessKey(c int) bool { //bool returned is whether to redraw
 		if c == 'u' && p.mode == NORMAL {
 			showVimMessage()
 		}
-
-		//showVimMessage() // doesn't work to show this all the time - ? why
 
 		if p.mode == PENDING { // -> operator pending (eg. typed 'd')
 			return false

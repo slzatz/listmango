@@ -253,12 +253,22 @@ func (s *Session) returnCursor() {
 	var ab strings.Builder
 	if s.editorMode {
 		// the lines below position the cursor where it should go
-		if p.mode != COMMAND_LINE {
-			fmt.Fprintf(&ab, "\x1b[%d;%dH", p.cy+p.top_margin, p.cx+p.left_margin+p.left_margin_offset+1)
-		} else { //E.mode == COMMAND_LINE
+		/*
+			if p.mode != COMMAND_LINE {
+				fmt.Fprintf(&ab, "\x1b[%d;%dH", p.cy+p.top_margin, p.cx+p.left_margin+p.left_margin_offset+1)
+			} else { //E.mode == COMMAND_LINE
+				fmt.Fprintf(&ab, "\x1b[%d;%dH", s.textLines+TOP_MARGIN+2, len(p.command_line)+s.divider+2)
+				ab.WriteString("\x1b[?25h") // show cursor
+			}
+		*/
+
+		switch p.mode {
+		case COMMAND_LINE, SEARCH:
 			fmt.Fprintf(&ab, "\x1b[%d;%dH", s.textLines+TOP_MARGIN+2, len(p.command_line)+s.divider+2)
-			ab.WriteString("\x1b[?25h") // show cursor
+		default:
+			fmt.Fprintf(&ab, "\x1b[%d;%dH", p.cy+p.top_margin, p.cx+p.left_margin+p.left_margin_offset+1)
 		}
+
 	} else {
 		if org.mode == FIND {
 			fmt.Fprintf(&ab, "\x1b[%d;%dH\x1b[1;34m>", org.cy+TOP_MARGIN+1, LEFT_MARGIN) //blue
