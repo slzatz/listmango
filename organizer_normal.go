@@ -31,7 +31,7 @@ var n_lookup = map[string]func(){
 	"$":                  dollar_N,
 	"I":                  I_N,
 	"G":                  G_N,
-	":":                  colon_N,
+	":":                  exCmd,
 	"v":                  v_N,
 	"p":                  p_N,
 	"*":                  asterisk_N,
@@ -204,10 +204,10 @@ func G_N() {
 }
 
 //case ':':
-func colon_N() {
+func exCmd() {
 	sess.showOrgMessage(":")
 	org.command_line = ""
-	org.last_mode = org.mode // one thing it does - keep display in FIND mode
+	org.last_mode = org.mode
 	org.mode = COMMAND_LINE
 }
 
