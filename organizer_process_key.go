@@ -20,7 +20,7 @@ func organizerProcessKey(c int) {
 	case NO_ROWS:
 		switch c {
 		case ':':
-			colon_N()
+			exCmd()
 		case '\x1b':
 			org.command = ""
 			org.repeat = 0
@@ -35,8 +35,6 @@ func organizerProcessKey(c int) {
 		switch c {
 		case ARROW_UP, ARROW_DOWN, ARROW_LEFT, ARROW_RIGHT:
 			org.moveCursor(c)
-		case ':':
-			colon_N()
 		default:
 			org.mode = NORMAL
 			org.command = ""
