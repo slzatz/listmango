@@ -88,7 +88,8 @@ type AltRow struct {
 	star  bool
 }
 
-type Entry struct { //right now only for getEntryInfo
+// used in synchronize and getEntryInfo
+type Entry struct {
 	id          int
 	tid         int
 	title       string
@@ -115,7 +116,6 @@ type Container struct {
 }
 
 //type outlineKey int
-
 const (
 	BACKSPACE  = iota + 127
 	ARROW_LEFT = iota + 999 //would have to be < 127 to be chars
@@ -134,8 +134,8 @@ const (
 type Mode int
 
 const (
-	NORMAL Mode = iota
-	PENDING
+	NORMAL  Mode = iota
+	PENDING      // only editor mode
 	INSERT
 	COMMAND_LINE
 	VISUAL_LINE // only editor mode
@@ -147,7 +147,7 @@ const (
 	SEARCH            // only editor mode
 	FIND              // only outline mode
 	ADD_CHANGE_FILTER // only outline mode
-	SYNC_LOG
+	SYNC_LOG          // only outline mode
 )
 
 func (m Mode) String() string {
@@ -169,17 +169,7 @@ func (m Mode) String() string {
 	}[m]
 }
 
-//var m Mode = NORMAL
-//fmt.Print(m)
-/*
-enum DB {
-  SQLITE,
-  POSTGRES
-};
-*/
-
 //type View int
-
 const (
 	TASK = iota
 	CONTEXT
@@ -189,7 +179,6 @@ const (
 )
 
 //type TaskView int
-
 const (
 	BY_CONTEXT = iota
 	BY_FOLDER

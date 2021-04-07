@@ -95,6 +95,7 @@ func editorProcessKey(c int) bool { //bool returned is whether to redraw
 
 	if nop || p.mode == COMMAND_LINE || p.mode == SEARCH {
 		//don't send keys to nvim - don't want it processing them
+		// except for SEARCH you do want to process keys and that is done below
 		//sess.showEdMessage("NOP or COMMAND_LINE or SEARCH - %q", p.mode)
 	} else {
 		//sess.showEdMessage("Not in NOP or COMMAND_LINE or SEARCH - %q", p.mode)
@@ -109,20 +110,20 @@ func editorProcessKey(c int) bool { //bool returned is whether to redraw
 
 		mode, _ := v.Mode()
 		sess.showOrgMessage("blocking: %t; mode: %s; dirty: %d", mode.Blocking, mode.Mode, p.dirty) //debugging
-		//Example of input that blocks is entering a number (eg, 4x) in NORMAL mode
-		//If blocked true you can't retrieve buffer with v.BufferLines (app just locks up)
+		// Example of input that blocks is entering a number (eg, 4x) in NORMAL mode
+		// If blocked = true you can't retrieve buffer with v.BufferLines -
+		// app just locks up
 		if mode.Blocking {
 			return false // don't draw rows - which calls v.BufferLines
 		}
 		if mode.Mode == "c" {
-			//p.mode = COMMAND_LINE
 			p.command_line = ""
 			p.command = ""
 			if c == ':' {
 				p.mode = COMMAND_LINE
-				// below will put nvim back in NORMAL mode but listmango will be in COMMAND_LINE
-				// essentially park nvim in NORMAL mode and don't feed it any keys while
-				// in COMMAND_LINE mode
+				// below will put nvim back in NORMAL mode but listmango will be
+				// in COMMAND_LINE mode, ie 'park' nvim in NORMAL mode
+				// and don't feed it any keys while in listmango COMMAND_LINE mode
 				_, err := v.Input("\x1b")
 				if err != nil {
 					sess.showEdMessage("Error input escape: %v", err)
@@ -175,13 +176,10 @@ func editorProcessKey(c int) bool { //bool returned is whether to redraw
 				}
 			}
 			if c == '\r' {
-				// note return puts nvim into normal mode
-				p.mode = NORMAL //gets reverted anyway
+				// return puts nvim into normal mode
+				p.mode = NORMAL
 				p.command_line = ""
 				sess.showEdMessage("")
-				//sess.showEdMessage("%q", p.mode)
-				//mode, _ := v.Mode()
-				//sess.showOrgMessage("blocking: %t; mode: %s; dirty: %d", mode.Blocking, mode.Mode, p.dirty) //debugging
 				break
 			} else if c == DEL_KEY || c == BACKSPACE {
 				if len(p.command_line) > 0 {
@@ -193,7 +191,7 @@ func editorProcessKey(c int) bool { //bool returned is whether to redraw
 
 			sess.showEdMessage("%s%s", p.searchPrefix, p.command_line)
 			return false
-		}
+		} // end switch p.mode
 
 		p.bb, _ = v.BufferLines(p.vbuf, 0, -1, true) //reading updated buffer
 		pos, _ := v.WindowCursor(w)                  //set screen cx and cy from pos
