@@ -32,8 +32,9 @@ type Editor struct {
 	is_subeditor        bool
 	is_below            bool
 	//nuspell::Dictionary dict;
-	vbuf nvim.Buffer
-	bb   [][]byte
+	vbuf         nvim.Buffer
+	bb           [][]byte
+	searchPrefix string
 	//bufChanged bool
 }
 

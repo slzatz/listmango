@@ -95,9 +95,9 @@ func editorProcessKey(c int) bool { //bool returned is whether to redraw
 
 	if nop || p.mode == COMMAND_LINE || p.mode == SEARCH {
 		//don't send keys to nvim - don't want it processing them
-		sess.showEdMessage("NOP or COMMAND_LINE or SEARCH - %q", p.mode)
+		//sess.showEdMessage("NOP or COMMAND_LINE or SEARCH - %q", p.mode)
 	} else {
-		sess.showEdMessage("Not in NOP or COMMAND_LINE or SEARCH - %q", p.mode)
+		//sess.showEdMessage("Not in NOP or COMMAND_LINE or SEARCH - %q", p.mode)
 		if z, found := termcodes[c]; found {
 			v.FeedKeys(z, "t", true)
 		} else {
@@ -127,10 +127,12 @@ func editorProcessKey(c int) bool { //bool returned is whether to redraw
 				if err != nil {
 					sess.showEdMessage("Error input escape: %v", err)
 				}
+				sess.showEdMessage(":")
 			} else {
 				p.mode = SEARCH
+				p.searchPrefix = string(c)
+				sess.showEdMessage(p.searchPrefix)
 			}
-			sess.showEdMessage(string(c))
 
 			return false
 		}
@@ -175,6 +177,8 @@ func editorProcessKey(c int) bool { //bool returned is whether to redraw
 			if c == '\r' {
 				// note return puts nvim into normal mode
 				p.mode = NORMAL //gets reverted anyway
+				p.command_line = ""
+				sess.showEdMessage("")
 				//sess.showEdMessage("%q", p.mode)
 				//mode, _ := v.Mode()
 				//sess.showOrgMessage("blocking: %t; mode: %s; dirty: %d", mode.Blocking, mode.Mode, p.dirty) //debugging
@@ -187,7 +191,7 @@ func editorProcessKey(c int) bool { //bool returned is whether to redraw
 				p.command_line += string(c)
 			}
 
-			sess.showEdMessage("/%s", p.command_line)
+			sess.showEdMessage("%s%s", p.searchPrefix, p.command_line)
 			return false
 		}
 
