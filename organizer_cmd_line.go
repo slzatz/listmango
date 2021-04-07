@@ -294,6 +294,8 @@ func (o *Organizer) editNote(id int) {
 			p.linked_editor.linked_editor = p
 			//p.linked_editor.rows = []string{" "}
 			p.left_margin_offset = LEFT_MARGIN_OFFSET
+		} else if folder_tid == 21 {
+			p.left_margin_offset = LEFT_MARGIN_OFFSET
 		}
 		readNoteIntoEditor(id)
 
