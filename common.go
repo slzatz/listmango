@@ -7,6 +7,8 @@ import (
 
 var z0 = struct{}{}
 
+// these are p.nvimModes some of which overlap
+// with p.modes but some don't
 var modeMap = map[string]Mode{
 	"n":  NORMAL,
 	"no": PENDING,
@@ -137,11 +139,12 @@ const (
 	NORMAL  Mode = iota
 	PENDING      // only editor mode
 	INSERT
-	COMMAND_LINE
-	VISUAL_LINE // only editor mode
+	COMMAND_LINE // only in org mode
+	EX_COMMAND   // only in editor mode
+	VISUAL_LINE  // only editor mode
 	VISUAL
-	REPLACE
-	FILE_DISPLAY // only outline mode
+	REPLACE      // only explicit in org mode
+	FILE_DISPLAY // only org mode
 	NO_ROWS
 	VISUAL_BLOCK      // only editor mode
 	SEARCH            // only editor mode
@@ -156,6 +159,7 @@ func (m Mode) String() string {
 		"PENDING",
 		"INSERT",
 		"COMMAND LINE",
+		"EX COMMAND",
 		"VISUAL LINE",
 		"VISUAL",
 		"REPLACE",

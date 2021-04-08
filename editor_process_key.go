@@ -95,7 +95,7 @@ func editorProcessKey(c int) bool { //bool returned is whether to redraw
 
 	//sess.showOrgMessage("char = %d; nop = %t", c, nop) //debugging
 
-	if nop || p.mode == COMMAND_LINE || p.mode == SEARCH {
+	if nop || p.mode == EX_COMMAND || p.mode == SEARCH {
 		//don't send keys to nvim - don't want it processing them
 		// except for SEARCH you do want to process keys but ? don't update mode and that is done below
 		//sess.showEdMessage("NOP or COMMAND_LINE or SEARCH - %q", p.mode)
@@ -123,7 +123,7 @@ func editorProcessKey(c int) bool { //bool returned is whether to redraw
 			p.command_line = ""
 			p.command = ""
 			if c == ':' {
-				p.mode = COMMAND_LINE
+				p.mode = EX_COMMAND
 				/*
 				 below will put nvim back in NORMAL mode but listmango will be
 				 in COMMAND_LINE mode, ie 'park' nvim in NORMAL mode
@@ -155,10 +155,11 @@ func editorProcessKey(c int) bool { //bool returned is whether to redraw
 				"\x16": VISUAL_BLOCK,
 		*/
 
+		// believe I am intercepting any instances where mode.Mode = "c'
 		p.mode = modeMap[mode.Mode]
 	}
 
-	if p.mode != COMMAND_LINE {
+	if p.mode != EX_COMMAND {
 		switch p.mode {
 		case INSERT:
 			sess.showEdMessage("--INSERT--")
@@ -235,7 +236,7 @@ func editorProcessKey(c int) bool { //bool returned is whether to redraw
 		}
 	}
 
-	/************Everything below is for COMMAND_LINE**************/
+	/************Everything below is for EX_COMMAND**************/
 
 	if c == '\r' {
 		pos := strings.Index(p.command_line, " ")
@@ -391,5 +392,5 @@ func editorProcessKey(c int) bool { //bool returned is whether to redraw
 	}
 
 	sess.showEdMessage(":%s", p.command_line)
-	return false //end COMMAND_LINE
+	return false //end EX_COMMAND
 }

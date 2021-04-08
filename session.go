@@ -263,7 +263,7 @@ func (s *Session) returnCursor() {
 		*/
 
 		switch p.mode {
-		case COMMAND_LINE, SEARCH:
+		case EX_COMMAND, SEARCH:
 			fmt.Fprintf(&ab, "\x1b[%d;%dH", s.textLines+TOP_MARGIN+2, len(p.command_line)+s.divider+2)
 		default:
 			fmt.Fprintf(&ab, "\x1b[%d;%dH", p.cy+p.top_margin, p.cx+p.left_margin+p.left_margin_offset+1)
