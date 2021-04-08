@@ -75,7 +75,7 @@ func (e *Editor) find_match_for_left_brace(left_brace byte, back bool) bool {
 
 		c++
 	}
-	y := e.getScreenYFromRowColWW(r, c) - e.line_offset
+	y := e.getScreenYFromRowColWW(r, c) - e.lineOffset
 	if y >= e.screenlines {
 		return false
 	}
@@ -85,7 +85,7 @@ func (e *Editor) find_match_for_left_brace(left_brace byte, back bool) bool {
 	fmt.Printf("\x1b[%d;%dH\x1b[48;5;244m%s", y+e.top_margin, x, string(right_brace))
 
 	x = e.getScreenXFromRowColWW(e.fr, e.fc-b) + e.left_margin + e.left_margin_offset + 1
-	y = e.getScreenYFromRowColWW(e.fr, e.fc-b) + e.top_margin - e.line_offset // added line offset 12-25-2019
+	y = e.getScreenYFromRowColWW(e.fr, e.fc-b) + e.top_margin - e.lineOffset // added line offset 12-25-2019
 	fmt.Printf("\x1b[%d;%dH\x1b[48;5;244m%s\x1b[0m", y, x, string(left_brace))
 	sess.showEdMessage("r = %d   c = %d", r, c)
 	return true
@@ -106,7 +106,7 @@ func (e *Editor) findMatchForBrace() bool {
 	//right_brace := m[left_brace]
 
 	//e.showMessage("left brace: {}", left_brace);
-	y := e.getScreenYFromRowColWW(r, c) - e.line_offset
+	y := e.getScreenYFromRowColWW(r, c) - e.lineOffset
 	if y >= e.screenlines {
 		return false
 	}
@@ -118,7 +118,7 @@ func (e *Editor) findMatchForBrace() bool {
 	//x = e.getScreenXFromRowColWW(e.fr, e.fc-b) + e.left_margin + e.left_margin_offset + 1
 	x = e.getScreenXFromRowColWW(e.fr, e.fc) + e.left_margin + e.left_margin_offset + 1
 	//y = e.getScreenYFromRowColWW(e.fr, e.fc-b) + e.top_margin - e.line_offset // added line offset 12-25-2019
-	y = e.getScreenYFromRowColWW(e.fr, e.fc) + e.top_margin - e.line_offset // added line offset 12-25-2019
+	y = e.getScreenYFromRowColWW(e.fr, e.fc) + e.top_margin - e.lineOffset // added line offset 12-25-2019
 	//fmt.Printf("\x1b[%d;%dH\x1b[48;5;244m%s\x1b[0m", y, x, string(left_brace))
 	fmt.Printf("\x1b[%d;%dH\x1b[48;5;244m%s\x1b[0m", y, x, "[")
 	v.SetWindowCursor(w, [2]int{e.fr + 1, e.fc}) //set screen cx and cy from pos
@@ -166,7 +166,7 @@ func (e *Editor) find_match_for_right_brace(right_brace byte, back bool) bool {
 		c--
 	}
 
-	y := e.getScreenYFromRowColWW(r, c) - e.line_offset
+	y := e.getScreenYFromRowColWW(r, c) - e.lineOffset
 	if y < 0 {
 		return false
 	}
@@ -175,7 +175,7 @@ func (e *Editor) find_match_for_right_brace(right_brace byte, back bool) bool {
 	fmt.Printf("\x1b[%d;%dH\x1b[48;5;244m%s", y+e.top_margin, x, string(left_brace))
 
 	x = e.getScreenXFromRowColWW(e.fr, e.fc-b) + e.left_margin + e.left_margin_offset + 1
-	y = e.getScreenYFromRowColWW(e.fr, e.fc-b) + e.top_margin - e.line_offset // added line offset 12-25-2019
+	y = e.getScreenYFromRowColWW(e.fr, e.fc-b) + e.top_margin - e.lineOffset // added line offset 12-25-2019
 	fmt.Printf("\x1b[%d;%dH\x1b[48;5;244m%s\x1b[0m", y, x, string(right_brace))
 	sess.showEdMessage("r = %d   c = %d", r, c)
 	return true
@@ -542,7 +542,7 @@ func (e *Editor) draw_visual(pab *strings.Builder) {
 
 		x := e.left_margin + e.left_margin_offset + 1
 		//int y = editorgetscreenyfromrowcolww(h_light[0], 0) + top_margin - line_offset;
-		y := e.getScreenYFromRowColWW(startRow, 0) - e.line_offset
+		y := e.getScreenYFromRowColWW(startRow, 0) - e.lineOffset
 
 		if y >= 0 {
 			fmt.Fprintf(pab, "\x1b[%d;%dH\x1b[48;5;244m", y+e.top_margin, x)
@@ -578,7 +578,7 @@ func (e *Editor) draw_visual(pab *strings.Builder) {
 		numrows := endRow - startRow + 1
 
 		x := e.getScreenXFromRowColWW(startRow, startcol) + e.left_margin + e.left_margin_offset
-		y := e.getScreenYFromRowColWW(startRow, startcol) + e.top_margin - e.line_offset // - 1
+		y := e.getScreenYFromRowColWW(startRow, startcol) + e.top_margin - e.lineOffset // - 1
 
 		pab.WriteString("\x1b[48;5;244m")
 		for n := 0; n < numrows; n++ {
@@ -621,7 +621,7 @@ func (e *Editor) draw_visual(pab *strings.Builder) {
 		}
 
 		x := e.getScreenXFromRowColWW(e.vb_highlight[0][1], left) + e.left_margin + e.left_margin_offset
-		y := e.getScreenYFromRowColWW(e.vb_highlight[0][1], left) + e.top_margin - e.line_offset - 1
+		y := e.getScreenYFromRowColWW(e.vb_highlight[0][1], left) + e.top_margin - e.lineOffset - 1
 
 		pab.WriteString("\x1b[48;5;244m")
 		for n := 0; n < (e.vb_highlight[1][1] - e.vb_highlight[0][1] + 1); n++ {
@@ -855,7 +855,7 @@ func (e *Editor) generateWWStringFromBuffer() string {
 	}
 
 	var ab strings.Builder
-	y := -e.line_offset
+	y := -e.lineOffset
 	filerow := 0
 
 	for {
@@ -949,7 +949,7 @@ func (e *Editor) drawStatusBar() {
 func (e *Editor) scroll() {
 
 	if e.fc == 0 && e.fr == 0 {
-		e.cy, e.cx, e.line_offset, e.prev_line_offset, e.first_visible_row, e.last_visible_row = 0, 0, 0, 0, 0, 0
+		e.cy, e.cx, e.lineOffset, e.first_visible_row, e.last_visible_row = 0, 0, 0, 0, 0
 		return //false // blocking issue with bb, err := v.BufferLines(0, 0, -1, true) in drawBuffer
 	}
 
@@ -957,53 +957,60 @@ func (e *Editor) scroll() {
 	cy := e.getScreenYFromRowColWW(e.fr, e.fc)
 
 	//deal with scroll insufficient to include the current line
-	if cy > e.screenlines+e.line_offset-1 {
-		e.line_offset = cy - e.screenlines + 1 ////
-		e.first_visible_row, e.line_offset = e.getInitialRow(e.line_offset)
+	if cy > e.screenlines+e.lineOffset-1 {
+		e.lineOffset = cy - e.screenlines + 1 ////
+		e.adjustFirstVisibleRow()             //can also change e.lineOffset
 	}
 
-	if cy < e.line_offset {
-		e.line_offset = cy
-		e.first_visible_row, e.line_offset = e.getInitialRow(e.line_offset)
+	if cy < e.lineOffset {
+		e.lineOffset = cy
+		e.adjustFirstVisibleRow()
 	}
 
-	if e.line_offset == 0 {
+	if e.lineOffset == 0 {
 		e.first_visible_row = 0
 	}
 
-	e.cy = cy - e.line_offset
-	e.prev_line_offset = e.line_offset
+	e.cy = cy - e.lineOffset
 }
 
-func (e *Editor) getInitialRow(line_offset int) (int, int) {
+// e.lineOffset determines the first
+// visible row but we want the whole row
+// visible so that can change e.lineOffset
+func (e *Editor) adjustFirstVisibleRow() {
 
-	if line_offset == 0 {
-		return 0, 0
+	if e.lineOffset == 0 {
+		e.first_visible_row = 0
+		return
 	}
 
-	initial_row := 0
+	rowNum := 0
 	lines := 0
 
 	for {
-		lines += e.getLinesInRowWW(initial_row)
-		initial_row++
+		lines += e.getLinesInRowWW(rowNum)
+		rowNum++
 
-		// there is no need to adjust line_offset
-		// if it happens that we start
-		// on the first line of row r
-		if lines == line_offset {
+		/*
+			there is no need to adjust line_offset
+			if it happens that we start
+			on the first line of the first visible row
+		*/
+		if lines == e.lineOffset {
 			break
 		}
 
-		// need to adjust line_offset
-		// so we can start on the first
-		// line of row r
-		if lines > line_offset {
-			line_offset = lines
+		/*
+			need to adjust line_offset
+			so we can start on the first
+			line of the top row
+		*/
+		if lines > e.lineOffset {
+			e.lineOffset = lines
 			break
 		}
 	}
-	return initial_row, line_offset
+	e.first_visible_row = rowNum
 }
 
 func (e *Editor) readFileIntoNote(filename string) error {
@@ -1031,7 +1038,7 @@ func (e *Editor) readFileIntoNote(filename string) error {
 		return fmt.Errorf("Error reading file %q: %v", filename, err)
 	}
 
-	e.fr, e.fc, e.cy, e.cx, e.line_offset, e.prev_line_offset, e.first_visible_row, e.last_visible_row = 0, 0, 0, 0, 0, 0, 0, 0
+	e.fr, e.fc, e.cy, e.cx, e.lineOffset, e.first_visible_row, e.last_visible_row = 0, 0, 0, 0, 0, 0, 0
 
 	e.dirty++
 	e.refreshScreen()

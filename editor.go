@@ -3,11 +3,9 @@ package main
 import "github.com/neovim/go-client/nvim"
 
 type Editor struct {
-	cx, cy              int //cursor x and y position
-	fc, fr              int // file x and y position
-	line_offset         int //row the user is currently scrolled to
-	prev_line_offset    int
-	coloff              int //column user is currently scrolled to
+	cx, cy              int //screen cursor x and y position
+	fc, fr              int // file cursor x and y position
+	lineOffset          int //first row based on user scroll
 	screenlines         int //number of lines for this Editor
 	screencols          int //number of columns for this Editor
 	left_margin         int //can vary (so could TOP_MARGIN - will do that later
@@ -35,7 +33,7 @@ type Editor struct {
 	vbuf         nvim.Buffer
 	bb           [][]byte
 	searchPrefix string
-	//bufChanged bool
+	//coloff              int //first column based on user scroll (word wrap)
 }
 
 func NewEditor() *Editor {
@@ -44,8 +42,7 @@ func NewEditor() *Editor {
 		cy:                0, //actual cursor y position ""
 		fc:                0, //'file' x position as defined by reading sqlite text into rows vector
 		fr:                0, //'file' y position ""
-		line_offset:       0, //the number of lines of text at the top scrolled off the screen
-		prev_line_offset:  0, //the prev number of lines of text at the top scrolled off the screen
+		lineOffset:        0, //the number of lines of text at the top scrolled off the screen
 		dirty:             0, //has filed changed since last save
 		mode:              0, //0=normal, 1=insert, 2=command line, 3=visual line, 4=visual, 5='r'
 		command:           "",

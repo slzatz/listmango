@@ -142,8 +142,8 @@ func editorProcessKey(c int) bool { //bool returned is whether to redraw
 
 			return false
 		}
-		/*
 
+		/*
 			modeMap = map[string]Mode
 				"n":  NORMAL,
 				"no": PENDING,
@@ -153,8 +153,8 @@ func editorProcessKey(c int) bool { //bool returned is whether to redraw
 				"v":    VISUAL,
 				"V":    VISUAL_LINE,
 				"\x16": VISUAL_BLOCK,
-
 		*/
+
 		p.mode = modeMap[mode.Mode]
 	}
 

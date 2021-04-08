@@ -182,8 +182,7 @@ func (e *Editor) compile() {
 	le.fc = 0
 	le.cy = 0
 	le.cx = 0
-	le.line_offset = 0
-	le.prev_line_offset = 0
+	le.lineOffset = 0
 	le.first_visible_row = 0
 	le.last_visible_row = 0
 	le.drawOutputWinText(rows)
@@ -258,8 +257,7 @@ func (e *Editor) runLocal() {
 	le.fc = 0
 	le.cy = 0
 	le.cx = 0
-	le.line_offset = 0
-	le.prev_line_offset = 0
+	le.lineOffset = 0
 	le.first_visible_row = 0
 	le.last_visible_row = 0
 

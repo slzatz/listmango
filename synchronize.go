@@ -873,13 +873,13 @@ func synchronize(reportOnly bool) {
 				fmt.Fprintf(&lg, "Error updating sqlite for an entry with tid: %d: %v\n", e.id, err3)
 				continue
 			}
-			fmt.Fprintf(&lg, "Updated local entry: %s with id %d and tid: %d\n", truncate(e.title, 15), client_id, e.id)
+			fmt.Fprintf(&lg, "Updated local entry %q with id %d and tid: %d\n", truncate(e.title, 15), client_id, e.id)
 
 			_, err4 := fts_db.Exec("UPDATE fts SET title=?, note=? WHERE lm_id=?;", e.title, e.note, client_id)
 			if err4 != nil {
 				fmt.Fprintf(&lg, "Error updating fts_db for entry %s; id: %d; %v\n", truncate(e.title, 15), client_id, err4)
 			} else {
-				fmt.Fprintf(&lg, "and updated fts_db for entry %q with id %d and tid %d\n", truncate(e.title, 15), client_id, e.id)
+				fmt.Fprintf(&lg, "and updated fts_db for entry with id %d and tid %d\n", client_id, e.id)
 			}
 		}
 		// Update the client entry's keywords
