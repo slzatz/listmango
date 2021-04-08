@@ -97,7 +97,7 @@ func editorProcessKey(c int) bool { //bool returned is whether to redraw
 
 	if nop || p.mode == COMMAND_LINE || p.mode == SEARCH {
 		//don't send keys to nvim - don't want it processing them
-		// except for SEARCH you do want to process keys and that is done below
+		// except for SEARCH you do want to process keys but ? don't update mode and that is done below
 		//sess.showEdMessage("NOP or COMMAND_LINE or SEARCH - %q", p.mode)
 	} else {
 		if z, found := termcodes[c]; found {
@@ -185,6 +185,12 @@ func editorProcessKey(c int) bool { //bool returned is whether to redraw
 		case VISUAL, VISUAL_LINE, VISUAL_BLOCK:
 			p.vb_highlight = highlightInfo(v)
 		case SEARCH:
+			/*
+				note that we are processing keys
+				but not updating mode which stays
+				mode.Mode = "c" until you hit return
+				and then goes to NORMAL
+			*/
 			if z, found := termcodes[c]; found {
 				v.FeedKeys(z, "t", true)
 			} else {
@@ -193,6 +199,8 @@ func editorProcessKey(c int) bool { //bool returned is whether to redraw
 					sess.showEdMessage("Error in nvim.Input: %v", err)
 				}
 			}
+			//mode, _ := v.Mode()                         //debug
+			//sess.showOrgMessage("mode = %q", mode.Mode) // debug
 			if c == '\r' {
 				// return puts nvim into normal mode
 				p.mode = NORMAL
