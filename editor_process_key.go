@@ -42,9 +42,8 @@ func highlightInfo(v *nvim.Nvim) [2][4]int {
 	return z
 }
 
-//func editorProcessKey(c int, messageBuf nvim.Buffer) bool { //bool returned is whether to redraw
 func editorProcessKey(c int) bool { //bool returned is whether to redraw
-	// editors are instantiated with sess.p.mode == NORMAL
+	// editors are instantiated with p.mode == NORMAL
 	//p.bufChanged = falsea //using mode = 'no' (operator-pending) instead
 
 	//No matter what mode you are in an escape puts you in NORMAL mode
@@ -58,18 +57,21 @@ func editorProcessKey(c int) bool { //bool returned is whether to redraw
 		p.command_line = ""
 		p.mode = NORMAL
 
-		//if previously in visual mode some text may be highlighted so need to return true
-		// also need the cursor position because for example going from INSERT -> NORMAL causes cursor to move back
-		// note you could fall through to getting pos but that recalcs rows which is unnecessary
+		/*
+			if previously in visual mode some text may be highlighted so need to return true
+			 also need the cursor position because for example going from INSERT -> NORMAL causes cursor to move back
+			 note you could fall through to getting pos but that recalcs rows which is unnecessary
+		*/
 		pos, _ := v.WindowCursor(w) //set screen cx and cy from pos
 		p.fr = pos[0] - 1
 		p.fc = pos[1]
 		sess.showEdMessage("")
 		return true
 	}
-
-	// there are a set of commands like ctrl-w that we are intercepting
-	// note any command that changes the UI like splits or tabs don't make sense
+	/*
+		 there are a set of commands like ctrl-w that we are intercepting
+		note any command that changes the UI like splits or tabs doesn't make sense
+	*/
 	nop := false
 	p.command += string(c)
 	if strings.IndexAny(p.command[0:1], "\x17\x08\x0c\x02\x05\x09\x06") == -1 {
@@ -91,14 +93,13 @@ func editorProcessKey(c int) bool { //bool returned is whether to redraw
 		}
 	*/
 
-	sess.showOrgMessage("char = %d; nop = %t", c, nop) //debugging
+	//sess.showOrgMessage("char = %d; nop = %t", c, nop) //debugging
 
 	if nop || p.mode == COMMAND_LINE || p.mode == SEARCH {
 		//don't send keys to nvim - don't want it processing them
 		// except for SEARCH you do want to process keys and that is done below
 		//sess.showEdMessage("NOP or COMMAND_LINE or SEARCH - %q", p.mode)
 	} else {
-		//sess.showEdMessage("Not in NOP or COMMAND_LINE or SEARCH - %q", p.mode)
 		if z, found := termcodes[c]; found {
 			v.FeedKeys(z, "t", true)
 		} else {
@@ -109,10 +110,12 @@ func editorProcessKey(c int) bool { //bool returned is whether to redraw
 		}
 
 		mode, _ := v.Mode()
-		sess.showOrgMessage("blocking: %t; mode: %s; dirty: %d", mode.Blocking, mode.Mode, p.dirty) //debugging
-		// Example of input that blocks is entering a number (eg, 4x) in NORMAL mode
-		// If blocked = true you can't retrieve buffer with v.BufferLines -
-		// app just locks up
+		/*
+			sess.showOrgMessage("blocking: %t; mode: %s; dirty: %d", mode.Blocking, mode.Mode, p.dirty) //debugging
+			Example of input that blocks is entering a number (eg, 4x) in NORMAL mode
+			If blocked = true you can't retrieve buffer with v.BufferLines -
+			app just locks up
+		*/
 		if mode.Blocking {
 			return false // don't draw rows - which calls v.BufferLines
 		}
@@ -121,9 +124,11 @@ func editorProcessKey(c int) bool { //bool returned is whether to redraw
 			p.command = ""
 			if c == ':' {
 				p.mode = COMMAND_LINE
-				// below will put nvim back in NORMAL mode but listmango will be
-				// in COMMAND_LINE mode, ie 'park' nvim in NORMAL mode
-				// and don't feed it any keys while in listmango COMMAND_LINE mode
+				/*
+				 below will put nvim back in NORMAL mode but listmango will be
+				 in COMMAND_LINE mode, ie 'park' nvim in NORMAL mode
+				 and don't feed it any keys while in listmango COMMAND_LINE mode
+				*/
 				_, err := v.Input("\x1b")
 				if err != nil {
 					sess.showEdMessage("Error input escape: %v", err)
@@ -137,6 +142,19 @@ func editorProcessKey(c int) bool { //bool returned is whether to redraw
 
 			return false
 		}
+		/*
+
+			modeMap = map[string]Mode
+				"n":  NORMAL,
+				"no": PENDING,
+				//"c":    COMMAND_LINE looking for this explicitly but would be cleaner here somehow
+				//"R":    REPLACE // right now doesn't seem necessary to pick up
+				"i":    INSERT,
+				"v":    VISUAL,
+				"V":    VISUAL_LINE,
+				"\x16": VISUAL_BLOCK,
+
+		*/
 		p.mode = modeMap[mode.Mode]
 	}
 
@@ -223,7 +241,7 @@ func editorProcessKey(c int) bool { //bool returned is whether to redraw
 
 		// note that right now we are not calling editor commands like E_write_close_C
 		// and E_quit_C and E_quit0_C
-		sess.showOrgMessage("You hit return and command is %v", cmd)
+		//sess.showOrgMessage("You hit return and command is %v", cmd) //debugging
 		if _, found := quit_cmds[cmd]; found {
 			if cmd == "x" {
 				if p.is_subeditor {
@@ -233,12 +251,12 @@ func editorProcessKey(c int) bool { //bool returned is whether to redraw
 					sess.showEdMessage("You can't save the contents of the Output Window")
 					return false
 				}
-				updateNote() //should be p->E_write_C(); closing_editor = true;
+				updateNote()
 
 				//sess.p.quit <- struct{}{}
 
 				// this seems like a kluge but I can't delete buffer
-				// without generating an error
+				// without generating an error (I think because using nvim 0.44 and not 0.5)
 				err := v.SetBufferLines(0, 0, -1, true, [][]byte{})
 				if err != nil {
 					sess.showOrgMessage("SetBufferLines to []  error %v", err)
@@ -250,7 +268,7 @@ func editorProcessKey(c int) bool { //bool returned is whether to redraw
 				if err != nil {
 					sess.showOrgMessage("SetBufferLines to []  error %v", err)
 				}
-				/* deleteBuffer is failing (for me)
+				/* deleteBuffer is failing (likey 0.44 v. 0.5 nvim)
 					deleteBufferOpts := map[string]bool{
 						"force":  true,
 						"unload": false,
@@ -298,11 +316,11 @@ func editorProcessKey(c int) bool { //bool returned is whether to redraw
 
 				p = editors[0] //kluge should move in some logical fashion
 				sess.positionEditors()
-				sess.eraseRightScreen() //moved down here on 10-24-2020
+				sess.eraseRightScreen()
 				sess.drawEditors()
 
 			} else { // we've quit the last remaining editor(s)
-				// unless commented out earlier sess.p.quiet <- causes panic
+				// unless commented out earlier sess.p.quit <- causes panic
 				//sess.p = nil
 				sess.editorMode = false
 				sess.eraseRightScreen()
@@ -319,6 +337,7 @@ func editorProcessKey(c int) bool { //bool returned is whether to redraw
 			return false
 		} //end quit_cmds
 
+		// for testing looking at message buffer
 		if cmd == "s" { //switch buffer
 			bufs, _ := v.Buffers()
 			if int(p.vbuf) == 2 {
@@ -334,6 +353,7 @@ func editorProcessKey(c int) bool { //bool returned is whether to redraw
 			return true
 		}
 
+		// for testing
 		if cmd == "m" {
 			sess.showEdMessage("buffer %v has been modified %v times", p.vbuf, p.dirty)
 			p.command_line = ""

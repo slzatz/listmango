@@ -784,22 +784,16 @@ func (e *Editor) drawCodeRows(pab *strings.Builder) {
 		return
 	}
 	var cmd *exec.Cmd
-	//var syntax string
 	tid := getFolderTid(e.id)
 	switch tid {
 	case 18:
 		cmd = exec.Command("highlight", "code_file", "--out-format=xterm256", "--style=gruvbox-dark-hard-slz", "--syntax=cpp")
-		//syntax = "--syntax=cpp"
 	case 14:
-		//syntax = "--syntax=go"
 		cmd = exec.Command("highlight", "code_file", "--out-format=xterm256", "--style=gruvbox-dark-hard-slz", "--syntax=go")
 	case 21:
-		//syntax = "--syntax=markdown"
 		cmd = exec.Command("bat", "code_file", "--theme=gruvbox-markdown", "--language=md",
 			"--italic-text=always", "--style=plain", "--paging=never", "--color=always")
-		sess.showEdMessage("Got here")
 	}
-	//cmd := exec.Command("highlight", "code_file", "--out-format=xterm256", "--style=gruvbox-dark-hard-slz", syntax)
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
 		sess.showEdMessage("Error creating pipe for highlighting file: %v", err)
