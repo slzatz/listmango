@@ -42,9 +42,9 @@ func highlightInfo(v *nvim.Nvim) [2][4]int {
 	return z
 }
 
+//note that bool returned is whether to redraw which will freeze program
+//in BufferLines if mode is blocking
 func editorProcessKey(c int) bool { //bool returned is whether to redraw
-	// editors are instantiated with p.mode == NORMAL
-	//p.bufChanged = false //using mode = 'no' (operator-pending) instead
 
 	//No matter what mode you are in an escape puts you in NORMAL mode
 	if c == '\x1b' {
@@ -72,20 +72,20 @@ func editorProcessKey(c int) bool { //bool returned is whether to redraw
 	/*
 		 there are a set of commands like ctrl-w that we are intercepting
 		note any command that changes the UI like splits or tabs doesn't make sense
+		Also note that the if below falls through if p.command is "" and the character isn't
+		one of the one that starts a command
 	*/
 
 	if p.mode == NORMAL {
 		if len(p.command) == 0 {
 			if strings.IndexAny(string(c), "\x17\x08\x0c\x02\x05\x09\x06 ") != -1 {
 				p.command = string(c)
-				//return false
 			}
 		} else {
 			p.command += string(c)
 		}
 
 		if len(p.command) > 0 {
-			//p.command += string(c)
 			if cmd, found := e_lookup2[p.command]; found {
 				switch cmd := cmd.(type) {
 				case func(*Editor):
@@ -97,7 +97,7 @@ func editorProcessKey(c int) bool { //bool returned is whether to redraw
 				case func(*Editor) bool:
 					cmd(p)
 				}
-				// not sure this is necessary
+				// seems to be necessary at least for certain commands
 				_, err := v.Input("\x1b")
 				if err != nil {
 					sess.showEdMessage("%v", err)
@@ -140,8 +140,6 @@ func editorProcessKey(c int) bool { //bool returned is whether to redraw
 						return false
 					}
 					updateNote()
-
-					//sess.p.quit <- struct{}{}
 
 					// this seems like a kluge but I can't delete buffer
 					// without generating an error (I think because using nvim 0.44 and not 0.5)
@@ -272,7 +270,9 @@ func editorProcessKey(c int) bool { //bool returned is whether to redraw
 
 		sess.showEdMessage(":%s", p.command_line)
 		return false //end EX_COMMAND
-	} else {
+
+	} else { /// the rest of the p.modes except EX_COMMAND ////////////////////////////////////////////////
+
 		if z, found := termcodes[c]; found {
 			v.FeedKeys(z, "t", true)
 		} else {
@@ -326,8 +326,7 @@ func editorProcessKey(c int) bool { //bool returned is whether to redraw
 		case VISUAL, VISUAL_LINE, VISUAL_BLOCK:
 			p.vb_highlight = highlightInfo(v)
 		case SEARCH:
-			// return puts nvim into normal mode so if below not necessary
-			// so don't need to deal with return explicitly
+			// return puts nvim into normal mode so don't need to catch return
 			if c == DEL_KEY || c == BACKSPACE {
 				if len(p.command_line) > 0 {
 					p.command_line = p.command_line[:len(p.command_line)-1]
@@ -337,9 +336,10 @@ func editorProcessKey(c int) bool { //bool returned is whether to redraw
 			}
 
 			sess.showEdMessage("%s%s", p.searchPrefix, p.command_line)
-			return false // don't need to anything after switch
+			return false
 		} // end switch p.mode
 
+		//below is done for everything except SEARCH and EX_COMMAND
 		p.bb, _ = v.BufferLines(p.vbuf, 0, -1, true) //reading updated buffer
 		pos, _ := v.WindowCursor(w)                  //set screen cx and cy from pos
 		p.fr = pos[0] - 1
@@ -355,7 +355,4 @@ func editorProcessKey(c int) bool { //bool returned is whether to redraw
 			return true
 		}
 	}
-
-	/************Everything below is for EX_COMMAND**************/
-
 }
