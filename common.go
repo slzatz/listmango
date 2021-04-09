@@ -12,7 +12,7 @@ var z0 = struct{}{}
 var modeMap = map[string]Mode{
 	"n":  NORMAL,
 	"no": PENDING,
-	//"c":    COMMAND_LINE
+	"c":  SEARCH, // catching c elsewhere for EX_COMMAND
 	//"R":    REPLACE
 	"i":    INSERT,
 	"v":    VISUAL,

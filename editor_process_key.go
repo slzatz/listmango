@@ -72,32 +72,91 @@ func editorProcessKey(c int) bool { //bool returned is whether to redraw
 		 there are a set of commands like ctrl-w that we are intercepting
 		note any command that changes the UI like splits or tabs doesn't make sense
 	*/
-	nop := false
-	p.command += string(c)
-	if strings.IndexAny(p.command[0:1], "\x17\x08\x0c\x02\x05\x09\x06") == -1 {
-		p.command = ""
-	} else {
-		nop = true
-	}
 
-	// also supporting a leader key for commands not sent to nvim
-	if p.mode == NORMAL && c == int(leader[0]) {
-		p.command = leader
-		nop = true
+	if p.mode == NORMAL {
+		if len(p.command) == 0 {
+			if strings.IndexAny(string(c), "\x17\x08\x0c\x02\x05\x09\x06 ") != -1 {
+				p.command = string(c)
+				//return false
+			}
+		} else {
+			p.command += string(c)
+		}
+
+		if len(p.command) > 0 {
+			//p.command += string(c)
+			if cmd, found := e_lookup2[p.command]; found {
+				switch cmd := cmd.(type) {
+				case func(*Editor):
+					cmd(p)
+				case func():
+					cmd()
+				case func(*Editor, int):
+					cmd(p, c)
+				case func(*Editor) bool:
+					cmd(p)
+				}
+				// not sure this is necessary
+				_, err := v.Input("\x1b")
+				if err != nil {
+					sess.showEdMessage("%v", err)
+				}
+				p.command = ""
+				p.bb, _ = v.BufferLines(p.vbuf, 0, -1, true) //reading updated buffer
+				pos, _ := v.WindowCursor(w)                  //set screen cx and cy from pos
+				p.fr = pos[0] - 1
+				p.fc = pos[1]
+				return true
+			} else {
+				return false
+			}
+		}
 	}
 
 	/*
-		if c == '+' {
-			showMessage(v, messageBuf)
-			return false
+		nop := false
+		p.command += string(c)
+		if p.mode == NORMAL {
+			if strings.IndexAny(p.command[0:1], "\x17\x08\x0c\x02\x05\x09\x06 ") == -1 {
+				p.command = ""
+			} else {
+				nop = true
+			}
+		}
+
+		if nop { //should probably check if p.command > 1
+			if cmd, found := e_lookup2[p.command]; found {
+				switch cmd := cmd.(type) {
+				case func(*Editor):
+					cmd(p)
+				case func():
+					cmd()
+				case func(*Editor, int):
+					cmd(p, c)
+				case func(*Editor) bool:
+					cmd(p)
+				}
+
+				// not sure this is necessary
+				//_, err := v.Input("\x1b")
+				//if err != nil {
+				//	sess.showEdMessage("%v", err)
+			//	}
+				p.command = ""
+				p.bb, _ = v.BufferLines(p.vbuf, 0, -1, true) //reading updated buffer
+				pos, _ := v.WindowCursor(w)                  //set screen cx and cy from pos
+				p.fr = pos[0] - 1
+				p.fc = pos[1]
+				return true
+			} else {
+				return false
+			}
 		}
 	*/
 
-	//sess.showOrgMessage("char = %d; nop = %t", c, nop) //debugging
-
-	if nop || p.mode == EX_COMMAND || p.mode == SEARCH {
+	//if nop || p.mode == EX_COMMAND { // || p.mode == SEARCH {
+	if p.mode == EX_COMMAND { // || p.mode == SEARCH {
 		//don't send keys to nvim - don't want it processing them
-		// except for SEARCH you do want to process keys but ? don't update mode and that is done below
 		//sess.showEdMessage("NOP or COMMAND_LINE or SEARCH - %q", p.mode)
 	} else {
 		if z, found := termcodes[c]; found {
@@ -119,7 +178,8 @@ func editorProcessKey(c int) bool { //bool returned is whether to redraw
 		if mode.Blocking {
 			return false // don't draw rows - which calls v.BufferLines
 		}
-		if mode.Mode == "c" {
+		// the only way to get into EX_COMMAND or SEARCH
+		if mode.Mode == "c" && p.mode != SEARCH {
 			p.command_line = ""
 			p.command = ""
 			if c == ':' {
@@ -141,6 +201,8 @@ func editorProcessKey(c int) bool { //bool returned is whether to redraw
 			}
 
 			return false
+		} else if mode.Mode == "i" && p.mode != INSERT {
+			sess.showEdMessage("\x1b[1m-- INSERT --\x1b[0m")
 		}
 
 		/*
@@ -156,59 +218,48 @@ func editorProcessKey(c int) bool { //bool returned is whether to redraw
 		*/
 
 		// believe I am intercepting any instances where mode.Mode = "c'
-		p.mode = modeMap[mode.Mode]
+		p.mode = modeMap[mode.Mode] //change modeMap so "c" => SEARCH
 	}
 
 	if p.mode != EX_COMMAND {
 		switch p.mode {
-		case INSERT:
-			sess.showEdMessage("--INSERT--")
+		//case INSERT, REPLACE:
+		//sess.showEdMessage("\x1b[1m-- INSERT --i\x1b[0m")
 		case NORMAL:
-			if cmd, found := e_lookup2[p.command]; found {
-				switch cmd := cmd.(type) {
-				case func(*Editor):
-					cmd(p)
-				case func():
-					cmd()
-				case func(*Editor, int):
-					cmd(p, c)
-				case func(*Editor) bool:
-					cmd(p)
-				}
+			/*
+				if cmd, found := e_lookup2[p.command]; found {
+					switch cmd := cmd.(type) {
+					case func(*Editor):
+						cmd(p)
+					case func():
+						cmd()
+					case func(*Editor, int):
+						cmd(p, c)
+					case func(*Editor) bool:
+						cmd(p)
+					}
 
-				_, err := v.Input("\x1b")
-				if err != nil {
-					sess.showEdMessage("%v", err)
+					_, err := v.Input("\x1b")
+					if err != nil {
+						sess.showEdMessage("%v", err)
+					}
+					p.command = ""
+					return true // if cmd no need to do anything after switch
 				}
-				p.command = ""
-				return true
-			}
+			*/
 		case VISUAL, VISUAL_LINE, VISUAL_BLOCK:
 			p.vb_highlight = highlightInfo(v)
 		case SEARCH:
+			// return puts nvim into normal mode so if below not necessary
 			/*
-				note that we are processing keys
-				but not updating mode which stays
-				mode.Mode = "c" until you hit return
-				and then goes to NORMAL
+				if c == '\r' {
+					p.mode = NORMAL
+					p.command_line = ""
+					sess.showEdMessage("")
+					break
+				} else if c == DEL_KEY || c == BACKSPACE {
 			*/
-			if z, found := termcodes[c]; found {
-				v.FeedKeys(z, "t", true)
-			} else {
-				_, err := v.Input(string(c))
-				if err != nil {
-					sess.showEdMessage("Error in nvim.Input: %v", err)
-				}
-			}
-			//mode, _ := v.Mode()                         //debug
-			//sess.showOrgMessage("mode = %q", mode.Mode) // debug
-			if c == '\r' {
-				// return puts nvim into normal mode
-				p.mode = NORMAL
-				p.command_line = ""
-				sess.showEdMessage("")
-				break
-			} else if c == DEL_KEY || c == BACKSPACE {
+			if c == DEL_KEY || c == BACKSPACE {
 				if len(p.command_line) > 0 {
 					p.command_line = p.command_line[:len(p.command_line)-1]
 				}
@@ -217,7 +268,7 @@ func editorProcessKey(c int) bool { //bool returned is whether to redraw
 			}
 
 			sess.showEdMessage("%s%s", p.searchPrefix, p.command_line)
-			return false
+			return false // don't need to anything after switch
 		} // end switch p.mode
 
 		p.bb, _ = v.BufferLines(p.vbuf, 0, -1, true) //reading updated buffer
