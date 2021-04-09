@@ -270,89 +270,89 @@ func editorProcessKey(c int) bool { //bool returned is whether to redraw
 
 		sess.showEdMessage(":%s", p.command_line)
 		return false //end EX_COMMAND
+	}
 
-	} else { /// the rest of the p.modes except EX_COMMAND ////////////////////////////////////////////////
+	/////////////////below everything besides EX_COMMAND///////////////////////////////////
 
-		if z, found := termcodes[c]; found {
-			v.FeedKeys(z, "t", true)
-		} else {
-			_, err := v.Input(string(c))
+	if z, found := termcodes[c]; found {
+		v.FeedKeys(z, "t", true)
+	} else {
+		_, err := v.Input(string(c))
+		if err != nil {
+			sess.showEdMessage("Error in nvim.Input: %v", err)
+		}
+	}
+
+	mode, _ := v.Mode()
+	/*
+		sess.showOrgMessage("blocking: %t; mode: %s; dirty: %d", mode.Blocking, mode.Mode, p.dirty) //debugging
+		Example of input that blocks is entering a number (eg, 4x) in NORMAL mode
+		If blocked = true you can't retrieve buffer with v.BufferLines -
+		app just locks up
+	*/
+	if mode.Blocking {
+		return false // don't draw rows - which calls v.BufferLines
+	}
+	// the only way to get into EX_COMMAND or SEARCH
+	if mode.Mode == "c" && p.mode != SEARCH {
+		p.command_line = ""
+		p.command = ""
+		if c == ':' {
+			p.mode = EX_COMMAND
+			/*
+			 below will put nvim back in NORMAL mode but listmango will be
+			 in COMMAND_LINE mode, ie 'park' nvim in NORMAL mode
+			 and don't feed it any keys while in listmango COMMAND_LINE mode
+			*/
+			_, err := v.Input("\x1b")
 			if err != nil {
-				sess.showEdMessage("Error in nvim.Input: %v", err)
+				sess.showEdMessage("Error input escape: %v", err)
 			}
-		}
-
-		mode, _ := v.Mode()
-		/*
-			sess.showOrgMessage("blocking: %t; mode: %s; dirty: %d", mode.Blocking, mode.Mode, p.dirty) //debugging
-			Example of input that blocks is entering a number (eg, 4x) in NORMAL mode
-			If blocked = true you can't retrieve buffer with v.BufferLines -
-			app just locks up
-		*/
-		if mode.Blocking {
-			return false // don't draw rows - which calls v.BufferLines
-		}
-		// the only way to get into EX_COMMAND or SEARCH
-		if mode.Mode == "c" && p.mode != SEARCH {
-			p.command_line = ""
-			p.command = ""
-			if c == ':' {
-				p.mode = EX_COMMAND
-				/*
-				 below will put nvim back in NORMAL mode but listmango will be
-				 in COMMAND_LINE mode, ie 'park' nvim in NORMAL mode
-				 and don't feed it any keys while in listmango COMMAND_LINE mode
-				*/
-				_, err := v.Input("\x1b")
-				if err != nil {
-					sess.showEdMessage("Error input escape: %v", err)
-				}
-				sess.showEdMessage(":")
-			} else {
-				p.mode = SEARCH
-				p.searchPrefix = string(c)
-				sess.showEdMessage(p.searchPrefix)
-			}
-
-			return false
-		} else if mode.Mode == "i" && p.mode != INSERT {
-			sess.showEdMessage("\x1b[1m-- INSERT --\x1b[0m")
-		}
-
-		p.mode = modeMap[mode.Mode] //note that "c" => SEARCH
-
-		switch p.mode {
-		//case INSERT, REPLACE, NORMAL:
-		case VISUAL, VISUAL_LINE, VISUAL_BLOCK:
-			p.vb_highlight = highlightInfo(v)
-		case SEARCH:
-			// return puts nvim into normal mode so don't need to catch return
-			if c == DEL_KEY || c == BACKSPACE {
-				if len(p.command_line) > 0 {
-					p.command_line = p.command_line[:len(p.command_line)-1]
-				}
-			} else {
-				p.command_line += string(c)
-			}
-
-			sess.showEdMessage("%s%s", p.searchPrefix, p.command_line)
-			return false
-		} // end switch p.mode
-
-		//below is done for everything except SEARCH and EX_COMMAND
-		p.bb, _ = v.BufferLines(p.vbuf, 0, -1, true) //reading updated buffer
-		pos, _ := v.WindowCursor(w)                  //set screen cx and cy from pos
-		p.fr = pos[0] - 1
-		p.fc = pos[1]
-
-		if c == 'u' && p.mode == NORMAL {
-			showVimMessage()
-		}
-
-		if p.mode == PENDING { // -> operator pending (eg. typed 'd')
-			return false
+			sess.showEdMessage(":")
 		} else {
-			return true
+			p.mode = SEARCH
+			p.searchPrefix = string(c)
+			sess.showEdMessage(p.searchPrefix)
 		}
+
+		return false
+	} else if mode.Mode == "i" && p.mode != INSERT {
+		sess.showEdMessage("\x1b[1m-- INSERT --\x1b[0m")
+	}
+
+	p.mode = modeMap[mode.Mode] //note that "c" => SEARCH
+
+	switch p.mode {
+	//case INSERT, REPLACE, NORMAL:
+	case VISUAL, VISUAL_LINE, VISUAL_BLOCK:
+		p.vb_highlight = highlightInfo(v)
+	case SEARCH:
+		// return puts nvim into normal mode so don't need to catch return
+		if c == DEL_KEY || c == BACKSPACE {
+			if len(p.command_line) > 0 {
+				p.command_line = p.command_line[:len(p.command_line)-1]
+			}
+		} else {
+			p.command_line += string(c)
+		}
+
+		sess.showEdMessage("%s%s", p.searchPrefix, p.command_line)
+		return false
+	} // end switch p.mode
+
+	//below is done for everything except SEARCH and EX_COMMAND
+	p.bb, _ = v.BufferLines(p.vbuf, 0, -1, true) //reading updated buffer
+	pos, _ := v.WindowCursor(w)                  //set screen cx and cy from pos
+	p.fr = pos[0] - 1
+	p.fc = pos[1]
+
+	if c == 'u' && p.mode == NORMAL {
+		showVimMessage()
+	}
+
+	if p.mode == PENDING { // -> operator pending (eg. typed 'd')
+		return false
+	} else {
+		return true
 	}
 }
