@@ -197,8 +197,8 @@ func organizerProcessKey(c int) {
 			org.moveAltCursor(c)
 
 		case '\r':
-			altRow := &org.altRows[org.altR] //currently highlighted container row
-			row := &org.rows[org.fr]         //currently highlighted entry row
+			altRow := &org.altRows[org.altFr] //currently highlighted container row
+			row := &org.rows[org.fr]          //currently highlighted entry row
 			if len(org.marked_entries) == 0 {
 				switch org.altView {
 				case KEYWORD:
@@ -272,18 +272,17 @@ func organizerProcessKey(c int) {
 		case ARROW_UP, 'k':
 			if org.fr > 0 {
 				org.fr--
-				readSyncLogIntoAltRows(org.rows[org.fr].id)
 				sess.eraseRightScreen()
-				org.altR = 0
-				org.drawAltRows2()
+				//org.firstLine = 0
+				org.altRowoff = 0
+				org.drawNoteReadOnly(org.rows[org.fr].id)
 			}
 		case ARROW_DOWN, 'j':
 			if org.fr < len(org.rows)-1 {
 				org.fr++
-				readSyncLogIntoAltRows(org.rows[org.fr].id)
 				sess.eraseRightScreen()
-				org.altR = 0
-				org.drawAltRows2()
+				org.altRowoff = 0
+				org.drawNoteReadOnly(org.rows[org.fr].id)
 			}
 		case ':':
 			sess.showOrgMessage(":")
@@ -293,14 +292,15 @@ func organizerProcessKey(c int) {
 
 		// the two below only handle logs < 2x textLines
 		case PAGE_DOWN:
-			sess.showOrgMessage("Got here")
-			org.altR = len(org.altRows) - 1
+			org.altRowoff++
 			sess.eraseRightScreen()
-			org.drawAltRows2()
+			org.drawNoteReadOnly(org.rows[org.fr].id)
 		case PAGE_UP:
-			org.altR = 0
+			if org.altRowoff > 0 {
+				org.altRowoff--
+			}
 			sess.eraseRightScreen()
-			org.drawAltRows2()
+			org.drawNoteReadOnly(org.rows[org.fr].id)
 		case ctrlKey('d'):
 			if len(org.marked_entries) == 0 {
 				deleteSyncItem(org.rows[org.fr].id)

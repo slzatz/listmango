@@ -132,13 +132,11 @@ func (o *Organizer) drawRows() {
 		ab.WriteString(strings.Repeat(" ", titlecols-length+1))
 
 		// believe the +2 is just to give some space from the end of long titles
-		//ab.WriteString(fmt.Sprintf("\x1b[%d;%dH", y+TOP_MARGIN+1, s.divider-TIME_COL_WIDTH+2))
 		fmt.Fprintf(&ab, "\x1b[%d;%dH", y+TOP_MARGIN+1, o.divider-TIME_COL_WIDTH+2)
 		ab.WriteString(o.rows[fr].modified)
 		ab.WriteString("\x1b[0m") // return background to normal ////////////////////////////////
 		ab.WriteString(lf_ret)
 	}
-	//fmt.Fprint(os.Stdout, ab.String())
 	fmt.Print(ab.String())
 }
 
@@ -170,7 +168,7 @@ func (o *Organizer) drawAltRows() {
 			ab.WriteString("\x1b[1;36m")
 		}
 
-		if fr == o.altR {
+		if fr == o.altFr {
 			ab.WriteString("\x1b[48;5;236m") // 236 is a grey
 		}
 
@@ -182,20 +180,14 @@ func (o *Organizer) drawAltRows() {
 }
 
 // for drawing sync log (note)
-func (o *Organizer) drawAltRows2() {
+func (o *Organizer) drawNoteReadOnly(id int) {
 
-	if len(o.altRows) == 0 {
+	note := readSyncLog(id)
+
+	if len(note) == 0 {
 		return
 	}
-	//scroll
-	if o.altR > o.textLines+o.altRowoff-1 {
-		o.altRowoff = o.altR - o.textLines + 1
-	}
-	if o.altR < o.altRowoff {
-		o.altRowoff = o.altR
-	}
-	// end scroll
-
+	rows := strings.Split(note, "\n")
 	var ab strings.Builder
 	fmt.Fprintf(&ab, "\x1b[%d;%dH", TOP_MARGIN+1, o.divider+2)
 	lf_ret := fmt.Sprintf("\r\n\x1b[%dC", o.divider+1)
@@ -203,21 +195,21 @@ func (o *Organizer) drawAltRows2() {
 	for y := 0; y < o.textLines; y++ {
 
 		fr := y + o.altRowoff
-		if fr > len(o.altRows)-1 {
+		if fr > len(rows)-1 {
 			break
 		}
 
-		length := len(o.altRows[fr].title)
+		length := len(rows[fr])
 		if length > o.totaleditorcols {
 			length = o.totaleditorcols
 		}
 
-		ab.WriteString(o.altRows[fr].title[:length])
+		ab.WriteString(rows[fr][:length])
 		ab.WriteString("\x1b[0m") // return background to normal
 		ab.WriteString(lf_ret)
 	}
 	fmt.Print(ab.String())
-	o.showOrgMessage("altR = %d; altRowoff = %d", o.altR, o.altRowoff)
+	o.showOrgMessage("altRowoff = %d", o.altRowoff)
 }
 
 func (o *Organizer) drawStatusBar() {

@@ -9,10 +9,10 @@ type Organizer struct {
 	rowoff    int //the number of rows scrolled (aka number of top rows now off-screen
 	altRowoff int
 	coloff    int //the number of columns scrolled (aka number of left rows now off-screen
-	altR      int
 
 	rows         []Row
 	altRows      []AltRow
+	altFr        int
 	filter       string
 	sort         string
 	command_line string

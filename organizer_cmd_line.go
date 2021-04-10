@@ -87,15 +87,13 @@ var cmd_lookup = map[string]func(*Organizer, int){
 func (o *Organizer) log(unused int) {
 	getSyncItems(MAX)
 	o.fc, o.fr, o.rowoff = 0, 0, 0
-	o.altR, o.altRowoff = 0, 0
+	o.altRowoff = 0
 	o.mode = SYNC_LOG      //kluge INSERT, NORMAL, ...
 	o.view = SYNC_LOG_VIEW //TASK, FOLDER, KEYWORD ...
 
 	// show first row's note
-	readSyncLogIntoAltRows(o.rows[0].id)
 	o.eraseRightScreen()
-	//o.drawOrgAltRows2()
-	o.drawAltRows2()
+	o.drawNoteReadOnly(o.rows[0].id)
 	o.clearMarkedEntries()
 	o.showOrgMessage("")
 }

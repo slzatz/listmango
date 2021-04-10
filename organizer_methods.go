@@ -110,13 +110,13 @@ func (o *Organizer) moveAltCursor(key int) {
 	switch key {
 
 	case ARROW_UP, 'k':
-		if o.altR > 0 {
-			o.altR--
+		if o.altFr > 0 {
+			o.altFr--
 		}
 
 	case ARROW_DOWN, 'j':
-		if o.altR < len(o.altRows)-1 {
-			o.altR++
+		if o.altFr < len(o.altRows)-1 {
+			o.altFr++
 		}
 	}
 }
@@ -350,12 +350,12 @@ func (o *Organizer) altScroll() {
 	}
 	prevRowoff := o.altRowoff
 
-	if o.altR > sess.textLines+o.altRowoff-1 {
-		o.altRowoff = o.altR - sess.textLines + 1
+	if o.altFr > sess.textLines+o.altRowoff-1 {
+		o.altRowoff = o.altFr - sess.textLines + 1
 	}
 
-	if o.altR < o.altRowoff {
-		o.altRowoff = o.altR
+	if o.altFr < o.altRowoff {
+		o.altRowoff = o.altFr
 	}
 
 	if prevRowoff != o.altRowoff {

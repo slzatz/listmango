@@ -828,7 +828,7 @@ func getAltContainers() {
 	*/
 
 	// below should ? be somewhere else
-	org.altR = 0
+	org.altFr = 0
 
 }
 
