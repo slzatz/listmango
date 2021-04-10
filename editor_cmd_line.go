@@ -22,6 +22,7 @@ var e_lookup_C = map[string]func(*Editor){
 	"sync":     (*Editor).sync,
 	"save":     (*Editor).saveNoteToFile,
 	"savefile": (*Editor).saveNoteToFile,
+	"render":   (*Editor).showMarkdown,
 }
 
 /* EDITOR cpp COMMAND_LINE mode lookup
@@ -270,4 +271,15 @@ func (e *Editor) sync() {
 		reportOnly = true
 	}
 	synchronize(reportOnly)
+}
+
+func (e *Editor) showMarkdown() {
+	note := readNoteIntoString(e.id)
+	if len(note) == 0 {
+		return
+	}
+	note = generateWWString(note, e.screencols, 100, "\n")
+	org.renderMarkdown(note)
+	sess.editorMode = false
+	org.mode = MARKDOWN
 }

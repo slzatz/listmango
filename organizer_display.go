@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/charmbracelet/glamour"
 	"strings"
 )
 
@@ -180,14 +181,14 @@ func (o *Organizer) drawAltRows() {
 }
 
 // for drawing sync log (note)
-func (o *Organizer) drawNoteReadOnly(id int) {
+func (o *Organizer) drawNoteReadOnly() {
 
-	note := readSyncLog(id)
+	//note := readSyncLog(id)
 
-	if len(note) == 0 {
+	if len(o.note) == 0 {
 		return
 	}
-	rows := strings.Split(note, "\n")
+	rows := strings.Split(o.note, "\n")
 	var ab strings.Builder
 	fmt.Fprintf(&ab, "\x1b[%d;%dH", TOP_MARGIN+1, o.divider+2)
 	lf_ret := fmt.Sprintf("\r\n\x1b[%dC", o.divider+1)
@@ -204,8 +205,8 @@ func (o *Organizer) drawNoteReadOnly(id int) {
 			length = o.totaleditorcols
 		}
 
-		ab.WriteString(rows[fr][:length])
-		ab.WriteString("\x1b[0m") // return background to normal
+		//ab.WriteString(rows[fr][:length])
+		ab.WriteString(rows[fr])
 		ab.WriteString(lf_ret)
 	}
 	fmt.Print(ab.String())
@@ -393,4 +394,16 @@ func (o *Organizer) drawPreviewWindow() {
 	    else updateHTMLCodeFile("assets/" + CURRENT_NOTE_FILE);
 	  }
 	*/
+}
+
+func (o *Organizer) renderMarkdown(note string) {
+	//note := readNoteIntoString(o.rows[o.fr].id)
+	o.note, _ = glamour.Render(note, "dark")
+	/*
+		if err != nil {
+			sess.showOrgMessage("Error in rendering markdown: %v", err)
+		}
+	*/
+	sess.eraseRightScreen()
+	o.drawNoteReadOnly()
 }

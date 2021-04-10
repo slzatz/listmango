@@ -17,6 +17,7 @@ type Organizer struct {
 	sort         string
 	command_line string
 	message      string
+	note         string
 
 	command string
 	repeat  int

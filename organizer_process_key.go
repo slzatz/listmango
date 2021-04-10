@@ -1,6 +1,9 @@
 package main
 
-import "strings"
+import (
+	"github.com/charmbracelet/glamour"
+	"strings"
+)
 
 var navigation = map[int]struct{}{
 	ARROW_UP:    z0,
@@ -267,22 +270,37 @@ func organizerProcessKey(c int) {
 
 		//probably should be a org.view not org.mode but
 		// for the moment this kluge works
-	case SYNC_LOG:
+	case SYNC_LOG, MARKDOWN:
 		switch c {
 		case ARROW_UP, 'k':
 			if org.fr > 0 {
 				org.fr--
 				sess.eraseRightScreen()
-				//org.firstLine = 0
 				org.altRowoff = 0
-				org.drawNoteReadOnly(org.rows[org.fr].id)
+				if org.mode == SYNC_LOG {
+					org.note = readSyncLog(org.rows[org.fr].id)
+					org.drawNoteReadOnly()
+				} else {
+					note := readNoteIntoString(org.rows[org.fr].id)
+					note = generateWWString(note, org.totaleditorcols, 500, "\n")
+					org.note, _ = glamour.Render(note, "dark")
+					org.drawNoteReadOnly()
+				}
 			}
 		case ARROW_DOWN, 'j':
 			if org.fr < len(org.rows)-1 {
 				org.fr++
 				sess.eraseRightScreen()
 				org.altRowoff = 0
-				org.drawNoteReadOnly(org.rows[org.fr].id)
+				if org.mode == SYNC_LOG {
+					org.note = readSyncLog(org.rows[org.fr].id)
+					org.drawNoteReadOnly()
+				} else {
+					note := readNoteIntoString(org.rows[org.fr].id)
+					note = generateWWString(note, org.totaleditorcols, 500, "\n")
+					org.note, _ = glamour.Render(note, "dark")
+					org.drawNoteReadOnly()
+				}
 			}
 		case ':':
 			sess.showOrgMessage(":")
@@ -294,13 +312,13 @@ func organizerProcessKey(c int) {
 		case PAGE_DOWN:
 			org.altRowoff++
 			sess.eraseRightScreen()
-			org.drawNoteReadOnly(org.rows[org.fr].id)
+			org.drawNoteReadOnly()
 		case PAGE_UP:
 			if org.altRowoff > 0 {
 				org.altRowoff--
 			}
 			sess.eraseRightScreen()
-			org.drawNoteReadOnly(org.rows[org.fr].id)
+			org.drawNoteReadOnly()
 		case ctrlKey('d'):
 			if len(org.marked_entries) == 0 {
 				deleteSyncItem(org.rows[org.fr].id)

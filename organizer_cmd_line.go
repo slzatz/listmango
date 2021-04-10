@@ -50,6 +50,8 @@ var cmd_lookup = map[string]func(*Organizer, int){
 	"delmarks":       (*Organizer).deleteMarks,
 	"delm":           (*Organizer).deleteMarks,
 	"copy":           (*Organizer).copyEntry,
+	"showmarkdown":   (*Organizer).showMarkdown,
+	"showm":          (*Organizer).showMarkdown,
 	/*
 	  "x": F_x,
 	 // {"linked", F_linked,
@@ -93,7 +95,8 @@ func (o *Organizer) log(unused int) {
 
 	// show first row's note
 	o.eraseRightScreen()
-	o.drawNoteReadOnly(o.rows[0].id)
+	o.note = readSyncLog(o.rows[o.fr].id)
+	o.drawNoteReadOnly()
 	o.clearMarkedEntries()
 	o.showOrgMessage("")
 }
@@ -677,4 +680,14 @@ func (o *Organizer) copyEntry(unused int) {
 	o.command_line = ""
 	o.refresh(0)
 	sess.showOrgMessage("Entry copied")
+}
+
+func (o *Organizer) showMarkdown(unused int) {
+	note := readNoteIntoString(o.rows[o.fr].id)
+	if len(note) == 0 {
+		return
+	}
+	note = generateWWString(note, o.totaleditorcols, 500, "\n")
+	o.renderMarkdown(note)
+	o.mode = MARKDOWN
 }
