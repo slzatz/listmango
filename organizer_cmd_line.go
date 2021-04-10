@@ -140,7 +140,8 @@ func (o *Organizer) openContext(pos int) {
 		sess.showOrgMessage("No results were returned")
 		o.mode = NO_ROWS
 	}
-	o.drawPreviewWindow()
+	//o.drawPreviewWindow()
+	o.drawMarkdownPreview()
 	return
 }
 
@@ -181,7 +182,8 @@ func (o *Organizer) openFolder(pos int) {
 		sess.showOrgMessage("No results were returned")
 		o.mode = NO_ROWS
 	}
-	o.drawPreviewWindow()
+	//o.drawPreviewWindow()
+	o.drawMarkdownPreview()
 	return
 }
 
@@ -212,7 +214,8 @@ func (o *Organizer) openKeyword(pos int) {
 		sess.showOrgMessage("No results were returned")
 		o.mode = NO_ROWS
 	}
-	o.drawPreviewWindow()
+	//o.drawPreviewWindow()
+	o.drawMarkdownPreview()
 	return
 }
 
@@ -396,7 +399,8 @@ func (o *Organizer) refresh(unused int) {
 				o.mode = NO_ROWS
 			}
 			if unused != -1 { //complete kluge has to do with refreshing when syncing
-				o.drawPreviewWindow()
+				//o.drawPreviewWindow()
+				o.drawMarkdownPreview()
 			}
 		} else {
 			o.fc, o.fr, o.rowoff = 0, 0, 0
@@ -406,7 +410,8 @@ func (o *Organizer) refresh(unused int) {
 				o.mode = NO_ROWS
 			}
 			if unused != -1 { //complete kluge has to do with refreshing when syncing
-				o.drawPreviewWindow()
+				//o.drawPreviewWindow()
+				o.drawMarkdownPreview()
 			}
 		}
 		sess.showOrgMessage("Entries will be refreshed")
@@ -452,7 +457,8 @@ func (o *Organizer) find(pos int) {
 		sess.showOrgMessage("No results were returned")
 		o.mode = NO_ROWS
 	}
-	o.drawPreviewWindow()
+	//o.drawPreviewWindow()
+	o.drawMarkdownPreview()
 }
 
 func (o *Organizer) sync(unused int) {
@@ -622,7 +628,8 @@ func (o *Organizer) recent(unused int) {
 		sess.showOrgMessage("No results were returned")
 		o.mode = NO_ROWS
 	}
-	o.drawPreviewWindow()
+	//o.drawPreviewWindow()
+	o.drawMarkdownPreview()
 }
 
 func (o *Organizer) deleteKeywords(unused int) {

@@ -374,6 +374,7 @@ func (o *Organizer) drawSearchRows() {
 }
 
 func (o *Organizer) drawPreviewWindow() {
+
 	if org.mode == NO_ROWS {
 		sess.eraseRightScreen()
 		return
@@ -394,6 +395,26 @@ func (o *Organizer) drawPreviewWindow() {
 	    else updateHTMLCodeFile("assets/" + CURRENT_NOTE_FILE);
 	  }
 	*/
+}
+
+func (o *Organizer) drawMarkdownPreview() {
+
+	if org.mode == NO_ROWS {
+		sess.eraseRightScreen()
+		return
+	}
+	id := o.rows[o.fr].id
+
+	if o.taskview != BY_FIND {
+		sess.eraseRightScreen()
+		org.altRowoff = 0
+		note := readNoteIntoString(id)
+		note = generateWWString(note, org.totaleditorcols, 500, "\n")
+		org.note, _ = glamour.Render(note, "dark")
+		org.drawNoteReadOnly()
+	} else {
+		sess.drawSearchPreview()
+	}
 }
 
 func (o *Organizer) renderMarkdown(note string) {

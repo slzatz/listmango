@@ -216,7 +216,8 @@ func editorProcessKey(c int) bool { //bool returned is whether to redraw
 						moveDivider(80)
 					}
 
-					org.drawPreviewWindow()
+					//org.drawPreviewWindow()
+					org.drawMarkdownPreview()
 					sess.returnCursor() //because main while loop if started in editor_mode -- need this 09302020
 				}
 

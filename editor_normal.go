@@ -132,7 +132,8 @@ func controlH() {
 
 		sess.editorMode = false //needs to be here
 
-		org.drawPreviewWindow()
+		//org.drawPreviewWindow()
+		org.drawMarkdownPreview()
 		org.mode = NORMAL
 		sess.returnCursor()
 		return
@@ -172,7 +173,8 @@ func controlH() {
 
 		sess.editorMode = false //needs to be here
 
-		org.drawPreviewWindow()
+		//org.drawPreviewWindow()
+		org.drawMarkdownPreview()
 		org.mode = NORMAL
 		sess.returnCursor()
 		return

@@ -2,7 +2,6 @@ package main
 
 import (
 	"strings"
-	//"fmt"
 	"unicode"
 )
 
@@ -99,6 +98,75 @@ func (o *Organizer) moveCursor(key int) {
 	}
 }
 
+func (o *Organizer) moveCursor2(key int) {
+
+	if len(o.rows) == 0 {
+		return
+	}
+
+	switch key {
+	case ARROW_LEFT, 'h':
+		if o.fc > 0 {
+			o.fc--
+		}
+
+	case ARROW_RIGHT, 'l':
+		o.fc++
+
+	case ARROW_UP, 'k':
+		if o.fr > 0 {
+			o.fr--
+		}
+		o.fc, o.coloff = 0, 0
+
+		if o.view == TASK {
+			o.drawMarkdownPreview()
+		} else {
+			c := getContainerInfo(o.rows[o.fr].id)
+			if c.id != 0 {
+				sess.displayContainerInfo(&c)
+				sess.drawPreviewBox()
+			}
+		}
+
+	case ARROW_DOWN, 'j':
+		if o.fr < len(o.rows)-1 {
+			o.fr++
+		}
+		o.fc, o.coloff = 0, 0
+		if o.view == TASK {
+			o.drawMarkdownPreview()
+		} else {
+			c := getContainerInfo(o.rows[o.fr].id)
+			if c.id != 0 {
+				sess.displayContainerInfo(&c)
+				sess.drawPreviewBox()
+			}
+		}
+	case PAGE_DOWN:
+		org.altRowoff++
+		sess.eraseRightScreen()
+		org.drawNoteReadOnly()
+	case PAGE_UP:
+		if org.altRowoff > 0 {
+			org.altRowoff--
+		}
+		sess.eraseRightScreen()
+		org.drawNoteReadOnly()
+	}
+
+	t := &o.rows[o.fr].title
+	if o.fc >= len(*t) {
+		if o.mode != INSERT {
+			o.fc = len(*t) - 1
+		} else {
+			o.fc = len(*t)
+		}
+	}
+	if *t == "" {
+		o.fc = 0
+	}
+}
 func (o *Organizer) moveAltCursor(key int) {
 
 	if len(o.altRows) == 0 {

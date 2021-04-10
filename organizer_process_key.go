@@ -10,6 +10,8 @@ var navigation = map[int]struct{}{
 	ARROW_DOWN:  z0,
 	ARROW_LEFT:  z0,
 	ARROW_RIGHT: z0,
+	PAGE_UP:     z0,
+	PAGE_DOWN:   z0,
 	'h':         z0,
 	'j':         z0,
 	'k':         z0,
@@ -36,8 +38,8 @@ func organizerProcessKey(c int) {
 
 	case FIND:
 		switch c {
-		case ARROW_UP, ARROW_DOWN, ARROW_LEFT, ARROW_RIGHT:
-			org.moveCursor(c)
+		case ARROW_UP, ARROW_DOWN, ARROW_LEFT, ARROW_RIGHT, PAGE_UP, PAGE_DOWN:
+			org.moveCursor2(c)
 		default:
 			org.mode = NORMAL
 			org.command = ""
@@ -48,8 +50,8 @@ func organizerProcessKey(c int) {
 		switch c {
 		case '\r': //also does in effect an escape into NORMAL mode
 			org.writeTitle()
-		case ARROW_UP, ARROW_DOWN, ARROW_LEFT, ARROW_RIGHT:
-			org.moveCursor(c)
+		case ARROW_UP, ARROW_DOWN, ARROW_LEFT, ARROW_RIGHT, PAGE_UP, PAGE_DOWN:
+			org.moveCursor2(c)
 		case '\x1b':
 			org.command = ""
 			org.mode = NORMAL
@@ -76,7 +78,8 @@ func organizerProcessKey(c int) {
 
 		if c == '\x1b' {
 			if org.view == TASK {
-				org.drawPreviewWindow()
+				//org.drawPreviewWindow()
+				org.drawMarkdownPreview()
 			}
 			sess.showOrgMessage("")
 			org.command = ""
@@ -116,7 +119,8 @@ func organizerProcessKey(c int) {
 				sess.showOrgMessage("No results were returned")
 				org.mode = NO_ROWS
 			}
-			org.drawPreviewWindow()
+			//org.drawPreviewWindow()
+			org.drawMarkdownPreview()
 			return
 		}
 
@@ -154,7 +158,7 @@ func organizerProcessKey(c int) {
 		//Arrows + h,j,k,l
 		if _, found := navigation[c]; found {
 			for j := 0; j < org.repeat; j++ {
-				org.moveCursor(c)
+				org.moveCursor2(c)
 			}
 			org.command = ""
 			org.repeat = 0
