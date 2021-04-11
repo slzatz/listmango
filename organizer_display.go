@@ -1,8 +1,12 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"github.com/charmbracelet/glamour"
+	"io"
+	"os"
+	"os/exec"
 	"strings"
 )
 
@@ -405,15 +409,61 @@ func (o *Organizer) drawMarkdownPreview() {
 	}
 	id := o.rows[o.fr].id
 
-	if o.taskview != BY_FIND {
+	tid := getFolderTid(id)
+	if o.taskview == BY_FIND {
+		sess.drawSearchPreview()
+	} else if tid == 18 || tid == 14 { //&& !e.is_subeditor {
+		sess.eraseRightScreen()
+		note := readNoteIntoString(id)
+		note = generateWWString(note, org.totaleditorcols, 500, "\n")
+		f, err := os.Create("code_file")
+		if err != nil {
+			sess.showEdMessage("Error creating code_file: %v", err)
+			return
+		}
+		defer f.Close()
+
+		_, err = f.WriteString(note)
+		if err != nil {
+			sess.showEdMessage("Error writing code_file: %v", err)
+			return
+		}
+		var cmd *exec.Cmd
+		switch tid {
+		case 18:
+			cmd = exec.Command("highlight", "code_file", "--out-format=xterm256", "--style=gruvbox-dark-hard-slz", "--syntax=cpp")
+		case 14:
+			cmd = exec.Command("highlight", "code_file", "--out-format=xterm256", "--style=gruvbox-dark-hard-slz", "--syntax=go")
+		}
+		stdout, err := cmd.StdoutPipe()
+		if err != nil {
+			sess.showEdMessage("Error creating pipe for highlighting file: %v", err)
+		}
+
+		err = cmd.Start()
+		if err != nil {
+			sess.showEdMessage("Error highlighting file: %v", err)
+		}
+		//var buf []byte
+		//io.ReadFull(stdout, buf)
+		buffer := bufio.NewReader(stdout)
+		//buffer.Read(buf)
+		org.note = ""
+		for {
+			bytes, _, err := buffer.ReadLine()
+			if err == io.EOF {
+				break
+			}
+			org.note += string(bytes) + "\n"
+		}
+		org.drawNoteReadOnly()
+	} else {
 		sess.eraseRightScreen()
 		org.altRowoff = 0
 		note := readNoteIntoString(id)
 		note = generateWWString(note, org.totaleditorcols, 500, "\n")
 		org.note, _ = glamour.Render(note, "dark")
 		org.drawNoteReadOnly()
-	} else {
-		sess.drawSearchPreview()
 	}
 }
 
