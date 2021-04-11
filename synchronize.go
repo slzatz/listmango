@@ -955,6 +955,10 @@ func synchronize(reportOnly bool) {
 			continue
 		}
 		kwns := getTaskKeywordsS(db, &lg, e.id) // returns []string
+		if len(kwns) == 0 {
+			fmt.Fprintf(&lg, "There were no keywords to add to server entry id %d", server_id)
+			continue
+		}
 		for _, kwn := range kwns {
 			keyword_id := keywordExistsS(pdb, &lg, kwn)
 			if keyword_id != -1 { // ? should create the keyword if it doesn't exist
