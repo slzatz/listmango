@@ -285,7 +285,8 @@ func (s *Session) returnCursor() {
 	fmt.Print(ab.String())
 }
 
-func (s *Session) drawSearchPreview() {
+// not in use
+func (s *Session) drawSearchPreview__() {
 	var ab strings.Builder
 	width := s.totaleditorcols - 10
 	length := s.textLines - 10
@@ -317,7 +318,8 @@ func (s *Session) drawSearchPreview() {
 	fmt.Print(ab.String())
 }
 
-func (s *Session) drawPreviewText(id int) {
+// not in use
+func (s *Session) drawPreviewText__(id int) {
 
 	var ab strings.Builder
 
@@ -349,7 +351,7 @@ func (s *Session) drawPreviewText(id int) {
 	fmt.Print(ab.String())
 }
 
-// being used for synchronize right now
+// being used for synchronize right now - but should use new preview logic
 func (s *Session) drawPreviewText2(text string) { //draw_preview
 
 	var ab strings.Builder
@@ -458,6 +460,7 @@ func (s *Session) displayEntryInfo(e *Entry) {
 	fmt.Print(ab.String())
 }
 
+// used by containers
 func (s *Session) drawPreviewBox() {
 	width := s.totaleditorcols - 10
 	length := s.textLines - 10

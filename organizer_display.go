@@ -184,7 +184,7 @@ func (o *Organizer) drawAltRows() {
 	fmt.Print(ab.String())
 }
 
-// for drawing sync log (note)
+// for drawing preview and sync log (note)
 func (o *Organizer) drawNoteReadOnly() {
 
 	//note := readSyncLog(id)
@@ -194,8 +194,8 @@ func (o *Organizer) drawNoteReadOnly() {
 	}
 	rows := strings.Split(o.note, "\n")
 	var ab strings.Builder
-	fmt.Fprintf(&ab, "\x1b[%d;%dH", TOP_MARGIN+1, o.divider+2)
-	lf_ret := fmt.Sprintf("\r\n\x1b[%dC", o.divider+1)
+	fmt.Fprintf(&ab, "\x1b[%d;%dH", TOP_MARGIN+1, o.divider+1) // was +2
+	lf_ret := fmt.Sprintf("\r\n\x1b[%dC", o.divider+0)         // was + 1
 
 	for y := 0; y < o.textLines; y++ {
 
@@ -204,17 +204,19 @@ func (o *Organizer) drawNoteReadOnly() {
 			break
 		}
 
-		length := len(rows[fr])
-		if length > o.totaleditorcols {
-			length = o.totaleditorcols
-		}
+		/*
+			length := len(rows[fr])
+			if length > o.totaleditorcols {
+				length = o.totaleditorcols
+			}
+		*/
 
 		//ab.WriteString(rows[fr][:length])
 		ab.WriteString(rows[fr])
 		ab.WriteString(lf_ret)
 	}
 	fmt.Print(ab.String())
-	o.showOrgMessage("altRowoff = %d", o.altRowoff)
+	//o.showOrgMessage("altRowoff = %d", o.altRowoff)
 }
 
 func (o *Organizer) drawStatusBar() {
@@ -377,7 +379,9 @@ func (o *Organizer) drawSearchRows() {
 	fmt.Print(ab.String())
 }
 
-func (o *Organizer) drawPreviewWindow() {
+// not in use
+/*
+func (o *Organizer) drawPreviewWindow__() {
 
 	if org.mode == NO_ROWS {
 		sess.eraseRightScreen()
@@ -392,30 +396,39 @@ func (o *Organizer) drawPreviewWindow() {
 	}
 	sess.drawPreviewBox()
 
-	/*
-	  if (lm_browser) {
-	    int folder_tid = getFolderTid(org.rows.at(org.fr).id);
-	    if (!(folder_tid == 18 || folder_tid == 14)) updateHTMLFile("assets/" + CURRENT_NOTE_FILE);
-	    else updateHTMLCodeFile("assets/" + CURRENT_NOTE_FILE);
-	  }
-	*/
 }
+*/
 
+// needs to be renamed drawPreview
 func (o *Organizer) drawMarkdownPreview() {
 
-	if org.mode == NO_ROWS {
+	if o.mode == NO_ROWS {
 		sess.eraseRightScreen()
 		return
 	}
 	id := o.rows[o.fr].id
-
 	tid := getFolderTid(id)
+	o.altRowoff = 0
 	if o.taskview == BY_FIND {
-		sess.drawSearchPreview()
+		//sess.drawSearchPreview()
+		sess.eraseRightScreen()
+		note := readNoteIntoString(id)
+		note = generateWWString(note, o.totaleditorcols, 500, "\n")
+		wp := getNoteSearchPositions(id)
+		o.note = highlight_terms_string(note, wp)
+		o.drawNoteReadOnly()
+		/*
+			var t string
+			if note != "" {
+				t = generateWWString(note, width, length, "\n")
+				wp := getNoteSearchPositions(org.rows[org.fr].id)
+				t = highlight_terms_string(t, wp)
+			}
+		*/
 	} else if tid == 18 || tid == 14 { //&& !e.is_subeditor {
 		sess.eraseRightScreen()
 		note := readNoteIntoString(id)
-		note = generateWWString(note, org.totaleditorcols, 500, "\n")
+		note = generateWWString(note, o.totaleditorcols, 500, "\n")
 		f, err := os.Create("code_file")
 		if err != nil {
 			sess.showEdMessage("Error creating code_file: %v", err)
@@ -448,22 +461,31 @@ func (o *Organizer) drawMarkdownPreview() {
 		//io.ReadFull(stdout, buf)
 		buffer := bufio.NewReader(stdout)
 		//buffer.Read(buf)
-		org.note = ""
+		o.note = ""
 		for {
 			bytes, _, err := buffer.ReadLine()
 			if err == io.EOF {
 				break
 			}
-			org.note += string(bytes) + "\n"
+			o.note += string(bytes) + "\n"
 		}
-		org.drawNoteReadOnly()
+		o.drawNoteReadOnly()
 	} else {
 		sess.eraseRightScreen()
-		org.altRowoff = 0
+		//o.altRowoff = 0
 		note := readNoteIntoString(id)
-		note = generateWWString(note, org.totaleditorcols, 500, "\n")
-		org.note, _ = glamour.Render(note, "dark")
-		org.drawNoteReadOnly()
+		note = generateWWString(note, o.totaleditorcols, 500, "\n") //glamour is indenting
+		//o.note, _ = glamour.Render(note, "dark")
+		r, _ := glamour.NewTermRenderer(
+			//glamour.WithStandardStyle("dark"),
+			glamour.WithStylePath("/home/slzatz/listmango/darkslz.json"),
+			glamour.WithWordWrap(0),
+		)
+		note, _ = r.Render(note)
+		//o.note = strings.ReplaceAll(o.note, "  ", "")
+		ix := strings.Index(note, "\n") //works for ix = -1
+		o.note = note[ix+1:]
+		o.drawNoteReadOnly()
 	}
 }
 

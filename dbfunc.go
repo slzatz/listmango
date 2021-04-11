@@ -1282,7 +1282,7 @@ func moveDivider(pct int) {
 		sess.eraseRightScreen() //erases editor area + statusbar + msg
 		sess.drawEditors()
 	} else if org.view == TASK && org.mode != NO_ROWS {
-		org.drawPreviewWindow() //get_preview
+		org.drawMarkdownPreview() //get_preview
 	}
 	sess.showOrgMessage("rows: %d  cols: %d  divider: %d", sess.screenLines, sess.screenCols, sess.divider)
 

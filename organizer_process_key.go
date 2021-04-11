@@ -39,7 +39,7 @@ func organizerProcessKey(c int) {
 	case FIND:
 		switch c {
 		case ARROW_UP, ARROW_DOWN, ARROW_LEFT, ARROW_RIGHT, PAGE_UP, PAGE_DOWN:
-			org.moveCursor2(c)
+			org.moveCursor(c)
 		default:
 			org.mode = NORMAL
 			org.command = ""
@@ -51,7 +51,7 @@ func organizerProcessKey(c int) {
 		case '\r': //also does in effect an escape into NORMAL mode
 			org.writeTitle()
 		case ARROW_UP, ARROW_DOWN, ARROW_LEFT, ARROW_RIGHT, PAGE_UP, PAGE_DOWN:
-			org.moveCursor2(c)
+			org.moveCursor(c)
 		case '\x1b':
 			org.command = ""
 			org.mode = NORMAL
@@ -158,7 +158,7 @@ func organizerProcessKey(c int) {
 		//Arrows + h,j,k,l
 		if _, found := navigation[c]; found {
 			for j := 0; j < org.repeat; j++ {
-				org.moveCursor2(c)
+				org.moveCursor(c)
 			}
 			org.command = ""
 			org.repeat = 0
