@@ -217,7 +217,7 @@ func editorProcessKey(c int) bool { //bool returned is whether to redraw
 					}
 
 					//org.drawPreviewWindow()
-					org.drawMarkdownPreview()
+					org.drawPreview()
 					sess.returnCursor() //because main while loop if started in editor_mode -- need this 09302020
 				}
 

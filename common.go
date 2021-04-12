@@ -151,7 +151,9 @@ const (
 	FIND              // only outline mode
 	ADD_CHANGE_FILTER // only outline mode
 	SYNC_LOG          // only outline mode
-	MARKDOWN          // only outline mode
+	//	MARKDOWN          // only outline mode
+	PREVIEW_MARKDOWN // only outline mode
+	PREVIEW_SYNC_LOG
 )
 
 func (m Mode) String() string {
@@ -171,7 +173,9 @@ func (m Mode) String() string {
 		"FIND",
 		"ADD/CHANGE FILTER",
 		"SYNC LOG",
-		"MARKDOWN",
+		//"MARKDOWN",
+		"PREVIEW_MARKDOWN",
+		"PREVIEW_SYNC_LOG",
 	}[m]
 }
 

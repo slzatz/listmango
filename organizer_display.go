@@ -379,28 +379,8 @@ func (o *Organizer) drawSearchRows() {
 	fmt.Print(ab.String())
 }
 
-// not in use
-/*
-func (o *Organizer) drawPreviewWindow__() {
-
-	if org.mode == NO_ROWS {
-		sess.eraseRightScreen()
-		return
-	}
-	id := o.rows[o.fr].id
-
-	if o.taskview != BY_FIND {
-		sess.drawPreviewText(id)
-	} else {
-		sess.drawSearchPreview()
-	}
-	sess.drawPreviewBox()
-
-}
-*/
-
 // needs to be renamed drawPreview
-func (o *Organizer) drawMarkdownPreview() {
+func (o *Organizer) drawPreview() {
 
 	if o.mode == NO_ROWS {
 		sess.eraseRightScreen()
@@ -410,21 +390,12 @@ func (o *Organizer) drawMarkdownPreview() {
 	tid := getFolderTid(id)
 	o.altRowoff = 0
 	if o.taskview == BY_FIND {
-		//sess.drawSearchPreview()
 		sess.eraseRightScreen()
 		note := readNoteIntoString(id)
 		note = generateWWString(note, o.totaleditorcols, 500, "\n")
 		wp := getNoteSearchPositions(id)
 		o.note = highlight_terms_string(note, wp)
 		o.drawNoteReadOnly()
-		/*
-			var t string
-			if note != "" {
-				t = generateWWString(note, width, length, "\n")
-				wp := getNoteSearchPositions(org.rows[org.fr].id)
-				t = highlight_terms_string(t, wp)
-			}
-		*/
 	} else if tid == 18 || tid == 14 { //&& !e.is_subeditor {
 		sess.eraseRightScreen()
 		note := readNoteIntoString(id)
@@ -470,19 +441,17 @@ func (o *Organizer) drawMarkdownPreview() {
 			o.note += string(bytes) + "\n"
 		}
 		o.drawNoteReadOnly()
-	} else {
+	} else { // render as markdown
 		sess.eraseRightScreen()
 		//o.altRowoff = 0
 		note := readNoteIntoString(id)
-		note = generateWWString(note, o.totaleditorcols, 500, "\n") //glamour is indenting
+		note = generateWWString(note, o.totaleditorcols, 500, "\n")
 		//o.note, _ = glamour.Render(note, "dark")
 		r, _ := glamour.NewTermRenderer(
-			//glamour.WithStandardStyle("dark"),
 			glamour.WithStylePath("/home/slzatz/listmango/darkslz.json"),
 			glamour.WithWordWrap(0),
 		)
 		note, _ = r.Render(note)
-		//o.note = strings.ReplaceAll(o.note, "  ", "")
 		ix := strings.Index(note, "\n") //works for ix = -1
 		o.note = note[ix+1:]
 		o.drawNoteReadOnly()

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"github.com/charmbracelet/glamour"
 	"strings"
 )
 
@@ -79,7 +78,7 @@ func organizerProcessKey(c int) {
 		if c == '\x1b' {
 			if org.view == TASK {
 				//org.drawPreviewWindow()
-				org.drawMarkdownPreview()
+				org.drawPreview()
 			}
 			sess.showOrgMessage("")
 			org.command = ""
@@ -120,7 +119,7 @@ func organizerProcessKey(c int) {
 				org.mode = NO_ROWS
 			}
 			//org.drawPreviewWindow()
-			org.drawMarkdownPreview()
+			org.drawPreview()
 			return
 		}
 
@@ -255,8 +254,8 @@ func organizerProcessKey(c int) {
 				return
 			}
 
-			sess.showOrgMessage("\x1b[41mNot an outline command: %s\x1b[0m", s)
-			org.mode = NORMAL
+			sess.showOrgMessage("\x1b[41mNot a recognized command: %s\x1b[0m", s)
+			org.mode = org.last_mode
 			return
 		}
 
@@ -274,38 +273,28 @@ func organizerProcessKey(c int) {
 
 		//probably should be a org.view not org.mode but
 		// for the moment this kluge works
-	case SYNC_LOG, MARKDOWN:
+	case SYNC_LOG:
 		switch c {
 		case ARROW_UP, 'k':
-			if org.fr > 0 {
-				org.fr--
-				sess.eraseRightScreen()
-				org.altRowoff = 0
-				if org.mode == SYNC_LOG {
-					org.note = readSyncLog(org.rows[org.fr].id)
-					org.drawNoteReadOnly()
-				} else {
-					note := readNoteIntoString(org.rows[org.fr].id)
-					note = generateWWString(note, org.totaleditorcols, 500, "\n")
-					org.note, _ = glamour.Render(note, "dark")
-					org.drawNoteReadOnly()
-				}
+			if org.fr == 0 {
+				return
 			}
+			org.fr--
+			sess.eraseRightScreen()
+			org.altRowoff = 0
+			note := readSyncLog(org.rows[org.fr].id)
+			org.note = generateWWString(note, org.totaleditorcols, 500, "\n")
+			org.drawNoteReadOnly()
 		case ARROW_DOWN, 'j':
-			if org.fr < len(org.rows)-1 {
-				org.fr++
-				sess.eraseRightScreen()
-				org.altRowoff = 0
-				if org.mode == SYNC_LOG {
-					org.note = readSyncLog(org.rows[org.fr].id)
-					org.drawNoteReadOnly()
-				} else {
-					note := readNoteIntoString(org.rows[org.fr].id)
-					note = generateWWString(note, org.totaleditorcols, 500, "\n")
-					org.note, _ = glamour.Render(note, "dark")
-					org.drawNoteReadOnly()
-				}
+			if org.fr == len(org.rows)-1 {
+				return
 			}
+			org.fr++
+			sess.eraseRightScreen()
+			org.altRowoff = 0
+			note := readSyncLog(org.rows[org.fr].id)
+			org.note = generateWWString(note, org.totaleditorcols, 500, "\n")
+			org.drawNoteReadOnly()
 		case ':':
 			sess.showOrgMessage(":")
 			org.command_line = ""
@@ -334,6 +323,34 @@ func organizerProcessKey(c int) {
 			org.log(0)
 		case 'm':
 			m_N()
+		}
+	case PREVIEW_MARKDOWN, PREVIEW_SYNC_LOG:
+		switch c {
+		case '\x1b', 'm':
+			org.mode = NORMAL
+			if org.mode == PREVIEW_MARKDOWN {
+				sess.editorMode = true
+				p.refreshScreen()
+			} else {
+				org.drawPreview()
+			}
+		case ':':
+			sess.showOrgMessage(":")
+			org.command_line = ""
+			org.last_mode = org.mode
+			org.mode = COMMAND_LINE
+
+		// the two below only handle logs < 2x textLines
+		case PAGE_DOWN, ARROW_DOWN, 'j':
+			org.altRowoff++
+			sess.eraseRightScreen()
+			org.drawNoteReadOnly()
+		case PAGE_UP, ARROW_UP, 'k':
+			if org.altRowoff > 0 {
+				org.altRowoff--
+			}
+			sess.eraseRightScreen()
+			org.drawNoteReadOnly()
 		}
 	} // end switch o.mode
 } // end func organizerProcessKey(c int)

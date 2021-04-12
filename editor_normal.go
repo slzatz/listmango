@@ -1,6 +1,7 @@
 package main
 
 import "strings"
+import "github.com/charmbracelet/glamour"
 
 var e_lookup2 = map[string]interface{}{
 	"\x17L":              (*Editor).moveOutputWindowRight,
@@ -15,6 +16,7 @@ var e_lookup2 = map[string]interface{}{
 	"\x17_":              (*Editor).changeSplit,
 	"\x06":               (*Editor).findMatchForBrace,
 	leader + "+":         showVimMessage,
+	leader + "m":         (*Editor).showMarkdown,
 }
 
 func (e *Editor) changeSplit(flag int) {
@@ -132,8 +134,7 @@ func controlH() {
 
 		sess.editorMode = false //needs to be here
 
-		//org.drawPreviewWindow()
-		org.drawMarkdownPreview()
+		org.drawPreview()
 		org.mode = NORMAL
 		sess.returnCursor()
 		return
@@ -173,8 +174,7 @@ func controlH() {
 
 		sess.editorMode = false //needs to be here
 
-		//org.drawPreviewWindow()
-		org.drawMarkdownPreview()
+		org.drawPreview()
 		org.mode = NORMAL
 		sess.returnCursor()
 		return
@@ -316,4 +316,25 @@ func showVimMessage() {
 	} else {
 		sess.showEdMessage("No message: len bb %v; Current Buf %v", len(bb), currentBuf)
 	}
+}
+
+func (e *Editor) showMarkdown() {
+	note := readNoteIntoString(e.id)
+	if len(note) == 0 {
+		return
+	}
+	sess.eraseRightScreen()
+	//o.altRowoff = 0
+	note = generateWWString(note, e.screencols, 500, "\n")
+	r, _ := glamour.NewTermRenderer(
+		glamour.WithStylePath("/home/slzatz/listmango/darkslz.json"),
+		glamour.WithWordWrap(0),
+	)
+	note, _ = r.Render(note)
+	ix := strings.Index(note, "\n") //works for ix = -1
+	org.note = note[ix+1:]
+	org.drawNoteReadOnly()
+
+	sess.editorMode = false
+	org.mode = PREVIEW_MARKDOWN
 }

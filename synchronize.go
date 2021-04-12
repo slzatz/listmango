@@ -90,18 +90,7 @@ func getTaskKeywordsS(dbase *sql.DB, plg io.Writer, id int) []string {
 	return kk
 }
 
-func writeLog(plg *strings.Builder, n *int, reportOnly bool) {
-	log := plg.String()
-	if !reportOnly {
-		log_title := fmt.Sprintf("%v - %d change(s)", time.Now().Format("Mon Jan 2 15:04:05"), *n)
-		insertSyncEntry(log_title, log)
-	}
-	sess.drawPreviewText2(log)
-	sess.drawPreviewBox()
-	org.refresh(-1)
-}
-
-func synchronize(reportOnly bool) {
+func synchronize(reportOnly bool) (log string) {
 	config, err := FromFile("/home/slzatz/listmango/config.json")
 	if err != nil {
 		sess.showOrgMessage("Error reading postgres config file: %v", err)
@@ -116,23 +105,26 @@ func synchronize(reportOnly bool) {
 		config.Postgres.DB,
 	)
 
+	var lg strings.Builder
+	defer func() {
+		log = lg.String()
+	}()
+
 	pdb, err := sql.Open("postgres", connect)
 	if err != nil {
-		sess.showOrgMessage("Error opening postgres db: %w", err)
+		fmt.Fprintf(&lg, "Error opening postgres db: %v", err)
 		return
 	}
 
 	// Ping to connection
 	err = pdb.Ping()
 	if err != nil {
-		sess.showOrgMessage("postgres ping failure!: %v", err)
+		fmt.Fprintf(&lg, "postgres ping failure!: %v", err)
 		return
 	}
 
 	nn := 0 //number of changes
-	var lg strings.Builder
-	defer writeLog(&lg, &nn, reportOnly)
-	lg.WriteString("****************************** BEGIN SYNC *******************************************\n\n")
+	//defer writeLog(&lg, &nn, reportOnly)
 
 	row := db.QueryRow("SELECT timestamp FROM sync WHERE machine=$1;", "client")
 	var raw_client_t string
@@ -142,8 +134,7 @@ func synchronize(reportOnly bool) {
 		return
 	}
 	//last_client_sync, _ := time.Parse("2006-01-02T15:04:05Z", client_t)
-	// note postscript doesn't seem to require the below and seems to be really doing a date comparison
-	//client_t = client_t[0:10] + " " + client_t[11:16]
+	// note postgres doesn't seem to require the below and seems to be really doing a date comparison
 	client_t := raw_client_t[0:10] + " " + raw_client_t[11:19]
 
 	var server_t string
@@ -159,7 +150,6 @@ func synchronize(reportOnly bool) {
 	fmt.Fprintf(&lg, "Server last sync: %v\n", server_t)
 	fmt.Fprintf(&lg, "(raw) Client last sync: %v\n", raw_client_t)
 	fmt.Fprintf(&lg, "Client last sync: %v\n", client_t)
-	//sess.showEdMessage("local time = %v; UTC time = %v; since last sync = %v", time.Now(), time.Now().UTC(), timeDelta(client_t))
 
 	//server updated contexts
 	rows, err := pdb.Query("SELECT id, title, \"default\", created, modified FROM context WHERE context.modified > $1 AND context.deleted = $2;", server_t, false)
@@ -190,7 +180,6 @@ func synchronize(reportOnly bool) {
 	}
 
 	//server deleted contexts
-	//rows, err = pdb.Query("SELECT id, title, \"default\", created, modified FROM context WHERE context.modified > $1 AND context.deleted = $2;", server_t, true)
 	rows, err = pdb.Query("SELECT id, title FROM context WHERE context.modified > $1 AND context.deleted = $2;", server_t, true)
 	if err != nil {
 		fmt.Fprintf(&lg, "Error in SELECT for server_deleted_contexts: %v\n", err)
@@ -245,7 +234,6 @@ func synchronize(reportOnly bool) {
 	}
 
 	//server deleted folders
-	//rows, err = pdb.Query("SELECT id, title, private, created, modified FROM folder WHERE folder.modified > $1 AND folder.deleted = $2;", server_t, true)
 	rows, err = pdb.Query("SELECT id, title FROM folder WHERE folder.modified > $1 AND folder.deleted = $2;", server_t, true)
 	if err != nil {
 		fmt.Fprintf(&lg, "Error in SELECT for server_deleted_folders: %v", err)
@@ -299,7 +287,6 @@ func synchronize(reportOnly bool) {
 	}
 
 	//server deleted keywords
-	//rows, err = pdb.Query("SELECT id, name, star, modified FROM keyword WHERE keyword.modified > $1 AND keyword.deleted = $2;", server_t, true)
 	rows, err = pdb.Query("SELECT id, name FROM keyword WHERE keyword.modified > $1 AND keyword.deleted = $2;", server_t, true)
 	if err != nil {
 		fmt.Fprintf(&lg, "Error in SELECT for server_deleted_keywords: %v", err)
@@ -1221,15 +1208,7 @@ func synchronize(reportOnly bool) {
 	fmt.Fprintf(&lg, "\nClient UTC timestamp: %s\n", client_ts)
 	fmt.Fprintf(&lg, "Server UTC timestamp: %s", tc(server_ts, 19, false))
 
-	/*
-		log := lg.String()
-		sess.drawPreviewText2(log)
-		sess.drawPreviewBox()
-		log_title := fmt.Sprintf("%v - %d change(s)", time.Now().Format("Mon Jan 2 15:04:05"), nn)
-		insertSyncEntry(log_title, log)
-	*/
-
-	//note the defer writeLog(...)
+	return
 }
 
 /* Task

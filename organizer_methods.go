@@ -38,7 +38,6 @@ func (o *Organizer) delWord() {
 
 //Note: outlineMoveCursor worries about moving cursor beyond the size of the row
 //OutlineScroll worries about moving cursor beyond the screen
-/*
 func (o *Organizer) moveCursor(key int) {
 
 	if len(o.rows) == 0 {
@@ -61,7 +60,7 @@ func (o *Organizer) moveCursor(key int) {
 		o.fc, o.coloff = 0, 0
 
 		if o.view == TASK {
-			o.drawPreviewWindow() //if id == -1 does not try to retrieve note
+			o.drawPreview()
 		} else {
 			c := getContainerInfo(o.rows[o.fr].id)
 			if c.id != 0 {
@@ -76,68 +75,7 @@ func (o *Organizer) moveCursor(key int) {
 		}
 		o.fc, o.coloff = 0, 0
 		if o.view == TASK {
-			o.drawPreviewWindow() //if id == -1 does not try to retrieve note
-		} else {
-			c := getContainerInfo(o.rows[o.fr].id)
-			if c.id != 0 {
-				sess.displayContainerInfo(&c)
-				sess.drawPreviewBox()
-			}
-		}
-	}
-
-	t := &o.rows[o.fr].title
-	if o.fc >= len(*t) {
-		if o.mode != INSERT {
-			o.fc = len(*t) - 1
-		} else {
-			o.fc = len(*t)
-		}
-	}
-	if *t == "" {
-		o.fc = 0
-	}
-}
-*/
-
-func (o *Organizer) moveCursor(key int) {
-
-	if len(o.rows) == 0 {
-		return
-	}
-
-	switch key {
-	case ARROW_LEFT, 'h':
-		if o.fc > 0 {
-			o.fc--
-		}
-
-	case ARROW_RIGHT, 'l':
-		o.fc++
-
-	case ARROW_UP, 'k':
-		if o.fr > 0 {
-			o.fr--
-		}
-		o.fc, o.coloff = 0, 0
-
-		if o.view == TASK {
-			o.drawMarkdownPreview()
-		} else {
-			c := getContainerInfo(o.rows[o.fr].id)
-			if c.id != 0 {
-				sess.displayContainerInfo(&c)
-				sess.drawPreviewBox()
-			}
-		}
-
-	case ARROW_DOWN, 'j':
-		if o.fr < len(o.rows)-1 {
-			o.fr++
-		}
-		o.fc, o.coloff = 0, 0
-		if o.view == TASK {
-			o.drawMarkdownPreview()
+			o.drawPreview()
 		} else {
 			c := getContainerInfo(o.rows[o.fr].id)
 			if c.id != 0 {

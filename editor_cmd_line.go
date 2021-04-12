@@ -272,14 +272,3 @@ func (e *Editor) sync() {
 	}
 	synchronize(reportOnly)
 }
-
-func (e *Editor) showMarkdown() {
-	note := readNoteIntoString(e.id)
-	if len(note) == 0 {
-		return
-	}
-	note = generateWWString(note, e.screencols, 100, "\n")
-	org.renderMarkdown(note)
-	sess.editorMode = false
-	org.mode = MARKDOWN
-}

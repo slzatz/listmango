@@ -1,7 +1,7 @@
 package main
 
 import (
-	//"fmt"
+	"fmt"
 	"strconv"
 	"strings"
 	"time"
@@ -50,8 +50,9 @@ var cmd_lookup = map[string]func(*Organizer, int){
 	"delmarks":       (*Organizer).deleteMarks,
 	"delm":           (*Organizer).deleteMarks,
 	"copy":           (*Organizer).copyEntry,
-	"showmarkdown":   (*Organizer).showMarkdown,
-	"showm":          (*Organizer).showMarkdown,
+	"save":           (*Organizer).save,
+	//"showmarkdown":   (*Organizer).showMarkdown,
+	//"showm":          (*Organizer).showMarkdown,
 	/*
 	  "x": F_x,
 	 // {"linked", F_linked,
@@ -141,7 +142,7 @@ func (o *Organizer) openContext(pos int) {
 		o.mode = NO_ROWS
 	}
 	//o.drawPreviewWindow()
-	o.drawMarkdownPreview()
+	o.drawPreview()
 	return
 }
 
@@ -183,7 +184,7 @@ func (o *Organizer) openFolder(pos int) {
 		o.mode = NO_ROWS
 	}
 	//o.drawPreviewWindow()
-	o.drawMarkdownPreview()
+	o.drawPreview()
 	return
 }
 
@@ -215,7 +216,7 @@ func (o *Organizer) openKeyword(pos int) {
 		o.mode = NO_ROWS
 	}
 	//o.drawPreviewWindow()
-	o.drawMarkdownPreview()
+	o.drawPreview()
 	return
 }
 
@@ -400,7 +401,7 @@ func (o *Organizer) refresh(unused int) {
 			}
 			if unused != -1 { //complete kluge has to do with refreshing when syncing
 				//o.drawPreviewWindow()
-				o.drawMarkdownPreview()
+				o.drawPreview()
 			}
 		} else {
 			o.fc, o.fr, o.rowoff = 0, 0, 0
@@ -411,7 +412,7 @@ func (o *Organizer) refresh(unused int) {
 			}
 			if unused != -1 { //complete kluge has to do with refreshing when syncing
 				//o.drawPreviewWindow()
-				o.drawMarkdownPreview()
+				o.drawPreview()
 			}
 		}
 		sess.showOrgMessage("Entries will be refreshed")
@@ -458,18 +459,22 @@ func (o *Organizer) find(pos int) {
 		o.mode = NO_ROWS
 	}
 	//o.drawPreviewWindow()
-	o.drawMarkdownPreview()
+	o.drawPreview()
 }
 
 func (o *Organizer) sync(unused int) {
+	var log string
 	if o.command_line == "test" {
-		synchronize(true)
+		log = synchronize(true)
 	} else {
 		//o.refresh(0) //param is unused
-		synchronize(false)
+		log = synchronize(false)
 	}
-	o.mode = NORMAL
 	o.command_line = ""
+	o.eraseRightScreen()
+	o.note = generateWWString(log, org.totaleditorcols, 500, "\n")
+	o.drawNoteReadOnly()
+	o.mode = PREVIEW_SYNC_LOG
 }
 
 func (o *Organizer) contexts(pos int) {
@@ -629,7 +634,7 @@ func (o *Organizer) recent(unused int) {
 		o.mode = NO_ROWS
 	}
 	//o.drawPreviewWindow()
-	o.drawMarkdownPreview()
+	o.drawPreview()
 }
 
 func (o *Organizer) deleteKeywords(unused int) {
@@ -689,12 +694,12 @@ func (o *Organizer) copyEntry(unused int) {
 	sess.showOrgMessage("Entry copied")
 }
 
-func (o *Organizer) showMarkdown(unused int) {
-	note := readNoteIntoString(o.rows[o.fr].id)
-	if len(note) == 0 {
-		return
-	}
-	note = generateWWString(note, o.totaleditorcols, 500, "\n")
-	o.renderMarkdown(note)
-	o.mode = MARKDOWN
+func (o *Organizer) save(unused int) {
+	if o.last_mode == PREVIEW_SYNC_LOG {
+		title := fmt.Sprintf("%v", time.Now().Format("Mon Jan 2 15:04:05"))
+		insertSyncEntry(title, o.note)
+		sess.showOrgMessage("Sync log save to database")
+		o.command_line = ""
+		o.mode = o.last_mode
+	} // otherwise should save to file
 }

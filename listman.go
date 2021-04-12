@@ -224,9 +224,7 @@ func main() {
 		sess.showOrgMessage("No results were returned")
 		org.mode = NO_ROWS
 	}
-	//org.drawPreviewWindow()
-	org.drawMarkdownPreview()
-
+	org.drawPreview()
 	org.refreshScreen()
 	org.drawStatusBar()
 	sess.showOrgMessage("rows: %d  columns: %d", sess.screenLines, sess.screenCols)
