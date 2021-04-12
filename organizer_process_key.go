@@ -327,13 +327,13 @@ func organizerProcessKey(c int) {
 	case PREVIEW_MARKDOWN, PREVIEW_SYNC_LOG:
 		switch c {
 		case '\x1b', 'm':
-			org.mode = NORMAL
 			if org.mode == PREVIEW_MARKDOWN {
 				sess.editorMode = true
 				p.refreshScreen()
 			} else {
 				org.drawPreview()
 			}
+			org.mode = NORMAL
 		case ':':
 			sess.showOrgMessage(":")
 			org.command_line = ""
