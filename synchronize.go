@@ -545,8 +545,6 @@ func synchronize(reportOnly bool) (log string) {
 	}
 
 	//client updated entries
-	//rows, err = db.Query("SELECT id, tid, title, star, created, modified, added, completed, context_tid, folder_tid FROM task WHERE task.modified > ? AND task.deleted = ?;", client_t, false)
-	//rows, err = db.Query("SELECT id, tid, title, star, created, modified, added, completed, context_tid, folder_tid FROM task WHERE task.modified > ? AND task.deleted = ?;", client_t, "false")
 	rows, err = db.Query("SELECT id, tid, title, star, note, created, modified, added, completed, context_tid, folder_tid FROM task WHERE substr(modified, 1, 19)  > ? AND deleted = ?;", client_t, false)
 	if err != nil {
 		fmt.Fprintf(&lg, "Error in SELECT for client_updated_entries: %v", err)
@@ -584,7 +582,6 @@ func synchronize(reportOnly bool) (log string) {
 	} else {
 		lg.WriteString("No updated (new and modified) client Entries since last sync.\n")
 	}
-	//sess.showEdMessage("Number of changes that client needs to transmit to client: %v", len(client_updated_entries))
 	for _, e := range client_updated_entries {
 		fmt.Fprintf(&lg, "id: %d; tid: %d %q; star: %t; modified: %v\n", e.id, e.tid, tc(e.title, 15, true), e.star, tc(e.modified, 19, false))
 	}
