@@ -940,7 +940,7 @@ func synchronize(reportOnly bool) (log string) {
 		}
 		kwns := getTaskKeywordsS(db, &lg, e.id) // returns []string
 		if len(kwns) == 0 {
-			fmt.Fprintf(&lg, "There were no keywords to add to server entry id %d", server_id)
+			fmt.Fprintf(&lg, "There were no keywords to add to server entry id %d\n", server_id)
 			continue
 		}
 		for _, kwn := range kwns {

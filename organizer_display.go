@@ -1,12 +1,10 @@
 package main
 
 import (
-	"bufio"
+	"bytes"
 	"fmt"
+	"github.com/alecthomas/chroma/quick"
 	"github.com/charmbracelet/glamour"
-	"io"
-	"os"
-	"os/exec"
 	"strings"
 )
 
@@ -381,7 +379,6 @@ func (o *Organizer) drawSearchRows() {
 
 // needs to be renamed drawPreview
 func (o *Organizer) drawPreview() {
-
 	if o.mode == NO_ROWS {
 		sess.eraseRightScreen()
 		return
@@ -389,64 +386,26 @@ func (o *Organizer) drawPreview() {
 	id := o.rows[o.fr].id
 	tid := getFolderTid(id)
 	o.altRowoff = 0
+	note := readNoteIntoString(id)
+	note = generateWWString(note, o.totaleditorcols, 500, "\n")
+	sess.eraseRightScreen()
 	if o.taskview == BY_FIND {
-		sess.eraseRightScreen()
-		note := readNoteIntoString(id)
-		note = generateWWString(note, o.totaleditorcols, 500, "\n")
 		wp := getNoteSearchPositions(id)
 		o.note = highlight_terms_string(note, wp)
 		o.drawNoteReadOnly()
 	} else if tid == 18 || tid == 14 { //&& !e.is_subeditor {
-		sess.eraseRightScreen()
-		note := readNoteIntoString(id)
-		note = generateWWString(note, o.totaleditorcols, 500, "\n")
-		f, err := os.Create("code_file")
-		if err != nil {
-			sess.showEdMessage("Error creating code_file: %v", err)
-			return
-		}
-		defer f.Close()
-
-		_, err = f.WriteString(note)
-		if err != nil {
-			sess.showEdMessage("Error writing code_file: %v", err)
-			return
-		}
-		var cmd *exec.Cmd
+		var lang string
+		var buf bytes.Buffer
 		switch tid {
 		case 18:
-			cmd = exec.Command("highlight", "code_file", "--out-format=xterm256", "--style=gruvbox-dark-hard-slz", "--syntax=cpp")
+			lang = "cpp"
 		case 14:
-			cmd = exec.Command("highlight", "code_file", "--out-format=xterm256", "--style=gruvbox-dark-hard-slz", "--syntax=go")
+			lang = "go"
 		}
-		stdout, err := cmd.StdoutPipe()
-		if err != nil {
-			sess.showEdMessage("Error creating pipe for highlighting file: %v", err)
-		}
-
-		err = cmd.Start()
-		if err != nil {
-			sess.showEdMessage("Error highlighting file: %v", err)
-		}
-		//var buf []byte
-		//io.ReadFull(stdout, buf)
-		buffer := bufio.NewReader(stdout)
-		//buffer.Read(buf)
-		o.note = ""
-		for {
-			bytes, _, err := buffer.ReadLine()
-			if err == io.EOF {
-				break
-			}
-			o.note += string(bytes) + "\n"
-		}
+		_ = quick.Highlight(&buf, note, lang, "terminal16m", "rrt")
+		o.note = buf.String()
 		o.drawNoteReadOnly()
 	} else { // render as markdown
-		sess.eraseRightScreen()
-		//o.altRowoff = 0
-		note := readNoteIntoString(id)
-		note = generateWWString(note, o.totaleditorcols, 500, "\n")
-		//o.note, _ = glamour.Render(note, "dark")
 		r, _ := glamour.NewTermRenderer(
 			glamour.WithStylePath("/home/slzatz/listmango/darkslz.json"),
 			glamour.WithWordWrap(0),

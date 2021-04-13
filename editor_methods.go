@@ -1037,6 +1037,7 @@ func (e *Editor) readFileIntoNote(filename string) error {
 	if err := scanner.Err(); err != nil {
 		return fmt.Errorf("Error reading file %q: %v", filename, err)
 	}
+	v.SetBufferLines(e.vbuf, 0, -1, true, e.bb)
 
 	e.fr, e.fc, e.cy, e.cx, e.lineOffset, e.first_visible_row, e.last_visible_row = 0, 0, 0, 0, 0, 0, 0
 
