@@ -17,6 +17,7 @@ var e_lookup2 = map[string]interface{}{
 	"\x06":               (*Editor).findMatchForBrace,
 	leader + "+":         showVimMessage,
 	leader + "m":         (*Editor).showMarkdown,
+	leader + "s":         (*Editor).nextStyle,
 }
 
 func (e *Editor) changeSplit(flag int) {
@@ -337,4 +338,12 @@ func (e *Editor) showMarkdown() {
 
 	sess.editorMode = false
 	org.mode = PREVIEW_MARKDOWN
+}
+
+func (e *Editor) nextStyle() {
+	sess.styleIndex++
+	if sess.styleIndex > len(sess.style)-1 {
+		sess.styleIndex = 0
+	}
+	sess.showEdMessage("New style is %q", sess.style[sess.styleIndex])
 }

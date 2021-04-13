@@ -24,6 +24,8 @@ type Session struct {
 	fts_search_terms string
 	origTermCfg      []byte //from GoKilo
 	cfg              Config
+	style            [7]string
+	styleIndex       int
 }
 
 type Config struct {

@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
+	"github.com/alecthomas/chroma/quick"
 	"io"
 	"os"
 	"os/exec"
@@ -770,6 +771,44 @@ func (e *Editor) drawBuffer(pab *strings.Builder) {
 }
 
 func (e *Editor) drawCodeRows(pab *strings.Builder) {
+	tid := getFolderTid(e.id)
+	note := e.generateWWStringFromBuffer()
+	var lang string
+	var buf bytes.Buffer
+	switch tid {
+	case 18:
+		lang = "cpp"
+	case 14:
+		lang = "go"
+	}
+	_ = quick.Highlight(&buf, note, lang, "terminal16m", sess.style[sess.styleIndex])
+	note = buf.String()
+	nnote := strings.Split(note, "\n")
+	lf_ret := fmt.Sprintf("\r\n\x1b[%dC", e.left_margin)
+	fmt.Fprintf(pab, "\x1b[?25l\x1b[%d;%dH", e.top_margin, e.left_margin+1)
+
+	// below draws the line number 'rectangle' only matters for the word-wrapped lines
+	fmt.Fprintf(pab, "\x1b[2*x\x1b[%d;%d;%d;%d;48;5;235$r\x1b[*x",
+		e.top_margin, e.left_margin, e.top_margin+e.screenlines, e.left_margin+e.left_margin_offset)
+	n := 0
+	//func (b *reader) readline() (line []byte, isprefix bool, err)
+
+	for _, line := range nnote {
+
+		if n >= e.first_visible_row { //substituted for above on 12312020
+			fmt.Fprintf(pab, "\x1b[48;5;235m\x1b[38;5;245m%3d \x1b[0m", n)
+			ll := strings.Split(line, "\t")
+			for i := 0; i < len(ll)-1; i++ {
+				fmt.Fprintf(pab, "%s%s\x1b[%dC", ll[i], lf_ret, e.left_margin_offset)
+			}
+			fmt.Fprintf(pab, "%s%s", ll[len(ll)-1], lf_ret)
+		}
+		n++
+	}
+	e.draw_visual(pab)
+}
+
+func (e *Editor) drawCodeRows_(pab *strings.Builder) {
 	//save the current file to code_file with correct extension
 	f, err := os.Create("code_file")
 	if err != nil {

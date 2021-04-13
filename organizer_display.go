@@ -377,7 +377,6 @@ func (o *Organizer) drawSearchRows() {
 	fmt.Print(ab.String())
 }
 
-// needs to be renamed drawPreview
 func (o *Organizer) drawPreview() {
 	if o.mode == NO_ROWS {
 		sess.eraseRightScreen()
@@ -392,7 +391,6 @@ func (o *Organizer) drawPreview() {
 	if o.taskview == BY_FIND {
 		wp := getNoteSearchPositions(id)
 		o.note = highlight_terms_string(note, wp)
-		o.drawNoteReadOnly()
 	} else if tid == 18 || tid == 14 { //&& !e.is_subeditor {
 		var lang string
 		var buf bytes.Buffer
@@ -402,9 +400,8 @@ func (o *Organizer) drawPreview() {
 		case 14:
 			lang = "go"
 		}
-		_ = quick.Highlight(&buf, note, lang, "terminal16m", "rrt")
+		_ = quick.Highlight(&buf, note, lang, "terminal16m", sess.style[sess.styleIndex])
 		o.note = buf.String()
-		o.drawNoteReadOnly()
 	} else { // render as markdown
 		r, _ := glamour.NewTermRenderer(
 			glamour.WithStylePath("/home/slzatz/listmango/darkslz.json"),
@@ -413,8 +410,8 @@ func (o *Organizer) drawPreview() {
 		note, _ = r.Render(note)
 		ix := strings.Index(note, "\n") //works for ix = -1
 		o.note = note[ix+1:]
-		o.drawNoteReadOnly()
 	}
+	o.drawNoteReadOnly()
 }
 
 func (o *Organizer) renderMarkdown(note string) {
