@@ -322,7 +322,7 @@ func organizerProcessKey(c int) {
 			}
 			org.log(0)
 		case 'm':
-			m_N()
+			mark()
 		}
 	case PREVIEW_MARKDOWN, PREVIEW_SYNC_LOG:
 		switch c {
