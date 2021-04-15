@@ -104,7 +104,7 @@ func (o *Organizer) drawRows() {
 			}
 
 			ab.WriteString(o.rows[fr].title[o.coloff : o.highlight[j]-o.coloff])
-			ab.WriteString(GRAY_BG)
+			ab.WriteString(LIGHT_GRAY_BG)
 			ab.WriteString(o.rows[fr].title[o.highlight[j] : o.highlight[k]-o.coloff])
 
 			ab.WriteString(DEFAULT_BG)
