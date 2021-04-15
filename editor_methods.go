@@ -789,20 +789,25 @@ func (e *Editor) drawCodeRows(pab *strings.Builder) {
 	fmt.Fprintf(pab, "\x1b[?25l\x1b[%d;%dH", e.top_margin, e.left_margin+1)
 
 	// below draws the line number 'rectangle' only matters for the word-wrapped lines
+	// note that foreground of numbers is screwing up comments on multiple contigous lines
 	fmt.Fprintf(pab, "\x1b[2*x\x1b[%d;%d;%d;%d;48;5;235$r\x1b[*x",
 		e.top_margin, e.left_margin, e.top_margin+e.screenlines, e.left_margin+e.left_margin_offset)
+
 	n := 0
-	//func (b *reader) readline() (line []byte, isprefix bool, err)
 
 	for _, line := range nnote {
 
-		if n >= e.first_visible_row { //substituted for above on 12312020
-			fmt.Fprintf(pab, "\x1b[48;5;235m\x1b[38;5;245m%3d \x1b[0m", n)
+		if n >= e.first_visible_row {
+			fmt.Fprintf(pab, "\x1b[48;5;235m\x1b[38;5;245m%3d \x1b[49m", n)
+
 			ll := strings.Split(line, "\t")
 			for i := 0; i < len(ll)-1; i++ {
 				fmt.Fprintf(pab, "%s%s\x1b[%dC", ll[i], lf_ret, e.left_margin_offset)
 			}
 			fmt.Fprintf(pab, "%s%s", ll[len(ll)-1], lf_ret)
+
+			//fmt.Fprintf(pab, "%s%s", line, lf_ret) // all necessary if ignoring multi-line comments
+
 		}
 		n++
 	}
@@ -879,14 +884,17 @@ func (e *Editor) drawCodeRows_(pab *strings.Builder) {
 	e.draw_visual(pab)
 }
 
-/* below exists to create a text file that has the proper
+/* below exists to create a string that has the proper
  * line breaks based on screen width for syntax highlighters
  * that are utilized by drawcoderows
  * produces a text string that starts at the first line of the
  * file (need to deal with comments where start of comment might be scrolled
- * and ends on the last visible linei. also multilines are indicated by \t
+ * and ends on the last visible line. also multilines are indicated by \t
  * so highlighter deals with them correctly and converted to \n in drawcoderows
- * only used by editordrawcoderows
+ * only used by editor.drawCodeRows
+ * very similar to dbfunc generateWWString except this uses buffer
+ * and only returns as much file as fits the screen
+ * and deals with multi-line comments
  */
 func (e *Editor) generateWWStringFromBuffer() string {
 	numRows := len(e.bb)
@@ -905,6 +913,7 @@ func (e *Editor) generateWWStringFromBuffer() string {
 		}
 
 		ret := []byte("\t")
+		width := e.screencols - e.left_margin_offset
 		row := e.bb[filerow]
 
 		// if you put a \n in the middle of a comment the wrapped portion won't be italic
@@ -925,7 +934,7 @@ func (e *Editor) generateWWStringFromBuffer() string {
 		prev_pos := 0 //except for start -> pos + 1
 		for {
 			// if remainder of line is less than screen width
-			if prev_pos+e.screencols-e.left_margin_offset > len(row)-1 {
+			if prev_pos+width > len(row)-1 {
 				ab.Write(row[prev_pos:])
 				if y == e.screenlines-1 {
 					e.last_visible_row = filerow - 1
@@ -937,12 +946,9 @@ func (e *Editor) generateWWStringFromBuffer() string {
 				break
 			}
 
-			//pos = strings.LastIndex(row[:prev_pos+e.screencols-e.left_margin_offset], " ")
-			pos = bytes.LastIndex(row[:prev_pos+e.screencols-e.left_margin_offset], []byte(" "))
-
-			//note npos when signed = -1 and order of if/else may matter
+			pos = bytes.LastIndex(row[:prev_pos+width], []byte(" "))
 			if pos == -1 || pos == prev_pos-1 {
-				pos = prev_pos + e.screencols - e.left_margin_offset - 1
+				pos = prev_pos + width - 1
 			}
 
 			ab.Write(row[prev_pos : pos+1]) //? pos+1
@@ -951,8 +957,8 @@ func (e *Editor) generateWWStringFromBuffer() string {
 				return ab.String()
 			}
 			ab.Write(ret)
-			prev_pos = pos + 1
 			y++
+			prev_pos = pos + 1
 		}
 	}
 }
