@@ -73,27 +73,27 @@ func (o *Organizer) drawRows() {
 		}
 
 		if o.rows[fr].star {
-			ab.WriteString(BOLD + LIGHT_CYAN_FG)
+			ab.WriteString(CYAN_BOLD)
 		}
 
 		if o.rows[fr].completed && o.rows[fr].deleted {
-			ab.WriteString(GREEN_FG)
+			ab.WriteString(GREEN)
 		} else if o.rows[fr].completed {
-			ab.WriteString(YELLOW_FG)
+			ab.WriteString(YELLOW)
 		} else if o.rows[fr].deleted {
-			ab.WriteString(RED_FG)
+			ab.WriteString(RED)
 		}
 
 		if fr == o.fr {
 			ab.WriteString("\x1b[48;5;236m") // 236 is a grey
 		}
 		if o.rows[fr].dirty {
-			ab.WriteString("\x1b[30;47m") //black letters on white bg
-			//ab.WriteString(BLACK_FG + WHITE_BG) //this unbolded for star for some reason
+			//ab.WriteString("\x1b[30;47m") //black letters on white bg
+			ab.WriteString(BLACK + WHITE_BG)
 		}
 		if _, ok := o.marked_entries[o.rows[fr].id]; ok {
-			//ab.WriteString(YELLOW_BG)
-			ab.WriteString("\x1b[30;43m") //black letters on yellow bg
+			ab.WriteString(BLACK + YELLOW_BG)
+			//ab.WriteString("\x1b[30;43m") //black letters on yellow bg
 		}
 
 		// below - only will get visual highlighting if it's the active
