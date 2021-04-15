@@ -408,8 +408,8 @@ func insertRow(row *Row) int {
 		context_tid = org.context_map[org.filter]
 	case BY_FOLDER:
 		folder_tid = org.folder_map[org.filter]
-	case BY_KEYWORD:
-	case BY_RECENT:
+		//case BY_KEYWORD:
+		//case BY_RECENT:
 	}
 
 	res, err := db.Exec("INSERT INTO task (priority, title, folder_tid, context_tid, "+

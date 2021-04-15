@@ -462,7 +462,6 @@ func synchronize(reportOnly bool) (log string) {
 	}
 
 	//client deleted folders
-	//rows, err = db.Query("SELECT id, tid, title, private, created, modified FROM folder WHERE folder.modified > $1 AND folder.deleted = $2;", client_t, true)
 	rows, err = db.Query("SELECT id, tid, title FROM folder WHERE substr(folder.modified, 1, 19) > $1 AND folder.deleted = $2;", client_t, true)
 	if err != nil {
 		fmt.Fprintf(&lg, "Error in SELECT for client_deleted_folders: %v", err)
@@ -554,6 +553,7 @@ func synchronize(reportOnly bool) (log string) {
 	var client_updated_entries []Entry
 	for rows.Next() {
 		var e Entry
+		// right now tid not being set on new entries so need this
 		var tid sql.NullInt64
 		rows.Scan(
 			&e.id,

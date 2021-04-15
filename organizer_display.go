@@ -59,8 +59,6 @@ func (o *Organizer) drawRows() {
 
 		// if a line is long you only draw what fits on the screen
 		//below solves problem when deleting chars from a scrolled long line
-
-		//can run into this problem when deleting chars from a scrolled log line
 		var length int
 		if fr == o.fr {
 			length = len(o.rows[fr].title) - o.coloff
@@ -85,15 +83,13 @@ func (o *Organizer) drawRows() {
 		}
 
 		if fr == o.fr {
-			ab.WriteString("\x1b[48;5;236m") // 236 is a grey
+			ab.WriteString(DARK_GRAY_BG)
 		}
 		if o.rows[fr].dirty {
-			//ab.WriteString("\x1b[30;47m") //black letters on white bg
 			ab.WriteString(BLACK + WHITE_BG)
 		}
 		if _, ok := o.marked_entries[o.rows[fr].id]; ok {
 			ab.WriteString(BLACK + YELLOW_BG)
-			//ab.WriteString("\x1b[30;43m") //black letters on yellow bg
 		}
 
 		// below - only will get visual highlighting if it's the active
@@ -108,10 +104,10 @@ func (o *Organizer) drawRows() {
 			}
 
 			ab.WriteString(o.rows[fr].title[o.coloff : o.highlight[j]-o.coloff])
-			ab.WriteString("\x1b[48;5;242m")
+			ab.WriteString(GRAY_BG)
 			ab.WriteString(o.rows[fr].title[o.highlight[j] : o.highlight[k]-o.coloff])
 
-			ab.WriteString("\x1b[49m") // return background to normal
+			ab.WriteString(DEFAULT_BG)
 			ab.WriteString(o.rows[fr].title[:o.highlight[k]])
 
 		} else {
@@ -133,7 +129,7 @@ func (o *Organizer) drawRows() {
 		// believe the +2 is just to give some space from the end of long titles
 		fmt.Fprintf(&ab, "\x1b[%d;%dH", y+TOP_MARGIN+1, o.divider-TIME_COL_WIDTH+2)
 		ab.WriteString(o.rows[fr].modified)
-		ab.WriteString("\x1b[0m") // return background to normal ////////////////////////////////
+		ab.WriteString(RESET)
 		ab.WriteString(lf_ret)
 	}
 	fmt.Print(ab.String())

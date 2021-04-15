@@ -32,6 +32,8 @@ const (
 
 	BASE_DATE string = "1970-01-01 00:00"
 
+	RESET string = "\x1b[0m"
+
 	BLACK   string = "\x1b[30m"
 	RED     string = "\x1b[31m"
 	GREEN   string = "\x1b[32m"
@@ -56,6 +58,11 @@ const (
 	MAGENTA_BG string = "\x1b[45m"
 	CYAN_BG    string = "\x1b[46m"
 	WHITE_BG   string = "\x1b[47m"
+	DEFAULT_BG string = "\x1b[49m"
+
+	// 8bit 256 color 48;5 => background
+	LIGHT_GRAY_BG string = "\x1b[48;5;242m"
+	DARK_GRAY_BG  string = "\x1b[48;5;236m"
 
 	BOLD string = "\x1b[1m"
 )
