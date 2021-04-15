@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+
 	"github.com/neovim/go-client/nvim"
 )
 
@@ -21,29 +22,41 @@ var modeMap = map[string]Mode{
 }
 
 const (
-	TZ_OFFSET                 = 4
-	LINKED_NOTE_HEIGHT        = 20
-	TOP_MARGIN                = 1
-	MAX                       = 500
-	TIME_COL_WIDTH            = 18
-	LEFT_MARGIN               = 1
-	LEFT_MARGIN_OFFSET        = 4
-	BASE_DATE          string = "1970-01-01 00:00"
-	BLACK_FG           string = "\x1b[0;30m" //red if 1 -> generally called light (e.g., light red)
-	RED_FG             string = "\x1b[0;31m" //red if 1 -> generally called light (e.g., light red)
-	GREEN_FG           string = "\x1b[0;32m" //green
-	YELLOW_FG          string = "\x1b[0;33m" //yellow
-	BLUE_FG            string = "\x1b[0;34m" //blue
-	MAGENTA_FG         string = "\x1b[0;35m" //magenta
-	CYAN_FG            string = "\x1b[0;36m" //cyan
-	WHITE_FG           string = "\x1b[0;37m"
-	RED_BG             string = "\x1b[41m"
-	GREEN_BG           string = "\x1b[42m"
-	YELLOW_BG          string = "\x1b[43m"
-	BLUE_BG            string = "\x1b[44m"
-	MAGENTA_BG         string = "\x1b[45m"
-	CYAN_BG            string = "\x1b[46m"
-	WHITE_BG           string = "\x1b[47m"
+	TZ_OFFSET          = 4
+	LINKED_NOTE_HEIGHT = 20
+	TOP_MARGIN         = 1
+	MAX                = 500
+	TIME_COL_WIDTH     = 18
+	LEFT_MARGIN        = 1
+	LEFT_MARGIN_OFFSET = 4
+
+	BASE_DATE  string = "1970-01-01 00:00"
+	BLACK_FG   string = "\x1b[0;30m"
+	RED_FG     string = "\x1b[0;31m"
+	GREEN_FG   string = "\x1b[0;32m"
+	YELLOW_FG  string = "\x1b[0;33m"
+	BLUE_FG    string = "\x1b[0;34m"
+	MAGENTA_FG string = "\x1b[0;35m"
+	CYAN_FG    string = "\x1b[0;36m"
+	WHITE_FG   string = "\x1b[0;37m"
+
+	LIGHT_RED_FG     string = "\x1b[1;31m"
+	LIGHT_GREEN_FG   string = "\x1b[1;32m"
+	LIGHT_YELLOW_FG  string = "\x1b[1;33m"
+	LIGHT_BLUE_FG    string = "\x1b[1;34m"
+	LIGHT_MAGENTA_FG string = "\x1b[1;35m"
+	LIGHT_CYAN_FG    string = "\x1b[1;36m"
+	LIGHT_WHITE_FG   string = "\x1b[1;37m"
+
+	RED_BG     string = "\x1b[41m"
+	GREEN_BG   string = "\x1b[42m"
+	YELLOW_BG  string = "\x1b[43m"
+	BLUE_BG    string = "\x1b[44m"
+	MAGENTA_BG string = "\x1b[45m"
+	CYAN_BG    string = "\x1b[46m"
+	WHITE_BG   string = "\x1b[47m"
+
+	BOLD string = "\x1b[1m"
 )
 
 func ctrlKey(b byte) int { //rune

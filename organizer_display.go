@@ -3,9 +3,10 @@ package main
 import (
 	"bytes"
 	"fmt"
+	"strings"
+
 	"github.com/alecthomas/chroma/quick"
 	"github.com/charmbracelet/glamour"
-	"strings"
 )
 
 // should probably be named drawOrgRows
@@ -72,18 +73,16 @@ func (o *Organizer) drawRows() {
 		}
 
 		if o.rows[fr].star {
-			ab.WriteString("\x1b[1m")    //bold
-			ab.WriteString("\x1b[1;36m") //light cyan
+			ab.WriteString(BOLD + LIGHT_CYAN_FG)
 		}
 
 		if o.rows[fr].completed && o.rows[fr].deleted {
-			ab.WriteString("\x1b[32m") //green foreground
+			ab.WriteString(GREEN_FG)
 		} else if o.rows[fr].completed {
-			ab.WriteString("\x1b[33m") //yellow foreground
-			//else if (row.deleted) ab.append("\x1b[31m", 5); //red foreground
+			ab.WriteString(YELLOW_FG)
 		} else if o.rows[fr].deleted {
 			ab.WriteString(RED_FG)
-		} //red (specific color depends on theme)
+		}
 
 		if fr == o.fr {
 			ab.WriteString("\x1b[48;5;236m") // 236 is a grey
@@ -92,11 +91,8 @@ func (o *Organizer) drawRows() {
 			ab.WriteString("\x1b[30;47m") //black letters on white bg
 			//ab.WriteString(BLACK_FG + WHITE_BG) //this unbolded for star for some reason
 		}
-		//if (row.mark) ab.append("\x1b[46m", 5); //cyan background
 		if _, ok := o.marked_entries[o.rows[fr].id]; ok {
-			//ab.WriteString("\x1b[46m")
 			//ab.WriteString(YELLOW_BG)
-			ab.WriteString(YELLOW_BG)
 			ab.WriteString("\x1b[30;43m") //black letters on yellow bg
 		}
 

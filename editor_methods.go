@@ -4,11 +4,12 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
-	"github.com/alecthomas/chroma/quick"
 	"io"
 	"os"
 	"os/exec"
 	"strings"
+
+	"github.com/alecthomas/chroma/quick"
 )
 
 func find_first_not_of(row *string, delimiters string, pos int) int {
@@ -690,7 +691,7 @@ func (e *Editor) getLineCharCountWW(r, line int) int {
 	return pos - prev_pos
 }
 
-// not in use -- was attempt to draw rows without e.rows just nvim buffer
+// draws editor plain text using nvim buffer directly
 func (e *Editor) drawBuffer(pab *strings.Builder) {
 
 	numLines := len(e.bb)
