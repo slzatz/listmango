@@ -778,40 +778,26 @@ func (e *Editor) drawCodeRows(pab *strings.Builder) {
 		e.left_margin,
 		e.top_margin+e.screenlines,
 		e.left_margin+e.left_margin_offset)
-	/*
-		n := 0
-		for _, line := range nnote {
 
-			if n >= e.first_visible_row {
-				fmt.Fprintf(pab, "\x1b[48;5;235m\x1b[38;5;245m%3d \x1b[49m", n)
-
-				ll := strings.Split(line, "\t")
-				for i := 0; i < len(ll)-1; i++ {
-					fmt.Fprintf(pab, "%s%s\x1b[%dC", ll[i], lf_ret, e.left_margin_offset)
-				}
-				fmt.Fprintf(pab, "%s%s", ll[len(ll)-1], lf_ret)
-
-				//fmt.Fprintf(pab, "%s%s", line, lf_ret) // all necessary if ignoring multi-line comments
-
-			}
-			n++
-		}
-	*/
+	var ab strings.Builder
+	fmt.Fprintf(&ab, "\x1b[?25l\x1b[%d;%dH", e.top_margin, e.left_margin+1)
 	for n := e.first_visible_row; n < len(nnote); n++ {
 		line := nnote[n]
 
-		// this line would go
-		fmt.Fprintf(pab, "\x1b[48;5;235m\x1b[38;5;245m%3d \x1b[49m", n)
+		// note this is printing to ab
+		fmt.Fprintf(&ab, "\x1b[48;5;235m\x1b[38;5;245m%3d \x1b[49m", n)
 
 		ll := strings.Split(line, "\t")
 		for i := 0; i < len(ll)-1; i++ {
-			fmt.Fprintf(pab, "%s%s\x1b[%dC", ll[i], lf_ret, e.left_margin_offset)
+			fmt.Fprintf(pab, "\x1b[%dC%s%s", e.left_margin_offset, ll[i], lf_ret)
 		}
-		fmt.Fprintf(pab, "%s%s", ll[len(ll)-1], lf_ret)
+		fmt.Fprintf(pab, "\x1b[%dC%s%s", e.left_margin_offset, ll[len(ll)-1], lf_ret)
+		ab.WriteString(lf_ret)
 
 		//fmt.Fprintf(pab, "%s%s", line, lf_ret) // all necessary if ignoring multi-line comments
 
 	}
+	pab.WriteString(ab.String())
 	e.draw_visual(pab)
 }
 
