@@ -771,33 +771,33 @@ func (e *Editor) drawCodeRows(pab *strings.Builder) {
 
 	// below draws the line number 'rectangle'
 	// this only matters for the word-wrapped lines
-	// note that foreground of numbers is screwing up
-	// comments on multiple contigous lines
+	// because of how chroma codes comment colors
+	// for a sequence like this - you need to create
+	// the number columns separately (numCols)
 	fmt.Fprintf(pab, "\x1b[2*x\x1b[%d;%d;%d;%d;48;5;235$r\x1b[*x",
 		e.top_margin,
 		e.left_margin,
 		e.top_margin+e.screenlines,
 		e.left_margin+e.left_margin_offset)
 
-	var ab strings.Builder
-	fmt.Fprintf(&ab, "\x1b[?25l\x1b[%d;%dH", e.top_margin, e.left_margin+1)
+	var numCols strings.Builder
+	fmt.Fprintf(&numCols, "\x1b[?25l\x1b[%d;%dH", e.top_margin, e.left_margin+1)
 	for n := e.first_visible_row; n < len(nnote); n++ {
-		line := nnote[n]
+		row := nnote[n]
 
-		// note this is printing to ab
-		fmt.Fprintf(&ab, "\x1b[48;5;235m\x1b[38;5;245m%3d \x1b[49m", n)
+		// note this is printing to numCols
+		fmt.Fprintf(&numCols, "\x1b[48;5;235m\x1b[38;5;245m%3d \x1b[49m", n+1)
 
-		ll := strings.Split(line, "\t")
-		for i := 0; i < len(ll)-1; i++ {
-			fmt.Fprintf(pab, "\x1b[%dC%s%s", e.left_margin_offset, ll[i], lf_ret)
+		line := strings.Split(row, "\t")
+		for i := 0; i < len(line); i++ {
+			fmt.Fprintf(pab, "\x1b[%dC%s%s", e.left_margin_offset, line[i], lf_ret)
+			numCols.WriteString(lf_ret)
 		}
-		fmt.Fprintf(pab, "\x1b[%dC%s%s", e.left_margin_offset, ll[len(ll)-1], lf_ret)
-		ab.WriteString(lf_ret)
 
-		//fmt.Fprintf(pab, "%s%s", line, lf_ret) // all necessary if ignoring multi-line comments
+		//fmt.Fprintf(pab, "%s%s", line, lf_ret) // works if ignoring multi-line comments
 
 	}
-	pab.WriteString(ab.String())
+	pab.WriteString(numCols.String())
 	e.draw_visual(pab)
 }
 
