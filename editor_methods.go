@@ -24,16 +24,6 @@ func find_first_not_of(row *string, delimiters string, pos int) int {
 	return -1
 }
 
-// want to transition to Session showEdMessage
-func (e *Editor) showMessage___(format string, a ...interface{}) {
-	fmt.Printf("\x1b[%d;%dH\x1b[K", sess.textLines+e.top_margin+1, sess.divider+1)
-	str := fmt.Sprintf(format, a...)
-	if len(str) > e.screencols {
-		str = str[:e.screencols]
-	}
-	fmt.Print(str)
-}
-
 //'automatically' happens in NORMAL and INSERT mode
 //return true -> redraw; false -> don't redraw
 func (e *Editor) find_match_for_left_brace(left_brace byte, back bool) bool {
@@ -436,11 +426,11 @@ func (e *Editor) refreshScreen() {
 	}
 	tid = getFolderTid(e.id)
 	if tid == 18 || tid == 14 || tid == 21 { //&& !e.is_subeditor {
-		e.drawCodeRows(&ab) // indirectly uses nvim buffer
+		e.drawCodeRows(&ab)
 		fmt.Print(ab.String())
 		e.draw_highlighted_braces() //has to come after draw
 	} else {
-		e.drawBuffer(&ab) //2 -> uses nvim buffer
+		e.drawBuffer(&ab)
 		fmt.Print(ab.String())
 	}
 	e.drawStatusBar()
@@ -476,11 +466,9 @@ func (e *Editor) drawOutputWinText(rows []string) {
 		}
 
 		if filerow == len(rows) {
-			//e.last_visible_row = filerow - 1
 			break
 		}
 
-		// keep e.rows for subeditor/outputwindow
 		row := rows[filerow]
 
 		if len(row) == 0 {
@@ -511,7 +499,6 @@ func (e *Editor) drawOutputWinText(rows []string) {
 
 			pos = strings.LastIndex(row[:prev_pos+e.screencols-e.left_margin_offset], " ")
 
-			//note npos when signed = -1 and order of if/else may matter
 			if pos == -1 || pos == prev_pos-1 {
 				pos = prev_pos + e.screencols - e.left_margin_offset - 1
 			}
@@ -526,11 +513,9 @@ func (e *Editor) drawOutputWinText(rows []string) {
 			y++
 		}
 	}
-	//e.last_visible_row = filerow - 1
 	fmt.Print(ab.String())
 }
 
-// ? only used by subeditor uses editor.rows
 func (e *Editor) draw_visual(pab *strings.Builder) {
 
 	lf_ret := fmt.Sprintf("\r\n\x1b[%dC", e.left_margin+e.left_margin_offset)
@@ -539,11 +524,7 @@ func (e *Editor) draw_visual(pab *strings.Builder) {
 		startRow := e.vb_highlight[0][1] - 1 // i think better to subtract one here
 		endRow := e.vb_highlight[1][1] - 1   //ditto - done differently for visual and v_block
 
-		// \x1b[nc moves cursor forward by n columns
-		// snprintf(lf_ret, sizeof(lf_ret), "\r\n\x1b[%dc", left_margin + left_margin_offset);
-
 		x := e.left_margin + e.left_margin_offset + 1
-		//int y = editorgetscreenyfromrowcolww(h_light[0], 0) + top_margin - line_offset;
 		y := e.getScreenYFromRowColWW(startRow, 0) - e.lineOffset
 
 		if y >= 0 {
@@ -643,7 +624,7 @@ func (e *Editor) draw_visual(pab *strings.Builder) {
 		}
 	}
 
-	pab.WriteString("\x1b[0m")
+	pab.WriteString(RESET)
 }
 
 func (e *Editor) getLineCharCountWW(r, line int) int {
@@ -691,7 +672,7 @@ func (e *Editor) getLineCharCountWW(r, line int) int {
 	return pos - prev_pos
 }
 
-// draws editor plain text using nvim buffer directly
+// draws editor non-code plain or markdown text using nvim buffer directly
 func (e *Editor) drawBuffer(pab *strings.Builder) {
 
 	numLines := len(e.bb)
@@ -788,28 +769,48 @@ func (e *Editor) drawCodeRows(pab *strings.Builder) {
 	lf_ret := fmt.Sprintf("\r\n\x1b[%dC", e.left_margin)
 	fmt.Fprintf(pab, "\x1b[?25l\x1b[%d;%dH", e.top_margin, e.left_margin+1)
 
-	// below draws the line number 'rectangle' only matters for the word-wrapped lines
-	// note that foreground of numbers is screwing up comments on multiple contigous lines
+	// below draws the line number 'rectangle'
+	// this only matters for the word-wrapped lines
+	// note that foreground of numbers is screwing up
+	// comments on multiple contigous lines
 	fmt.Fprintf(pab, "\x1b[2*x\x1b[%d;%d;%d;%d;48;5;235$r\x1b[*x",
-		e.top_margin, e.left_margin, e.top_margin+e.screenlines, e.left_margin+e.left_margin_offset)
+		e.top_margin,
+		e.left_margin,
+		e.top_margin+e.screenlines,
+		e.left_margin+e.left_margin_offset)
+	/*
+		n := 0
+		for _, line := range nnote {
 
-	n := 0
+			if n >= e.first_visible_row {
+				fmt.Fprintf(pab, "\x1b[48;5;235m\x1b[38;5;245m%3d \x1b[49m", n)
 
-	for _, line := range nnote {
+				ll := strings.Split(line, "\t")
+				for i := 0; i < len(ll)-1; i++ {
+					fmt.Fprintf(pab, "%s%s\x1b[%dC", ll[i], lf_ret, e.left_margin_offset)
+				}
+				fmt.Fprintf(pab, "%s%s", ll[len(ll)-1], lf_ret)
 
-		if n >= e.first_visible_row {
-			fmt.Fprintf(pab, "\x1b[48;5;235m\x1b[38;5;245m%3d \x1b[49m", n)
+				//fmt.Fprintf(pab, "%s%s", line, lf_ret) // all necessary if ignoring multi-line comments
 
-			ll := strings.Split(line, "\t")
-			for i := 0; i < len(ll)-1; i++ {
-				fmt.Fprintf(pab, "%s%s\x1b[%dC", ll[i], lf_ret, e.left_margin_offset)
 			}
-			fmt.Fprintf(pab, "%s%s", ll[len(ll)-1], lf_ret)
-
-			//fmt.Fprintf(pab, "%s%s", line, lf_ret) // all necessary if ignoring multi-line comments
-
+			n++
 		}
-		n++
+	*/
+	for n := e.first_visible_row; n < len(nnote); n++ {
+		line := nnote[n]
+
+		// this line would go
+		fmt.Fprintf(pab, "\x1b[48;5;235m\x1b[38;5;245m%3d \x1b[49m", n)
+
+		ll := strings.Split(line, "\t")
+		for i := 0; i < len(ll)-1; i++ {
+			fmt.Fprintf(pab, "%s%s\x1b[%dC", ll[i], lf_ret, e.left_margin_offset)
+		}
+		fmt.Fprintf(pab, "%s%s", ll[len(ll)-1], lf_ret)
+
+		//fmt.Fprintf(pab, "%s%s", line, lf_ret) // all necessary if ignoring multi-line comments
+
 	}
 	e.draw_visual(pab)
 }
