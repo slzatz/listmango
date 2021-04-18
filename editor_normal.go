@@ -1,7 +1,11 @@
 package main
 
-import "strings"
-import "github.com/charmbracelet/glamour"
+import (
+	"fmt"
+	"strings"
+
+	"github.com/charmbracelet/glamour"
+)
 
 var e_lookup2 = map[string]interface{}{
 	"\x17L":              (*Editor).moveOutputWindowRight,
@@ -320,24 +324,52 @@ func showVimMessage() {
 }
 
 func (e *Editor) showMarkdown() {
-	note := readNoteIntoString(e.id)
-	if len(note) == 0 {
+	if len(e.bb) == 0 {
 		return
 	}
-	sess.eraseRightScreen()
-	//o.altRowoff = 0
+
+	note := readNoteIntoString(e.id)
+
 	note = generateWWString(note, e.screencols, 500, "\n")
 	r, _ := glamour.NewTermRenderer(
 		glamour.WithStylePath("/home/slzatz/listmango/darkslz.json"),
 		glamour.WithWordWrap(0),
 	)
 	note, _ = r.Render(note)
-	ix := strings.Index(note, "\n") //works for ix = -1
-	org.note = note[ix+1:]
-	org.drawNoteReadOnly()
 
-	sess.editorMode = false
-	org.mode = PREVIEW_MARKDOWN
+	// for some` reason get extra line at top
+	ix := strings.Index(note, "\n") //works for ix = -1
+	e.renderedNote = note[ix+1:]
+
+	e.mode = PREVIEW_MARKDOWN
+	e.previewLineOffset = 0
+	e.drawPreview()
+
+}
+
+func (e *Editor) drawPreview() {
+	rows := strings.Split(e.renderedNote, "\n")
+	var ab strings.Builder
+	fmt.Fprintf(&ab, "\x1b[?25l\x1b[%d;%dH", e.top_margin, e.left_margin+1)
+	lf_ret := fmt.Sprintf("\r\n\x1b[%dC", e.left_margin)
+	erase_chars := fmt.Sprintf("\x1b[%dX", e.screencols)
+	for i := 0; i < e.screenlines; i++ {
+		ab.WriteString(erase_chars)
+		ab.WriteString(lf_ret)
+	}
+
+	fmt.Fprintf(&ab, "\x1b[%d;%dH", e.top_margin, e.left_margin+1)
+	for y := 0; y < e.screenlines; y++ {
+
+		fr := y + e.previewLineOffset
+		if fr > len(rows)-1 {
+			break
+		}
+
+		ab.WriteString(rows[fr])
+		ab.WriteString(lf_ret)
+	}
+	fmt.Print(ab.String())
 }
 
 func (e *Editor) nextStyle() {

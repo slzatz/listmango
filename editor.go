@@ -30,9 +30,11 @@ type Editor struct {
 	is_subeditor        bool
 	is_below            bool
 	//nuspell::Dictionary dict;
-	vbuf         nvim.Buffer
-	bb           [][]byte
-	searchPrefix string
+	vbuf              nvim.Buffer
+	bb                [][]byte
+	searchPrefix      string
+	renderedNote      string
+	previewLineOffset int
 	//coloff              int //first column based on user scroll (word wrap)
 }
 

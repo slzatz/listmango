@@ -2,8 +2,9 @@ package main
 
 import (
 	//"fmt"
-	"github.com/neovim/go-client/nvim"
 	"strings"
+
+	"github.com/neovim/go-client/nvim"
 )
 
 var termcodes = map[int]string{
@@ -75,6 +76,18 @@ func editorProcessKey(c int) bool { //bool returned is whether to redraw
 		Also note that the if below falls through if p.command is "" and the character isn't
 		one of the one that starts a command
 	*/
+	if p.mode == PREVIEW_MARKDOWN {
+		switch c {
+		case PAGE_DOWN, ARROW_DOWN, 'j':
+			p.previewLineOffset++
+		case PAGE_UP, ARROW_UP, 'k':
+			if p.previewLineOffset > 0 {
+				p.previewLineOffset--
+			}
+		}
+		p.drawPreview()
+		return false
+	}
 
 	if p.mode == NORMAL {
 		if len(p.command) == 0 {
@@ -101,6 +114,10 @@ func editorProcessKey(c int) bool { //bool returned is whether to redraw
 				_, err := v.Input("\x1b")
 				if err != nil {
 					sess.showEdMessage("%v", err)
+				}
+				if p.command == " m" {
+					p.command = ""
+					return false
 				}
 				p.command = ""
 				p.bb, _ = v.BufferLines(p.vbuf, 0, -1, true) //reading updated buffer

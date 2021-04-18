@@ -177,8 +177,6 @@ func (o *Organizer) drawAltRows() {
 // for drawing preview and sync log (note)
 func (o *Organizer) drawNoteReadOnly() {
 
-	//note := readSyncLog(id)
-
 	if len(o.note) == 0 {
 		return
 	}
@@ -194,19 +192,10 @@ func (o *Organizer) drawNoteReadOnly() {
 			break
 		}
 
-		/*
-			length := len(rows[fr])
-			if length > o.totaleditorcols {
-				length = o.totaleditorcols
-			}
-		*/
-
-		//ab.WriteString(rows[fr][:length])
 		ab.WriteString(rows[fr])
 		ab.WriteString(lf_ret)
 	}
 	fmt.Print(ab.String())
-	//o.showOrgMessage("altRowoff = %d", o.altRowoff)
 }
 
 func (o *Organizer) drawStatusBar() {

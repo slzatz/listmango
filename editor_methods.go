@@ -983,7 +983,7 @@ func (e *Editor) scroll() {
 
 	if e.fc == 0 && e.fr == 0 {
 		e.cy, e.cx, e.lineOffset, e.first_visible_row, e.last_visible_row = 0, 0, 0, 0, 0
-		return //false // blocking issue with bb, err := v.BufferLines(0, 0, -1, true) in drawBuffer
+		return
 	}
 
 	e.cx = e.getScreenXFromRowColWW(e.fr, e.fc)

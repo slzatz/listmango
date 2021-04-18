@@ -324,15 +324,10 @@ func organizerProcessKey(c int) {
 		case 'm':
 			mark()
 		}
-	case PREVIEW_MARKDOWN, PREVIEW_SYNC_LOG:
+	case PREVIEW_SYNC_LOG:
 		switch c {
-		case '\x1b', 'm':
-			if org.mode == PREVIEW_MARKDOWN {
-				sess.editorMode = true
-				p.refreshScreen()
-			} else {
-				org.drawPreview()
-			}
+		case '\x1b': //'m'
+			org.drawPreview()
 			org.mode = NORMAL
 		case ':':
 			sess.showOrgMessage(":")
@@ -340,7 +335,6 @@ func organizerProcessKey(c int) {
 			org.last_mode = org.mode
 			org.mode = COMMAND_LINE
 
-		// the two below only handle logs < 2x textLines
 		case PAGE_DOWN, ARROW_DOWN, 'j':
 			org.altRowoff++
 			sess.eraseRightScreen()

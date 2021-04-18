@@ -160,20 +160,20 @@ const (
 	NORMAL  Mode = iota
 	PENDING      // only editor mode
 	INSERT
-	COMMAND_LINE // only in org mode
+	COMMAND_LINE // only in organizer mode
 	EX_COMMAND   // only in editor mode
 	VISUAL_LINE  // only editor mode
 	VISUAL
-	REPLACE      // only explicit in org mode
-	FILE_DISPLAY // only org mode
+	REPLACE      // only explicit in organizer mode
+	FILE_DISPLAY // only organizer mode
 	NO_ROWS
 	VISUAL_BLOCK      // only editor mode
 	SEARCH            // only editor mode
-	FIND              // only outline mode
-	ADD_CHANGE_FILTER // only outline mode
-	SYNC_LOG          // only outline mode
-	PREVIEW_MARKDOWN  // only outline mode
-	PREVIEW_SYNC_LOG
+	FIND              // only organizer mode
+	ADD_CHANGE_FILTER // only organizer mode
+	SYNC_LOG          // only organizer mode
+	PREVIEW_MARKDOWN  // only editor mode
+	PREVIEW_SYNC_LOG  // only in organizer mode
 )
 
 func (m Mode) String() string {
