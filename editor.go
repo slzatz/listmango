@@ -21,7 +21,7 @@ type Editor struct {
 	first_visible_row   int
 	last_visible_row    int
 	spellcheck          bool
-	highlight_syntax    bool
+	highlightSyntax     bool
 	redraw              bool
 	pos_mispelled_words [][2]int
 	search_string       string //word under cursor works with *, n, N etc.
@@ -40,24 +40,23 @@ type Editor struct {
 
 func NewEditor() *Editor {
 	return &Editor{
-		cx:                0, //actual cursor x position (takes into account any scroll/offset)
-		cy:                0, //actual cursor y position ""
-		fc:                0, //'file' x position as defined by reading sqlite text into rows vector
-		fr:                0, //'file' y position ""
-		lineOffset:        0, //the number of lines of text at the top scrolled off the screen
-		dirty:             0, //has filed changed since last save
-		mode:              0, //0=normal, 1=insert, 2=command line, 3=visual line, 4=visual, 5='r'
-		command:           "",
-		command_line:      "",
-		first_visible_row: 0,
-		spellcheck:        false,
-		highlight_syntax:  true, // should only apply to code - not in use
-		redraw:            false,
-		//undo_mode:          false,
+		cx:                 0, //actual cursor x position (takes into account any scroll/offset)
+		cy:                 0, //actual cursor y position ""
+		fc:                 0, //'file' x position as defined by reading sqlite text into rows vector
+		fr:                 0, //'file' y position ""
+		lineOffset:         0, //the number of lines of text at the top scrolled off the screen
+		dirty:              0, //has filed changed since last save
+		mode:               NORMAL,
+		command:            "",
+		command_line:       "",
+		first_visible_row:  0,
+		spellcheck:         false,
+		highlightSyntax:    true, // can shut off syntax highlighting; default is ot assume markdown
+		redraw:             false,
 		linked_editor:      nil,
 		is_subeditor:       false,
 		is_below:           false,
-		left_margin_offset: 0, // 0 if no line numbers
+		left_margin_offset: LEFT_MARGIN_OFFSET, // 0 if not syntax highlighting b/o synt high =>line numbers
 		//E.coloff: 0,  //always zero because currently only word wrap supported
 
 		/*

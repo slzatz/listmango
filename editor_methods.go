@@ -414,7 +414,6 @@ func (e *Editor) getLineInRowWW(r, c int) int {
 
 func (e *Editor) refreshScreen() {
 	var ab strings.Builder
-	var tid int
 
 	fmt.Fprintf(&ab, "\x1b[?25l\x1b[%d;%dH", e.top_margin, e.left_margin+1)
 	// \x1b[NC moves cursor forward by n columns
@@ -424,8 +423,9 @@ func (e *Editor) refreshScreen() {
 		ab.WriteString(erase_chars)
 		ab.WriteString(lf_ret)
 	}
-	tid = getFolderTid(e.id)
-	if tid == 18 || tid == 14 || tid == 21 { //&& !e.is_subeditor {
+	//tid := getFolderTid(e.id)
+	//if tid == 18 || tid == 14 || e.highlightSyntax { //&& !e.is_subeditor {
+	if e.highlightSyntax {
 		e.drawCodeRows(&ab)
 		fmt.Print(ab.String())
 		e.draw_highlighted_braces() //has to come after draw
@@ -762,6 +762,8 @@ func (e *Editor) drawCodeRows(pab *strings.Builder) {
 		lang = "cpp"
 	case 14:
 		lang = "go"
+	default:
+		lang = "markdown"
 	}
 	_ = quick.Highlight(&buf, note, lang, "terminal16m", sess.style[sess.styleIndex])
 	note = buf.String()
@@ -1077,4 +1079,29 @@ func (e *Editor) readFileIntoNote(filename string) error {
 	e.dirty++
 	e.refreshScreen()
 	return nil
+}
+
+func (e *Editor) drawPreview() {
+	rows := strings.Split(e.renderedNote, "\n")
+	var ab strings.Builder
+	fmt.Fprintf(&ab, "\x1b[?25l\x1b[%d;%dH", e.top_margin, e.left_margin+1)
+	lf_ret := fmt.Sprintf("\r\n\x1b[%dC", e.left_margin)
+	erase_chars := fmt.Sprintf("\x1b[%dX", e.screencols)
+	for i := 0; i < e.screenlines; i++ {
+		ab.WriteString(erase_chars)
+		ab.WriteString(lf_ret)
+	}
+
+	fmt.Fprintf(&ab, "\x1b[%d;%dH", e.top_margin, e.left_margin+1)
+	for y := 0; y < e.screenlines; y++ {
+
+		fr := y + e.previewLineOffset
+		if fr > len(rows)-1 {
+			break
+		}
+
+		ab.WriteString(rows[fr])
+		ab.WriteString(lf_ret)
+	}
+	fmt.Print(ab.String())
 }

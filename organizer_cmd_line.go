@@ -284,7 +284,8 @@ func (o *Organizer) editNote(id int) {
 	}
 
 	if !active {
-		p = &Editor{}
+		//p = &Editor{}
+		p = NewEditor()
 		editors = append(editors, p)
 		p.id = id
 		p.top_margin = TOP_MARGIN + 1
@@ -298,10 +299,13 @@ func (o *Organizer) editNote(id int) {
 			p.linked_editor.is_below = true
 			p.linked_editor.linked_editor = p
 			//p.linked_editor.rows = []string{" "}
-			p.left_margin_offset = LEFT_MARGIN_OFFSET
-		} else if folder_tid == 21 {
-			p.left_margin_offset = LEFT_MARGIN_OFFSET
+			//p.left_margin_offset = LEFT_MARGIN_OFFSET //in NewEditor
 		}
+		/*
+			} else if folder_tid == 21 {
+				p.left_margin_offset = LEFT_MARGIN_OFFSET
+			}
+		*/
 		readNoteIntoEditor(id)
 
 		ok, err := v.AttachBuffer(0, false, make(map[string]interface{})) // 0 => current buffer

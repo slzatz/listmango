@@ -22,7 +22,8 @@ var e_lookup_C = map[string]func(*Editor){
 	"sync":     (*Editor).sync,
 	"save":     (*Editor).saveNoteToFile,
 	"savefile": (*Editor).saveNoteToFile,
-	"render":   (*Editor).showMarkdown,
+	"render":   (*Editor).showMarkdown, //leader+m does this in normal mode; may remove this
+	"syntax":   (*Editor).toggleSyntaxHighlighting,
 }
 
 /* EDITOR cpp COMMAND_LINE mode lookup
@@ -271,4 +272,15 @@ func (e *Editor) sync() {
 		reportOnly = true
 	}
 	synchronize(reportOnly)
+}
+
+func (e *Editor) toggleSyntaxHighlighting() {
+	e.highlightSyntax = !e.highlightSyntax
+	if e.highlightSyntax {
+		e.left_margin_offset = LEFT_MARGIN_OFFSET
+	} else {
+		e.left_margin_offset = 0
+	}
+	e.refreshScreen()
+	sess.showEdMessage("Syntax highlighting is %v", e.highlightSyntax)
 }

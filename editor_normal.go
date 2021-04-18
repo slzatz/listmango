@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/charmbracelet/glamour"
@@ -345,31 +344,6 @@ func (e *Editor) showMarkdown() {
 	e.previewLineOffset = 0
 	e.drawPreview()
 
-}
-
-func (e *Editor) drawPreview() {
-	rows := strings.Split(e.renderedNote, "\n")
-	var ab strings.Builder
-	fmt.Fprintf(&ab, "\x1b[?25l\x1b[%d;%dH", e.top_margin, e.left_margin+1)
-	lf_ret := fmt.Sprintf("\r\n\x1b[%dC", e.left_margin)
-	erase_chars := fmt.Sprintf("\x1b[%dX", e.screencols)
-	for i := 0; i < e.screenlines; i++ {
-		ab.WriteString(erase_chars)
-		ab.WriteString(lf_ret)
-	}
-
-	fmt.Fprintf(&ab, "\x1b[%d;%dH", e.top_margin, e.left_margin+1)
-	for y := 0; y < e.screenlines; y++ {
-
-		fr := y + e.previewLineOffset
-		if fr > len(rows)-1 {
-			break
-		}
-
-		ab.WriteString(rows[fr])
-		ab.WriteString(lf_ret)
-	}
-	fmt.Print(ab.String())
 }
 
 func (e *Editor) nextStyle() {
