@@ -65,6 +65,9 @@ const (
 	DARK_GRAY_BG  string = "\x1b[48;5;236m"
 
 	BOLD string = "\x1b[1m"
+
+	maxUint = ^uint(0)
+	maxInt  = int(maxUint >> 1)
 )
 
 func ctrlKey(b byte) int { //rune

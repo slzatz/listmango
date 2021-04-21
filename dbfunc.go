@@ -4,12 +4,13 @@ import (
 	"bytes"
 	"database/sql"
 	"fmt"
-	_ "github.com/mattn/go-sqlite3"
 	"log"
 	"os"
 	"strconv"
 	"strings"
 	"time"
+
+	_ "github.com/mattn/go-sqlite3"
 )
 
 var db, _ = sql.Open("sqlite3", "/home/slzatz/listmango/mylistmanager_s.db")
@@ -1162,6 +1163,11 @@ func generateWWString(text string, width int, length int, ret string) string {
 	if text == "" {
 		return ""
 	}
+
+	if length <= 0 {
+		length = maxInt
+	}
+
 	ss := strings.Split(text, "\n")
 	var ab strings.Builder
 

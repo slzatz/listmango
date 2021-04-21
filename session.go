@@ -4,10 +4,11 @@ import (
 	"bytes"
 	"encoding/gob"
 	"fmt"
-	"github.com/slzatz/listmango/rawmode"
-	"golang.org/x/sys/unix"
 	"os"
 	"strings"
+
+	"github.com/slzatz/listmango/rawmode"
+	"golang.org/x/sys/unix"
 )
 
 type Session struct {
@@ -254,137 +255,32 @@ func (s *Session) showEdMessage(format string, a ...interface{}) {
 func (s *Session) returnCursor() {
 	var ab strings.Builder
 	if s.editorMode {
-		// the lines below position the cursor where it should go
-		/*
-			if p.mode != COMMAND_LINE {
-				fmt.Fprintf(&ab, "\x1b[%d;%dH", p.cy+p.top_margin, p.cx+p.left_margin+p.left_margin_offset+1)
-			} else { //E.mode == COMMAND_LINE
-				fmt.Fprintf(&ab, "\x1b[%d;%dH", s.textLines+TOP_MARGIN+2, len(p.command_line)+s.divider+2)
-				ab.WriteString("\x1b[?25h") // show cursor
-			}
-		*/
-
 		switch p.mode {
+		case PREVIEW_MARKDOWN:
+			// we don't need to position cursor and don't want cursor visible
+			fmt.Print(ab.String())
+			return
 		case EX_COMMAND, SEARCH:
 			fmt.Fprintf(&ab, "\x1b[%d;%dH", s.textLines+TOP_MARGIN+2, len(p.command_line)+s.divider+2)
 		default:
 			fmt.Fprintf(&ab, "\x1b[%d;%dH", p.cy+p.top_margin, p.cx+p.left_margin+p.left_margin_offset+1)
 		}
-
 	} else {
-		if org.mode == FIND {
+		switch org.mode {
+		case FIND:
 			fmt.Fprintf(&ab, "\x1b[%d;%dH\x1b[1;34m>", org.cy+TOP_MARGIN+1, LEFT_MARGIN) //blue
-		} else if org.mode != COMMAND_LINE {
+		case COMMAND_LINE:
+			fmt.Fprintf(&ab, "\x1b[%d;%dH", s.textLines+2+TOP_MARGIN, len(org.command_line)+LEFT_MARGIN+1)
+
+		default:
 			fmt.Fprintf(&ab, "\x1b[%d;%dH\x1b[1;31m>", org.cy+TOP_MARGIN+1, LEFT_MARGIN)
 			// below restores the cursor position based on org.cx and org.cy + margin
 			fmt.Fprintf(&ab, "\x1b[%d;%dH", org.cy+TOP_MARGIN+1, org.cx+LEFT_MARGIN+1)
-		} else { //org.mode == COMMAND_LINE
-			fmt.Fprintf(&ab, "\x1b[%d;%dH", s.textLines+2+TOP_MARGIN, len(org.command_line)+LEFT_MARGIN+1)
 		}
 	}
-	ab.WriteString("\x1b[0m")   //return background to normal
+
+	ab.WriteString("\x1b[0m")   //return to default fg/bg
 	ab.WriteString("\x1b[?25h") //shows the cursor
-	fmt.Print(ab.String())
-}
-
-// not in use
-func (s *Session) drawSearchPreview__() {
-	var ab strings.Builder
-	width := s.totaleditorcols - 10
-	length := s.textLines - 10
-	//hide the cursor
-	ab.WriteString("\x1b[?25l")
-	fmt.Fprintf(&ab, "\x1b[%d;%dH", TOP_MARGIN+6, s.divider+6)
-	lf_ret := fmt.Sprintf("\r\n\x1b[%dC", s.divider+6)
-
-	erase_chars := fmt.Sprintf("\x1b[%dX", s.totaleditorcols-10)
-
-	for i := 0; i < length-1; i++ {
-		ab.WriteString(erase_chars)
-		ab.WriteString(lf_ret)
-	}
-
-	fmt.Fprintf(&ab, "\x1b[%d;%dH", TOP_MARGIN+6, s.divider+7)
-	fmt.Fprintf(&ab, "\x1b[2*x\x1b[%d;%d;%d;%d;48;5;235$r\x1b[*x",
-		TOP_MARGIN+6, s.divider+7, TOP_MARGIN+4+length, s.divider+7+width)
-	ab.WriteString("\x1b[48;5;235m")
-	note := readNoteIntoString(org.rows[org.fr].id)
-	var t string
-	if note != "" {
-		t = generateWWString(note, width, length, "\n")
-		wp := getNoteSearchPositions(org.rows[org.fr].id)
-		t = highlight_terms_string(t, wp)
-	}
-	t = strings.ReplaceAll(t, "\n", lf_ret)
-	ab.WriteString(t)
-	fmt.Print(ab.String())
-}
-
-// not in use
-func (s *Session) drawPreviewText__(id int) {
-
-	var ab strings.Builder
-
-	width := s.totaleditorcols - 10
-	length := s.textLines - 10
-	//hide the cursor
-	ab.WriteString("\x1b[?25l")
-	fmt.Fprintf(&ab, "\x1b[%d;%dH", TOP_MARGIN+6, s.divider+6)
-
-	lf_ret := fmt.Sprintf("\r\n\x1b[%dC", s.divider+6)
-	//erase set number of chars on each line
-	erase_chars := fmt.Sprintf("\x1b[%dX", s.totaleditorcols-10)
-
-	for i := 0; i < length-1; i++ {
-		ab.WriteString(erase_chars)
-		ab.WriteString(lf_ret)
-	}
-
-	fmt.Fprintf(&ab, "\x1b[%d;%dH", TOP_MARGIN+6, s.divider+7)
-	fmt.Fprintf(&ab, "\x1b[2*x\x1b[%d;%d;%d;%d;48;5;235$r\x1b[*x",
-		TOP_MARGIN+6, s.divider+7, TOP_MARGIN+4+length, s.divider+7+width)
-
-	ab.WriteString("\x1b[48;5;235m")
-	//note := readNoteIntoString(org.rows[org.fr].id)
-	note := readNoteIntoString(id)
-	if note != "" {
-		ab.WriteString(generateWWString(note, width, length, lf_ret))
-	}
-	fmt.Print(ab.String())
-}
-
-// being used for synchronize right now - but should use new preview logic
-func (s *Session) drawPreviewText2(text string) { //draw_preview
-
-	var ab strings.Builder
-
-	width := s.totaleditorcols - 10
-	length := s.textLines - 10
-	//hide the cursor
-	ab.WriteString("\x1b[?25l")
-	fmt.Fprintf(&ab, "\x1b[%d;%dH", TOP_MARGIN+6, s.divider+6)
-
-	fmt.Fprintf(&ab, "\x1b[%d;%dH", TOP_MARGIN+6, s.divider+7)
-
-	lf_ret := fmt.Sprintf("\r\n\x1b[%dC", s.divider+6)
-	//erase set number of chars on each line
-	erase_chars := fmt.Sprintf("\x1b[%dX", s.totaleditorcols-10)
-
-	for i := 0; i < length-1; i++ {
-		ab.WriteString(erase_chars)
-		ab.WriteString(lf_ret)
-	}
-
-	fmt.Fprintf(&ab, "\x1b[%d;%dH", TOP_MARGIN+6, s.divider+7)
-
-	fmt.Fprintf(&ab, "\x1b[2*x\x1b[%d;%d;%d;%d;48;5;235$r\x1b[*x",
-		TOP_MARGIN+6, s.divider+7, TOP_MARGIN+4+length, s.divider+7+width)
-
-	ab.WriteString("\x1b[48;5;235m")
-	//note := readNoteIntoString(org.rows[org.fr].id)
-	if text != "" {
-		ab.WriteString(generateWWString(text, width, length, lf_ret))
-	}
 	fmt.Print(ab.String())
 }
 

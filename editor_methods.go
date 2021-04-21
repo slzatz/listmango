@@ -73,7 +73,6 @@ func (e *Editor) find_match_for_left_brace(left_brace byte, back bool) bool {
 	}
 
 	x := e.getScreenXFromRowColWW(r, c) + e.left_margin + e.left_margin_offset + 1
-	//fmt.Printf("\x1b[%d;%dH\x1b[48;5;244m%d", y+e.top_margin, x, right_brace)
 	fmt.Printf("\x1b[%d;%dH\x1b[48;5;244m%s", y+e.top_margin, x, string(right_brace))
 
 	x = e.getScreenXFromRowColWW(e.fr, e.fc-b) + e.left_margin + e.left_margin_offset + 1
