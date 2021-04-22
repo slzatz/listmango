@@ -6,8 +6,6 @@ import (
 	"fmt"
 	"os"
 	"strings"
-
-	"github.com/alecthomas/chroma/quick"
 )
 
 func find_first_not_of(row *string, delimiters string, pos int) int {
@@ -762,7 +760,7 @@ func (e *Editor) drawCodeRows(pab *strings.Builder) {
 	default:
 		lang = "markdown"
 	}
-	_ = quick.Highlight(&buf, note, lang, "terminal16m", sess.style[sess.styleIndex])
+	_ = Highlight(&buf, note, lang, "terminal16m", sess.style[sess.styleIndex])
 	note = buf.String()
 	nnote := strings.Split(note, "\n")
 	lf_ret := fmt.Sprintf("\r\n\x1b[%dC", e.left_margin)

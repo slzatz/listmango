@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/alecthomas/chroma/quick"
 	"github.com/charmbracelet/glamour"
 )
 
@@ -381,7 +380,7 @@ func (o *Organizer) drawPreview() {
 		case 14:
 			lang = "go"
 		}
-		_ = quick.Highlight(&buf, note, lang, "terminal16m", sess.style[sess.styleIndex])
+		_ = Highlight(&buf, note, lang, "terminal16m", sess.style[sess.styleIndex])
 		o.note = buf.String()
 	} else { // render as markdown
 		r, _ := glamour.NewTermRenderer(
