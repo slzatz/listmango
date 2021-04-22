@@ -476,7 +476,7 @@ func (o *Organizer) sync(unused int) {
 	}
 	o.command_line = ""
 	o.eraseRightScreen()
-	o.note = generateWWString(log, org.totaleditorcols, 500, "\n")
+	o.note = generateWWString2(log, org.totaleditorcols)
 	o.drawNoteReadOnly()
 	o.mode = PREVIEW_SYNC_LOG
 }

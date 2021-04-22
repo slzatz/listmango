@@ -1158,7 +1158,8 @@ func highlight_terms_string(text string, word_positions [][]int) string {
 	return text
 }
 
-func generateWWString(text string, width int, length int, ret string) string {
+// not currently in use but more general than generateWWString2
+func generateWWString_(text string, width int, length int, ret string) string {
 
 	if text == "" {
 		return ""
@@ -1214,6 +1215,51 @@ func generateWWString(text string, width int, length int, ret string) string {
 				return ab.String()
 			}
 			ab.WriteString(ret)
+			y++
+			prev_pos = pos + 1
+		}
+	}
+	return ab.String()
+}
+
+func generateWWString2(text string, width int) string {
+	if text == "" {
+		return ""
+	}
+	ss := strings.Split(text, "\n")
+	var ab strings.Builder
+	y := 0
+	filerow := 0
+
+	for _, s := range ss {
+		if filerow == len(ss) {
+			return ab.String()
+		}
+
+		if s == "" {
+			ab.WriteString("\n")
+			filerow++
+			y++
+			continue
+		}
+
+		pos := 0
+		prev_pos := 0
+
+		for {
+			if prev_pos+width > len(s)-1 {
+				ab.WriteString(s[prev_pos:])
+				ab.WriteString("\n")
+				y++
+				filerow++
+				break
+			}
+			pos = strings.LastIndex(s[:prev_pos+width], " ")
+			if pos == -1 || pos == prev_pos-1 {
+				pos = prev_pos + width - 1
+			}
+			ab.WriteString(s[prev_pos : pos+1])
+			ab.WriteString("\n")
 			y++
 			prev_pos = pos + 1
 		}

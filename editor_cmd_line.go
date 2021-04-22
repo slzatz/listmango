@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"bytes"
 	"io"
 	"os"
 	"os/exec"
@@ -60,7 +61,7 @@ func (e *Editor) saveNoteToFile() {
 	}
 	defer f.Close()
 
-	_, err = f.WriteString(e.generateWWStringFromBuffer())
+	_, err = f.Write(bytes.Join(e.bb, []byte("\n")))
 	if err != nil {
 		sess.showEdMessage("Error writing file %s: %v", filename, err)
 		return

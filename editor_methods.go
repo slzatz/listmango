@@ -4,9 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
-	"io"
 	"os"
-	"os/exec"
 	"strings"
 
 	"github.com/alecthomas/chroma/quick"
@@ -802,87 +800,74 @@ func (e *Editor) drawCodeRows(pab *strings.Builder) {
 	e.draw_visual(pab)
 }
 
-func (e *Editor) drawCodeRows_(pab *strings.Builder) {
-	//save the current file to code_file with correct extension
-	f, err := os.Create("code_file")
-	if err != nil {
-		sess.showEdMessage("Error creating code_file: %v", err)
-		return
-	}
-	defer f.Close()
-
-	_, err = f.WriteString(e.generateWWStringFromBuffer())
-	if err != nil {
-		sess.showEdMessage("Error writing code_file: %v", err)
-		return
-	}
-	var cmd *exec.Cmd
-	tid := getFolderTid(e.id)
-	switch tid {
-	case 18:
-		cmd = exec.Command("highlight", "code_file", "--out-format=xterm256", "--style=gruvbox-dark-hard-slz", "--syntax=cpp")
-	case 14:
-		cmd = exec.Command("highlight", "code_file", "--out-format=xterm256", "--style=gruvbox-dark-hard-slz", "--syntax=go")
-	case 21:
-		cmd = exec.Command("bat", "code_file", "--theme=gruvbox-markdown", "--language=md",
-			"--italic-text=always", "--style=plain", "--paging=never", "--color=always")
-	}
-	stdout, err := cmd.StdoutPipe()
-	if err != nil {
-		sess.showEdMessage("Error creating pipe for highlighting file: %v", err)
+/*
+* simplified version of generateWWStringFromBuffer
+* used by editor.showMarkdown in editor_normal
+* we know we want the whole buffer not just what is visible
+* unlike the situation with syntax highlighting for code
+* we don't have to handle word-wrapped lines
+* in a special way
+ */
+func (e *Editor) generateWWStringFromBuffer2() string {
+	numRows := len(e.bb)
+	if numRows == 0 {
+		return ""
 	}
 
-	err = cmd.Start()
-	if err != nil {
-		sess.showEdMessage("Error highlighting file: %v", err)
-	}
-	buffer := bufio.NewReader(stdout)
+	var ab strings.Builder
+	y := 0
+	filerow := 0
+	width := e.screencols - e.left_margin_offset
 
-	/* alternative is to use a scanner
-	scanner := bufio.newscanner(stdout)
-	for scanner.scan() {
-	 z = scanner.text()
-	*/
-
-	lf_ret := fmt.Sprintf("\r\n\x1b[%dC", e.left_margin)
-	fmt.Fprintf(pab, "\x1b[?25l\x1b[%d;%dH", e.top_margin, e.left_margin+1)
-
-	// below draws the line number 'rectangle' only matters for the word-wrapped lines
-	fmt.Fprintf(pab, "\x1b[2*x\x1b[%d;%d;%d;%d;48;5;235$r\x1b[*x",
-		e.top_margin, e.left_margin, e.top_margin+e.screenlines, e.left_margin+e.left_margin_offset)
-	n := 0
-	//func (b *reader) readline() (line []byte, isprefix bool, err)
 	for {
-		bytes, _, err := buffer.ReadLine()
-		if err == io.EOF {
-			break
+		if filerow == numRows {
+			return ab.String()
 		}
 
-		if n >= e.first_visible_row { //substituted for above on 12312020
-			line := string(bytes)
-			fmt.Fprintf(pab, "\x1b[48;5;235m\x1b[38;5;245m%3d \x1b[0m", n)
-			ll := strings.Split(line, "\t")
-			for i := 0; i < len(ll)-1; i++ {
-				fmt.Fprintf(pab, "%s%s\x1b[%dC", ll[i], lf_ret, e.left_margin_offset)
-			}
-			fmt.Fprintf(pab, "%s%s", ll[len(ll)-1], lf_ret)
+		row := e.bb[filerow]
+
+		if len(row) == 0 {
+			ab.Write([]byte("\n"))
+			filerow++
+			y++
+			continue
 		}
-		n++
+
+		pos := 0
+		prev_pos := 0 //except for start -> pos + 1
+		for {
+			// if remainder of line is less than screen width
+			if prev_pos+width > len(row)-1 {
+				ab.Write(row[prev_pos:])
+				ab.Write([]byte("\n"))
+				y++
+				filerow++
+				break
+			}
+
+			pos = bytes.LastIndex(row[:prev_pos+width], []byte(" "))
+			if pos == -1 || pos == prev_pos-1 {
+				pos = prev_pos + width - 1
+			}
+
+			ab.Write(row[prev_pos : pos+1]) //? pos+1
+			ab.Write([]byte("\n"))
+			y++
+			prev_pos = pos + 1
+		}
 	}
-	e.draw_visual(pab)
 }
 
 /* below exists to create a string that has the proper
- * line breaks based on screen width for syntax highlighters
- * that are utilized by drawcoderows
+ * line breaks based on screen width for syntax highlighting
+ * being done in drawcoderows
  * produces a text string that starts at the first line of the
  * file (need to deal with comments where start of comment might be scrolled
- * and ends on the last visible line. also multilines are indicated by \t
+ * and ends on the last visible line. Word-wrapped rows are terminated by \t
  * so highlighter deals with them correctly and converted to \n in drawcoderows
- * only used by editor.drawCodeRows
  * very similar to dbfunc generateWWString except this uses buffer
  * and only returns as much file as fits the screen
- * and deals with multi-line comments
+ * and deals with the issue of multi-line comments
  */
 func (e *Editor) generateWWStringFromBuffer() string {
 	numRows := len(e.bb)
@@ -891,8 +876,10 @@ func (e *Editor) generateWWStringFromBuffer() string {
 	}
 
 	var ab strings.Builder
-	y := -e.lineOffset
+	y := 0
 	filerow := 0
+	ret := []byte("\t")
+	width := e.screencols - e.left_margin_offset
 
 	for {
 		if filerow == numRows {
@@ -900,16 +887,10 @@ func (e *Editor) generateWWStringFromBuffer() string {
 			return ab.String()
 		}
 
-		ret := []byte("\t")
-		width := e.screencols - e.left_margin_offset
 		row := e.bb[filerow]
 
-		// if you put a \n in the middle of a comment the wrapped portion won't be italic
-		//if (row.find("//") != std::string::npos) ret = '\t';
-		//ret = '\t';
-
 		if len(row) == 0 {
-			if y == e.screenlines-1 {
+			if y == e.screenlines+e.lineOffset-1 {
 				return ab.String()
 			}
 			ab.Write([]byte("\n"))
@@ -924,7 +905,7 @@ func (e *Editor) generateWWStringFromBuffer() string {
 			// if remainder of line is less than screen width
 			if prev_pos+width > len(row)-1 {
 				ab.Write(row[prev_pos:])
-				if y == e.screenlines-1 {
+				if y == e.screenlines+e.lineOffset-1 {
 					e.last_visible_row = filerow - 1
 					return ab.String()
 				}
@@ -940,7 +921,7 @@ func (e *Editor) generateWWStringFromBuffer() string {
 			}
 
 			ab.Write(row[prev_pos : pos+1]) //? pos+1
-			if y == e.screenlines-1 {
+			if y == e.screenlines+e.lineOffset-1 {
 				e.last_visible_row = filerow - 1
 				return ab.String()
 			}
@@ -950,7 +931,6 @@ func (e *Editor) generateWWStringFromBuffer() string {
 		}
 	}
 }
-
 func (e *Editor) drawStatusBar() {
 	var ab strings.Builder
 	fmt.Fprintf(&ab, "\x1b[%d;%dH", e.screenlines+e.top_margin, e.left_margin+1)

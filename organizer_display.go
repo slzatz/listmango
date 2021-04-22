@@ -367,7 +367,7 @@ func (o *Organizer) drawPreview() {
 	tid := getFolderTid(id)
 	o.altRowoff = 0
 	note := readNoteIntoString(id)
-	note = generateWWString(note, o.totaleditorcols, 500, "\n")
+	note = generateWWString2(note, o.totaleditorcols)
 	sess.eraseRightScreen()
 	if o.taskview == BY_FIND {
 		wp := getNoteSearchPositions(id)
