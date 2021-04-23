@@ -876,7 +876,62 @@ func (e *Editor) generateWWStringFromBuffer() string {
 	var ab strings.Builder
 	y := 0
 	filerow := 0
-	ret := []byte("\t")
+	width := e.screencols - e.left_margin_offset
+
+	for {
+		if filerow == numRows || y == e.screenlines+e.lineOffset-1 {
+			e.last_visible_row = filerow - 1
+			return ab.String()[:ab.Len() - 1] // delete last \n
+		}
+
+		row := e.bb[filerow]
+
+		if len(row) == 0 {
+			ab.Write([]byte("\n"))
+			filerow++
+			y++
+			continue
+		}
+
+		pos := 0
+		prev_pos := 0 //except for start -> pos + 1
+		for {
+			// if remainder of line is less than screen width
+			if prev_pos+width > len(row)-1 {
+				ab.Write(row[prev_pos:])
+				ab.Write([]byte("\n"))
+				y++
+				filerow++
+				break
+			}
+
+			pos = bytes.LastIndex(row[:prev_pos+width], []byte(" "))
+			if pos == -1 || pos == prev_pos-1 {
+				pos = prev_pos + width - 1
+			}
+
+			ab.Write(row[prev_pos : pos+1]) //? pos+1
+			if y == e.screenlines+e.lineOffset-1 {
+				e.last_visible_row = filerow - 1
+				return ab.String()
+			}
+			ab.Write([]byte("\t"))
+			y++
+			prev_pos = pos + 1
+		}
+	}
+}
+
+//  old version - delete if no issues
+func (e *Editor) generateWWStringFromBuffer__() string {
+	numRows := len(e.bb)
+	if numRows == 0 {
+		return ""
+	}
+
+	var ab strings.Builder
+	y := 0
+	filerow := 0
 	width := e.screencols - e.left_margin_offset
 
 	for {
@@ -923,7 +978,7 @@ func (e *Editor) generateWWStringFromBuffer() string {
 				e.last_visible_row = filerow - 1
 				return ab.String()
 			}
-			ab.Write(ret)
+			ab.Write([]byte("\t"))
 			y++
 			prev_pos = pos + 1
 		}
