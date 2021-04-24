@@ -12,7 +12,7 @@ type Editor struct {
 	left_margin_offset  int // 0 if no line numbers
 	top_margin          int
 	code                string //used by lsp thread and intended to avoid unnecessary calls to editorRowsToString
-	dirty               int64  //file changes since last save
+	dirty               int32  //file changes since last save //atomic
 	vb_highlight        [2][4]int
 	mode                Mode
 	command_line        string //for commands on the command line; string doesn't include ':'

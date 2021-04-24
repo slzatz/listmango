@@ -7,7 +7,9 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"sync/atomic"
 	"syscall"
+
 	//	"time"
 	//"strings"
 
@@ -157,7 +159,7 @@ func main() {
 						}
 			*/
 			case <-bufLinesChan:
-				p.dirty++
+				atomic.AddInt32(&p.dirty, 1) // not sure this is worth it/doesn't crash program
 				//p.bufChanged = true
 			case <-quit:
 				return
