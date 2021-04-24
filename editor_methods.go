@@ -22,7 +22,7 @@ func find_first_not_of(row *string, delimiters string, pos int) int {
 
 //'automatically' happens in NORMAL and INSERT mode
 //return true -> redraw; false -> don't redraw
-func (e *Editor) find_match_for_left_brace(left_brace byte, back bool) bool {
+func (e *Editor) findMatchForLeftBrace(leftBrace byte, back bool) bool {
 	r := e.fr
 	c := e.fc + 1
 	count := 1
@@ -33,7 +33,7 @@ func (e *Editor) find_match_for_left_brace(left_brace byte, back bool) bool {
 	}
 
 	m := map[byte]byte{'{': '}', '(': ')', '[': ']'}
-	right_brace := m[left_brace]
+	rightBrace := m[leftBrace]
 
 	for {
 
@@ -52,12 +52,12 @@ func (e *Editor) find_match_for_left_brace(left_brace byte, back bool) bool {
 			continue
 		}
 
-		if row[c] == right_brace {
+		if row[c] == rightBrace {
 			count -= 1
 			if count == 0 {
 				break
 			}
-		} else if row[c] == left_brace {
+		} else if row[c] == leftBrace {
 			count += 1
 		}
 
@@ -69,11 +69,11 @@ func (e *Editor) find_match_for_left_brace(left_brace byte, back bool) bool {
 	}
 
 	x := e.getScreenXFromRowColWW(r, c) + e.left_margin + e.left_margin_offset + 1
-	fmt.Printf("\x1b[%d;%dH\x1b[48;5;244m%s", y+e.top_margin, x, string(right_brace))
+	fmt.Printf("\x1b[%d;%dH\x1b[48;5;244m%s", y+e.top_margin, x, string(rightBrace))
 
 	x = e.getScreenXFromRowColWW(e.fr, e.fc-b) + e.left_margin + e.left_margin_offset + 1
 	y = e.getScreenYFromRowColWW(e.fr, e.fc-b) + e.top_margin - e.lineOffset // added line offset 12-25-2019
-	fmt.Printf("\x1b[%d;%dH\x1b[48;5;244m%s\x1b[0m", y, x, string(left_brace))
+	fmt.Printf("\x1b[%d;%dH\x1b[48;5;244m%s\x1b[0m", y, x, string(leftBrace))
 	sess.showEdMessage("r = %d   c = %d", r, c)
 	return true
 }
@@ -114,7 +114,7 @@ func (e *Editor) findMatchForBrace() bool {
 }
 
 //'automatically' happens in NORMAL and INSERT mode
-func (e *Editor) find_match_for_right_brace(right_brace byte, back bool) bool {
+func (e *Editor) findMatchForRightBrace(rightBrace byte, back bool) bool {
 	var b int
 	if back {
 		b = 1
@@ -126,7 +126,7 @@ func (e *Editor) find_match_for_right_brace(right_brace byte, back bool) bool {
 	row := e.bb[r]
 
 	m := map[byte]byte{'}': '{', ')': '(', ']': '['}
-	left_brace := m[right_brace]
+	leftBrace := m[rightBrace]
 
 	for {
 
@@ -141,12 +141,12 @@ func (e *Editor) find_match_for_right_brace(right_brace byte, back bool) bool {
 			continue
 		}
 
-		if row[c] == left_brace {
+		if row[c] == leftBrace {
 			count -= 1
 			if count == 0 {
 				break
 			}
-		} else if row[c] == right_brace {
+		} else if row[c] == rightBrace {
 			count += 1
 		}
 
@@ -159,16 +159,16 @@ func (e *Editor) find_match_for_right_brace(right_brace byte, back bool) bool {
 	}
 
 	x := e.getScreenXFromRowColWW(r, c) + e.left_margin + e.left_margin_offset + 1
-	fmt.Printf("\x1b[%d;%dH\x1b[48;5;244m%s", y+e.top_margin, x, string(left_brace))
+	fmt.Printf("\x1b[%d;%dH\x1b[48;5;244m%s", y+e.top_margin, x, string(leftBrace))
 
 	x = e.getScreenXFromRowColWW(e.fr, e.fc-b) + e.left_margin + e.left_margin_offset + 1
 	y = e.getScreenYFromRowColWW(e.fr, e.fc-b) + e.top_margin - e.lineOffset // added line offset 12-25-2019
-	fmt.Printf("\x1b[%d;%dH\x1b[48;5;244m%s\x1b[0m", y, x, string(right_brace))
+	fmt.Printf("\x1b[%d;%dH\x1b[48;5;244m%s\x1b[0m", y, x, string(rightBrace))
 	sess.showEdMessage("r = %d   c = %d", r, c)
 	return true
 }
 
-func (e *Editor) draw_highlighted_braces() {
+func (e *Editor) drawHighlightedBraces() {
 
 	// this guard is necessary
 	if len(e.bb) == 0 || len(e.bb[e.fr]) == 0 {
@@ -191,12 +191,10 @@ func (e *Editor) draw_highlighted_braces() {
 	if pos != -1 {
 		switch c {
 		case '{', '(':
-			//e.redraw = e.find_match_for_left_brace(c, back)
-			e.find_match_for_left_brace(c, back)
+			e.findMatchForLeftBrace(c, back)
 			return
 		case '}', ')':
-			//e.redraw = e.find_match_for_right_brace(c, back)
-			e.find_match_for_right_brace(c, back)
+			e.findMatchForRightBrace(c, back)
 			return
 		//case '(':
 		default: //should not need this
@@ -208,12 +206,10 @@ func (e *Editor) draw_highlighted_braces() {
 		if pos != -1 {
 			switch e.bb[e.fr][e.fc-1] {
 			case '{', '(':
-				//e.redraw = e.find_match_for_left_brace(c, true)
-				e.find_match_for_left_brace(c, true)
+				e.findMatchForLeftBrace(c, true)
 				return
 			case '}', ')':
-				//e.redraw = e.find_match_for_right_brace(c, true)
-				e.find_match_for_right_brace(c, true)
+				e.findMatchForRightBrace(c, true)
 				return
 			//case '(':
 			default: //should not need this
@@ -423,7 +419,7 @@ func (e *Editor) refreshScreen() {
 	if e.highlightSyntax {
 		e.drawCodeRows(&ab)
 		fmt.Print(ab.String())
-		e.draw_highlighted_braces() //has to come after draw
+		go e.drawHighlightedBraces() //has to come after drawing rows
 	} else {
 		e.drawBuffer(&ab)
 		fmt.Print(ab.String())
@@ -511,7 +507,7 @@ func (e *Editor) drawOutputWinText(rows []string) {
 	fmt.Print(ab.String())
 }
 
-func (e *Editor) draw_visual(pab *strings.Builder) {
+func (e *Editor) drawVisual(pab *strings.Builder) {
 
 	lf_ret := fmt.Sprintf("\r\n\x1b[%dC", e.left_margin+e.left_margin_offset)
 
@@ -744,7 +740,7 @@ func (e *Editor) drawBuffer(pab *strings.Builder) {
 	// ? only used so spellcheck stops at end of visible note
 	e.last_visible_row = filerow - 1 // note that this is not exactly true - could be the whole last row is visible
 
-	e.draw_visual(pab)
+	e.drawVisual(pab)
 }
 
 func (e *Editor) drawCodeRows(pab *strings.Builder) {
@@ -795,7 +791,7 @@ func (e *Editor) drawCodeRows(pab *strings.Builder) {
 
 	}
 	pab.WriteString(numCols.String())
-	e.draw_visual(pab)
+	e.drawVisual(pab)
 }
 
 /*
@@ -881,7 +877,7 @@ func (e *Editor) generateWWStringFromBuffer() string {
 	for {
 		if filerow == numRows || y == e.screenlines+e.lineOffset-1 {
 			e.last_visible_row = filerow - 1
-			return ab.String()[:ab.Len() - 1] // delete last \n
+			return ab.String()[:ab.Len()-1] // delete last \n
 		}
 
 		row := e.bb[filerow]
