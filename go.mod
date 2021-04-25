@@ -1,6 +1,7 @@
 module github.com/slzatz/listmango
 
-replace github.com/charmbracelet/glamour v0.3.0 => github.com/slzatz/glamour v0.3.1
+//replace github.com/charmbracelet/glamour v0.3.0 => github.com/slzatz/glamour v0.3.1
+replace github.com/charmbracelet/glamour v0.3.0 => /home/slzatz/glamour
 
 go 1.16
 

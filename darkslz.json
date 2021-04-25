@@ -56,12 +56,6 @@
     "color": "240",
     "format": "\n----------------------\n"
   },
-  "item": {
-    "block_prefix": "• "
-  },
-  "enumeration": {
-    "block_prefix": ". "
-  },
   "task": {
     "ticked": "[✓] ",
     "unticked": "[ ] "
