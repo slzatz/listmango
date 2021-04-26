@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"sync/atomic"
 	"time"
 )
 
@@ -289,6 +290,7 @@ func (o *Organizer) editNote(id int) {
 		editors = append(editors, p)
 		p.id = id
 		p.top_margin = TOP_MARGIN + 1
+		atomic.StoreInt32(&p.dirty, 0)
 
 		folder_tid := getFolderTid(o.rows[o.fr].id)
 		if folder_tid == 18 || folder_tid == 14 {

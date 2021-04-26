@@ -40,12 +40,12 @@ type Editor struct {
 
 func NewEditor() *Editor {
 	return &Editor{
-		cx:                 0, //actual cursor x position (takes into account any scroll/offset)
-		cy:                 0, //actual cursor y position ""
-		fc:                 0, //'file' x position as defined by reading sqlite text into rows vector
-		fr:                 0, //'file' y position ""
-		lineOffset:         0, //the number of lines of text at the top scrolled off the screen
-		dirty:              0, //has filed changed since last save
+		cx:         0, //actual cursor x position (takes into account any scroll/offset)
+		cy:         0, //actual cursor y position ""
+		fc:         0, //'file' x position as defined by reading sqlite text into rows vector
+		fr:         0, //'file' y position ""
+		lineOffset: 0, //the number of lines of text at the top scrolled off the screen
+		//dirty:              0, //has filed changed since last save
 		mode:               NORMAL,
 		command:            "",
 		command_line:       "",

@@ -8,6 +8,7 @@ import (
 	"os/exec"
 	"strconv"
 	"strings"
+	"sync/atomic"
 )
 
 //var e_lookup_C = map[string]interface{}{
@@ -87,7 +88,8 @@ func (e *Editor) writeNote() {
 			sess.updateHTMLFile("assets/" + CURRENT_NOTE_FILE)
 		}
 	*/
-	e.dirty = 0
+	//e.dirty = 0
+	atomic.StoreInt32(&e.dirty, 0)
 	e.drawStatusBar() //need this since now refresh won't do it unless redraw =true
 	sess.showEdMessage("")
 }

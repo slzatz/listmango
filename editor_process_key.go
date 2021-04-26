@@ -3,6 +3,7 @@ package main
 import (
 	//"fmt"
 	"strings"
+	"sync/atomic"
 
 	"github.com/neovim/go-client/nvim"
 )
@@ -185,7 +186,8 @@ func editorProcessKey(c int) bool { //bool returned is whether to redraw
 					*/
 
 					// do nothing = allow editor to be closed
-				} else if p.dirty > 0 {
+				} else if atomic.LoadInt32(&p.dirty) > 0 {
+					//} else if p.dirty > 0 {
 					p.mode = NORMAL
 					p.command = ""
 					p.command_line = ""
