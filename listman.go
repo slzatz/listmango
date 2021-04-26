@@ -7,7 +7,7 @@ import (
 	"log"
 	"os"
 	"os/signal"
-	"sync/atomic"
+	//"sync/atomic"
 	"syscall"
 
 	//	"time"
@@ -90,6 +90,7 @@ func main() {
 			opts = append(opts, nvim.ChildProcessCommand("nvim.exe"))
 		}
 	*/
+	opts = append(opts, nvim.ChildProcessCommand("/home/slzatz/neovim/build/bin/nvim"))
 
 	var err error
 	v, err = nvim.NewChildProcess(opts...)
@@ -110,63 +111,63 @@ func main() {
 	messageBuf, _ = v.CreateBuffer(true, true)
 
 	////////////////////////////////////////////////
-	bufLinesChan := make(chan *BufLinesEvent)
-	v.RegisterHandler("nvim_buf_lines_event", func(bufLinesEvent ...interface{}) {
-		ev := &BufLinesEvent{
-			Buffer: bufLinesEvent[0].(nvim.Buffer),
-			//Changetick:  bufLinesEvent[1].(int64),
-			Changetick:  bufLinesEvent[1], // .(int64)
-			FirstLine:   bufLinesEvent[2], // .(int64)
-			LastLine:    bufLinesEvent[3], // .(int64)
-			LineData:    fmt.Sprint(bufLinesEvent[4]),
-			IsMultipart: bufLinesEvent[5].(bool),
-		}
-		bufLinesChan <- ev
-	})
+	/*
+		bufLinesChan := make(chan *BufLinesEvent)
+		v.RegisterHandler("nvim_buf_lines_event", func(bufLinesEvent ...interface{}) {
+			ev := &BufLinesEvent{
+				Buffer: bufLinesEvent[0].(nvim.Buffer),
+				//Changetick:  bufLinesEvent[1].(int64),
+				Changetick:  bufLinesEvent[1], // .(int64)
+				FirstLine:   bufLinesEvent[2], // .(int64)
+				LastLine:    bufLinesEvent[3], // .(int64)
+				LineData:    fmt.Sprint(bufLinesEvent[4]),
+				IsMultipart: bufLinesEvent[5].(bool),
+			}
+			bufLinesChan <- ev
+		})
 
-	// records changes that do not involve actual text changes
-	changedtickChan := make(chan *ChangedtickEvent)
-	v.RegisterHandler("nvim_buf_changedtick_event", func(changedtickEvent ...interface{}) {
-		ev := &ChangedtickEvent{
-			Buffer: changedtickEvent[0].(nvim.Buffer),
-			//Changetick: changedtickEvent[1].(int64),
-			Changetick: changedtickEvent[1],
-		}
-		changedtickChan <- ev
-	})
+		// records changes that do not involve actual text changes
+		changedtickChan := make(chan *ChangedtickEvent)
+		v.RegisterHandler("nvim_buf_changedtick_event", func(changedtickEvent ...interface{}) {
+			ev := &ChangedtickEvent{
+				Buffer: changedtickEvent[0].(nvim.Buffer),
+				//Changetick: changedtickEvent[1].(int64),
+				Changetick: changedtickEvent[1],
+			}
+			changedtickChan <- ev
+		})
 
-	quit := make(chan struct{})
+		quit := make(chan struct{})
 
-	go func() {
-		for {
-			select {
-			case <-changedtickChan:
-			//case c := <-changedtickChan:
-			//do nothing - these are not text changes
-			/*
-					for _, e := range sess.editors {
-						if c.Buffer == e.vbuf {
-							e.dirty++
-							break
-						}
-					}
-				case b := <-bufLinesChan:
-						for _, e := range editors { // why isn't this just p.dirty++??????
-							if b.Buffer == e.vbuf {
+		go func() {
+			for {
+				select {
+				case <-changedtickChan:
+				//case c := <-changedtickChan:
+				//do nothing - these are not text changes
+						for _, e := range sess.editors {
+							if c.Buffer == e.vbuf {
 								e.dirty++
 								break
 							}
 						}
-			*/
-			case <-bufLinesChan:
-				atomic.AddInt32(&p.dirty, 1) // not sure this is worth it/doesn't crash program
-				//p.bufChanged = true
-			case <-quit:
-				return
+					case b := <-bufLinesChan:
+							for _, e := range editors { // why isn't this just p.dirty++??????
+								if b.Buffer == e.vbuf {
+									e.dirty++
+									break
+								}
+							}
+				case <-bufLinesChan:
+					atomic.AddInt32(&p.dirty, 1) // not sure this is worth it/doesn't crash program
+					//p.bufChanged = true
+				case <-quit:
+					return
 
+				}
 			}
-		}
-	}()
+		}()
+	*/
 
 	// enable raw mode
 	origCfg, err := rawmode.Enable()

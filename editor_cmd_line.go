@@ -26,6 +26,7 @@ var e_lookup_C = map[string]func(*Editor){
 	"savefile": (*Editor).saveNoteToFile,
 	"render":   (*Editor).showMarkdown, //leader+m does this in normal mode; may remove this
 	"syntax":   (*Editor).toggleSyntaxHighlighting,
+	"modified": (*Editor).modified,
 }
 
 /* EDITOR cpp COMMAND_LINE mode lookup
@@ -77,6 +78,7 @@ func (e *Editor) writeNote() {
 	}
 
 	updateNote()
+	v.Input(":w\n") ////////////////////////////////
 
 	folder_tid := getFolderTid(e.id)
 	if folder_tid == 18 || folder_tid == 14 {
@@ -286,4 +288,17 @@ func (e *Editor) toggleSyntaxHighlighting() {
 	}
 	e.refreshScreen()
 	sess.showEdMessage("Syntax highlighting is %v", e.highlightSyntax)
+}
+
+func (e *Editor) modified() {
+	//var result bool
+	result := false
+	//err := v.BufferOption(e.vbuf, "mod", &result) // works but always returns false
+	err := v.BufferOption(0, "modified", &result)
+	//v.BufferVar(0, "&filetype", &result)
+	if err != nil {
+		sess.showEdMessage("%s", err)
+		return
+	}
+	sess.showEdMessage("Modified = %t", result)
 }

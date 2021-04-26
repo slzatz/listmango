@@ -3,7 +3,7 @@ package main
 import (
 	//"fmt"
 	"strings"
-	"sync/atomic"
+	//"sync/atomic"
 
 	"github.com/neovim/go-client/nvim"
 )
@@ -158,41 +158,41 @@ func editorProcessKey(c int) bool { //bool returned is whether to redraw
 						return false
 					}
 					updateNote()
-
-					// this seems like a kluge but I can't delete buffer
-					// without generating an error (I think because using nvim 0.44 and not 0.5)
-					err := v.SetBufferLines(0, 0, -1, true, [][]byte{})
-					if err != nil {
-						sess.showOrgMessage("SetBufferLines to []  error %v", err)
-					}
-
-				} else if cmd == "q!" || cmd == "quit!" {
-
-					err := v.SetBufferLines(0, 0, -1, true, [][]byte{})
-					if err != nil {
-						sess.showOrgMessage("SetBufferLines to []  error %v", err)
-					}
-					/* deleteBuffer is failing (likely b/o 0.44 v. 0.5 nvim)
+					/*
 						deleteBufferOpts := map[string]bool{
 							"force":  true,
 							"unload": false,
 						}
-					//err = v.DeleteBuffer(0, deleteBufferOpts)
-					//zero is the current buffer
-					err = v.DeleteBuffer(0, map[string]bool{})
-					if err != nil {
-						sess.showOrgMessage("DeleteBuffer error %v", err)
-					}
+						//err := v.DeleteBuffer(0, map[string]bool{})
+						err := v.DeleteBuffer(0, deleteBufferOpts)
+						if err != nil {
+							sess.showOrgMessage("DeleteBuffer error %v", err)
+						} else {
+							sess.showOrgMessage("DeleteBuffer successful")
+						}
 					*/
 
+				} else if cmd == "q!" || cmd == "quit!" {
 					// do nothing = allow editor to be closed
-				} else if atomic.LoadInt32(&p.dirty) > 0 {
+
+				} else if p.isModified() {
 					//} else if p.dirty > 0 {
 					p.mode = NORMAL
 					p.command = ""
 					p.command_line = ""
 					sess.showEdMessage("No write since last change")
 					return false
+				}
+				deleteBufferOpts := map[string]bool{
+					"force":  true,
+					"unload": false,
+				}
+				//err = v.DeleteBuffer(0, map[string]bool{})
+				err := v.DeleteBuffer(0, deleteBufferOpts)
+				if err != nil {
+					sess.showOrgMessage("DeleteBuffer error %v", err)
+				} else {
+					sess.showOrgMessage("DeleteBuffer successful")
 				}
 
 				index := -1

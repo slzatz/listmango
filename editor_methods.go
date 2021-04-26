@@ -1135,3 +1135,13 @@ func (e *Editor) drawPreview() {
 	}
 	fmt.Print(ab.String())
 }
+
+func (e *Editor) isModified() bool {
+	var result bool
+	err := v.BufferOption(e.vbuf, "modified", &result)
+	if err != nil {
+		sess.showEdMessage("Error checking isModified: %v", err)
+		return true
+	}
+	return result
+}

@@ -493,7 +493,7 @@ func readNoteIntoEditor(id int) {
 	p.bb = bytes.Split([]byte(note), []byte("\n")) // yes, you need to do it this way
 
 	//func (v *Nvim) CreateBuffer(listed bool, scratch bool) (buffer Buffer, err error) {
-	p.vbuf, err = v.CreateBuffer(true, true)
+	p.vbuf, err = v.CreateBuffer(true, false)
 	if err != nil {
 		sess.showOrgMessage("%v", err)
 	}
@@ -504,6 +504,19 @@ func readNoteIntoEditor(id int) {
 		sess.showOrgMessage("%v", p.vbuf)
 	}
 	v.SetBufferLines(p.vbuf, 0, -1, true, p.bb)
+	// ? write the buffer here to see if mod works
+	if _, err = os.Stat("scratch"); err == nil {
+		err = os.Remove("scratch")
+		if err != nil {
+			log.Fatal(err)
+			sess.showOrgMessage("Error removing scratch file: %v", err)
+		}
+	}
+	_, err = v.Input(":w scratch\n") //I need to send this but may be a problem
+	if err != nil {
+		sess.showEdMessage("Error in nvim.Input in dbfuc: %v", err)
+	}
+	//v.FeekKeys(":w scratch\n", "t", true) //I need to send this but may be a problem
 
 }
 

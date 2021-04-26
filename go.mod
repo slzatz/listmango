@@ -10,6 +10,6 @@ require (
 	github.com/charmbracelet/glamour v0.3.0
 	github.com/lib/pq v1.10.1
 	github.com/mattn/go-sqlite3 v1.14.7
-	github.com/neovim/go-client v1.1.6
+	github.com/neovim/go-client v1.1.7
 	golang.org/x/sys v0.0.0-20210330210617-4fbd30eecc44
 )

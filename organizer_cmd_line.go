@@ -310,13 +310,15 @@ func (o *Organizer) editNote(id int) {
 		*/
 		readNoteIntoEditor(id)
 
-		ok, err := v.AttachBuffer(0, false, make(map[string]interface{})) // 0 => current buffer
-		if err != nil {
-			sess.showOrgMessage("Error when attaching buffer: %v", err)
-		}
-		if !ok {
-			sess.showOrgMessage("Problem when attaching buffer")
-		}
+		/*
+			ok, err := v.AttachBuffer(0, false, make(map[string]interface{})) // 0 => current buffer
+			if err != nil {
+				sess.showOrgMessage("Error when attaching buffer: %v", err)
+			}
+			if !ok {
+				sess.showOrgMessage("Problem when attaching buffer")
+			}
+		*/
 	}
 
 	sess.positionEditors()
