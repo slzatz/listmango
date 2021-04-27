@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"os"
 	"strings"
-	"sync/atomic"
 )
 
 func find_first_not_of(row *string, delimiters string, pos int) int {
@@ -994,7 +993,7 @@ func (e *Editor) drawStatusBar() {
 	if len(title) > 30 {
 		title = title[:30]
 	}
-	if atomic.LoadInt32(&e.dirty) > 0 {
+	if e.isModified() {
 		title += "[+]"
 	}
 	var sub string
@@ -1106,7 +1105,6 @@ func (e *Editor) readFileIntoNote(filename string) error {
 
 	e.fr, e.fc, e.cy, e.cx, e.lineOffset, e.first_visible_row, e.last_visible_row = 0, 0, 0, 0, 0, 0, 0
 
-	atomic.AddInt32(&e.dirty, 1)
 	e.refreshScreen()
 	return nil
 }

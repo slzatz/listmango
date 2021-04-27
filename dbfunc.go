@@ -478,7 +478,7 @@ func readNoteIntoString(id int) string {
 	return note
 }
 
-func readNoteIntoEditor(id int) {
+func readNoteIntoBuffer(id int) {
 	if id == -1 {
 		return // id given to new and unsaved entries
 	}
@@ -504,20 +504,19 @@ func readNoteIntoEditor(id int) {
 		sess.showOrgMessage("%v", p.vbuf)
 	}
 	v.SetBufferLines(p.vbuf, 0, -1, true, p.bb)
-	// ? write the buffer here to see if mod works
-	if _, err = os.Stat("scratch"); err == nil {
-		err = os.Remove("scratch")
+	fileName := fmt.Sprintf("scratch%d", p.vbuf)
+	if _, err = os.Stat(fileName); err == nil {
+		err = os.Remove(fileName)
 		if err != nil {
 			log.Fatal(err)
 			sess.showOrgMessage("Error removing scratch file: %v", err)
 		}
 	}
-	_, err = v.Input(":w scratch\n") //I need to send this but may be a problem
+	cmd := fmt.Sprintf(":w %s\n", fileName)
+	_, err = v.Input(cmd)
 	if err != nil {
 		sess.showEdMessage("Error in nvim.Input in dbfuc: %v", err)
 	}
-	//v.FeekKeys(":w scratch\n", "t", true) //I need to send this but may be a problem
-
 }
 
 func readSyncLogIntoAltRows(id int) {

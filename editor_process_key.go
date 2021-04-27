@@ -176,7 +176,6 @@ func editorProcessKey(c int) bool { //bool returned is whether to redraw
 					// do nothing = allow editor to be closed
 
 				} else if p.isModified() {
-					//} else if p.dirty > 0 {
 					p.mode = NORMAL
 					p.command = ""
 					p.command_line = ""
@@ -259,14 +258,6 @@ func editorProcessKey(c int) bool { //bool returned is whether to redraw
 				return true
 			}
 
-			// for testing
-			if cmd == "m" {
-				sess.showEdMessage("buffer %v has been modified %v times", p.vbuf, p.dirty)
-				p.command_line = ""
-				p.mode = NORMAL
-				return false
-			}
-
 			if cmd0, found := e_lookup_C[cmd]; found {
 				cmd0(p)
 				p.command_line = ""
@@ -304,12 +295,14 @@ func editorProcessKey(c int) bool { //bool returned is whether to redraw
 	}
 
 	mode, _ := v.Mode()
-	/*
-		sess.showOrgMessage("blocking: %t; mode: %s; dirty: %d", mode.Blocking, mode.Mode, p.dirty) //debugging
-		Example of input that blocks is entering a number (eg, 4x) in NORMAL mode
-		If blocked = true you can't retrieve buffer with v.BufferLines -
-		app just locks up
+
+	/* debugging
+	sess.showOrgMessage("blocking: %t; mode: %s", mode.Blocking, mode.Mode)
+	Example of input that blocks is entering a number (eg, 4x) in NORMAL mode
+	If blocked = true you can't retrieve buffer with v.BufferLines -
+	app just locks up
 	*/
+
 	if mode.Blocking {
 		return false // don't draw rows - which calls v.BufferLines
 	}

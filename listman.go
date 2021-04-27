@@ -7,27 +7,12 @@ import (
 	"log"
 	"os"
 	"os/signal"
-	//"sync/atomic"
 	"syscall"
-
-	//	"time"
-	//"strings"
 
 	"github.com/neovim/go-client/nvim"
 	"github.com/slzatz/listmango/rawmode"
 	"github.com/slzatz/listmango/terminal"
 )
-
-/*
-func ctrlKey(b byte) rune {
-  return rune(b & 0x1f)
-}
-*/
-
-//var insert_cmds = map[string]struct{}{"I": z0, "i": z0, "A": z0, "a": z0, "o": z0, "O": z0, "s": z0, "cw": z0, "caw": z0}
-//var file_cmds = map[string]struct{}{"savefile": z0, "save": z0, "readfile": z0, "read": z0}
-
-//var move_only = map[string]struct{}{"w": z0, "e": z0, "b": z0, "0": z0, "$": z0, ":": z0, "*": z0, "n": z0, "[s": z0, "]s": z0, "z=": z0, "gg": z0, "G": z0, "yy": z0} //could put 'u' ctrl-r here
 
 var sess Session
 var org = Organizer{Session: &sess}
@@ -39,19 +24,10 @@ var w nvim.Window
 var messageBuf nvim.Buffer
 
 func redirectMessages(v *nvim.Nvim) {
-	//_, err := v.Input("\x1b:redir >> listman_messages.txt")
-	//err := v.FeedKeys("\x1b:redir >> listman_messages.txt\r", "t", false)
 	err := v.FeedKeys("\x1b:redir @a\r", "t", false)
 	if err != nil {
 		fmt.Printf("%v\n", err)
 	}
-	/*
-		out, err := v.Exec("redir >> listman_messages.txt", true)
-		if err != nil {
-			fmt.Printf("messages error: %v", err)
-		}
-		return out
-	*/
 }
 
 func main() {
@@ -85,11 +61,6 @@ func main() {
 		nvim.ChildProcessLogf(log.Printf),
 	}
 
-	/*
-		if runtime.GOOS == "windows" {
-			opts = append(opts, nvim.ChildProcessCommand("nvim.exe"))
-		}
-	*/
 	opts = append(opts, nvim.ChildProcessCommand("/home/slzatz/neovim/build/bin/nvim"))
 
 	var err error
@@ -110,65 +81,6 @@ func main() {
 	redirectMessages(v)
 	messageBuf, _ = v.CreateBuffer(true, true)
 
-	////////////////////////////////////////////////
-	/*
-		bufLinesChan := make(chan *BufLinesEvent)
-		v.RegisterHandler("nvim_buf_lines_event", func(bufLinesEvent ...interface{}) {
-			ev := &BufLinesEvent{
-				Buffer: bufLinesEvent[0].(nvim.Buffer),
-				//Changetick:  bufLinesEvent[1].(int64),
-				Changetick:  bufLinesEvent[1], // .(int64)
-				FirstLine:   bufLinesEvent[2], // .(int64)
-				LastLine:    bufLinesEvent[3], // .(int64)
-				LineData:    fmt.Sprint(bufLinesEvent[4]),
-				IsMultipart: bufLinesEvent[5].(bool),
-			}
-			bufLinesChan <- ev
-		})
-
-		// records changes that do not involve actual text changes
-		changedtickChan := make(chan *ChangedtickEvent)
-		v.RegisterHandler("nvim_buf_changedtick_event", func(changedtickEvent ...interface{}) {
-			ev := &ChangedtickEvent{
-				Buffer: changedtickEvent[0].(nvim.Buffer),
-				//Changetick: changedtickEvent[1].(int64),
-				Changetick: changedtickEvent[1],
-			}
-			changedtickChan <- ev
-		})
-
-		quit := make(chan struct{})
-
-		go func() {
-			for {
-				select {
-				case <-changedtickChan:
-				//case c := <-changedtickChan:
-				//do nothing - these are not text changes
-						for _, e := range sess.editors {
-							if c.Buffer == e.vbuf {
-								e.dirty++
-								break
-							}
-						}
-					case b := <-bufLinesChan:
-							for _, e := range editors { // why isn't this just p.dirty++??????
-								if b.Buffer == e.vbuf {
-									e.dirty++
-									break
-								}
-							}
-				case <-bufLinesChan:
-					atomic.AddInt32(&p.dirty, 1) // not sure this is worth it/doesn't crash program
-					//p.bufChanged = true
-				case <-quit:
-					return
-
-				}
-			}
-		}()
-	*/
-
 	// enable raw mode
 	origCfg, err := rawmode.Enable()
 	if err != nil {
@@ -188,7 +100,6 @@ func main() {
 	}
 
 	sess.showOrgMessage("hello")
-	//filename := flag.Arg(0)
 
 	org.cx = 0               //cursor x position
 	org.cy = 0               //cursor y position
@@ -252,7 +163,6 @@ func main() {
 		}
 
 		if sess.editorMode {
-			//textChange := editorProcessKey(k, messageBuf)
 			textChange := editorProcessKey(k)
 
 			if !sess.editorMode {
@@ -260,10 +170,7 @@ func main() {
 			}
 
 			if textChange {
-				//scroll := p.scroll()
 				p.scroll()
-				//redraw := textChange || scroll || p.redraw
-				//p.refreshScreen(redraw)
 				p.refreshScreen()
 			}
 		} else {

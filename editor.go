@@ -12,7 +12,6 @@ type Editor struct {
 	left_margin_offset  int // 0 if no line numbers
 	top_margin          int
 	code                string //used by lsp thread and intended to avoid unnecessary calls to editorRowsToString
-	dirty               int32  //file changes since last save //atomic
 	vb_highlight        [2][4]int
 	mode                Mode
 	command_line        string //for commands on the command line; string doesn't include ':'
@@ -40,12 +39,11 @@ type Editor struct {
 
 func NewEditor() *Editor {
 	return &Editor{
-		cx:         0, //actual cursor x position (takes into account any scroll/offset)
-		cy:         0, //actual cursor y position ""
-		fc:         0, //'file' x position as defined by reading sqlite text into rows vector
-		fr:         0, //'file' y position ""
-		lineOffset: 0, //the number of lines of text at the top scrolled off the screen
-		//dirty:              0, //has filed changed since last save
+		cx:                 0, //actual cursor x position (takes into account any scroll/offset)
+		cy:                 0, //actual cursor y position ""
+		fc:                 0, //'file' x position as defined by reading sqlite text into rows vector
+		fr:                 0, //'file' y position ""
+		lineOffset:         0, //the number of lines of text at the top scrolled off the screen
 		mode:               NORMAL,
 		command:            "",
 		command_line:       "",

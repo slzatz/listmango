@@ -8,7 +8,6 @@ import (
 	"os/exec"
 	"strconv"
 	"strings"
-	"sync/atomic"
 )
 
 //var e_lookup_C = map[string]interface{}{
@@ -78,20 +77,13 @@ func (e *Editor) writeNote() {
 	}
 
 	updateNote()
-	v.Input(":w\n") ////////////////////////////////
+	v.Input(":w\n") // sets editor.isModified to false
 
 	folder_tid := getFolderTid(e.id)
 	if folder_tid == 18 || folder_tid == 14 {
 		e.code = e.bufferToString()
 		updateCodeFile()
 	}
-	/*
-		} else if sess.lm_browser {
-			sess.updateHTMLFile("assets/" + CURRENT_NOTE_FILE)
-		}
-	*/
-	//e.dirty = 0
-	atomic.StoreInt32(&e.dirty, 0)
 	e.drawStatusBar() //need this since now refresh won't do it unless redraw =true
 	sess.showEdMessage("")
 }
@@ -291,11 +283,8 @@ func (e *Editor) toggleSyntaxHighlighting() {
 }
 
 func (e *Editor) modified() {
-	//var result bool
-	result := false
-	//err := v.BufferOption(e.vbuf, "mod", &result) // works but always returns false
-	err := v.BufferOption(0, "modified", &result)
-	//v.BufferVar(0, "&filetype", &result)
+	var result bool
+	err := v.BufferOption(0, "modified", &result) //or e.vbuf
 	if err != nil {
 		sess.showEdMessage("%s", err)
 		return

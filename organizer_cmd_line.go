@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
-	"sync/atomic"
 	"time"
 )
 
@@ -242,16 +241,9 @@ func (o *Organizer) quitApp(_ int) {
 		sess.showOrgMessage("No db write since last change")
 	} else {
 		sess.run = false
-
-		/* need to figure out if need any of the below
-		   context.close();
-		   subscriber.close();
-		   publisher.close();
-		   subs_thread.join();
-		   exit(0);
-		*/
 	}
 }
+
 func (o *Organizer) editNote(id int) {
 
 	if o.view != TASK {
@@ -285,12 +277,10 @@ func (o *Organizer) editNote(id int) {
 	}
 
 	if !active {
-		//p = &Editor{}
 		p = NewEditor()
 		editors = append(editors, p)
 		p.id = id
 		p.top_margin = TOP_MARGIN + 1
-		atomic.StoreInt32(&p.dirty, 0)
 
 		folder_tid := getFolderTid(o.rows[o.fr].id)
 		if folder_tid == 18 || folder_tid == 14 {
@@ -300,25 +290,10 @@ func (o *Organizer) editNote(id int) {
 			p.linked_editor.is_subeditor = true
 			p.linked_editor.is_below = true
 			p.linked_editor.linked_editor = p
-			//p.linked_editor.rows = []string{" "}
 			//p.left_margin_offset = LEFT_MARGIN_OFFSET //in NewEditor
 		}
-		/*
-			} else if folder_tid == 21 {
-				p.left_margin_offset = LEFT_MARGIN_OFFSET
-			}
-		*/
-		readNoteIntoEditor(id)
+		readNoteIntoBuffer(id)
 
-		/*
-			ok, err := v.AttachBuffer(0, false, make(map[string]interface{})) // 0 => current buffer
-			if err != nil {
-				sess.showOrgMessage("Error when attaching buffer: %v", err)
-			}
-			if !ok {
-				sess.showOrgMessage("Problem when attaching buffer")
-			}
-		*/
 	}
 
 	sess.positionEditors()
