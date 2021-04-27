@@ -77,7 +77,11 @@ func (e *Editor) writeNote() {
 	}
 
 	updateNote()
-	v.Input(":w\n") // sets editor.isModified to false
+	//v.Input(":w\n") // sets editor.isModified to false
+	err := v.Command("w")
+	if err != nil {
+		sess.showEdMessage("Error in writing file in editor.WriteNote: %v", err)
+	}
 
 	folder_tid := getFolderTid(e.id)
 	if folder_tid == 18 || folder_tid == 14 {
