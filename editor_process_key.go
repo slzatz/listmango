@@ -187,7 +187,7 @@ func editorProcessKey(c int) bool { //bool returned is whether to redraw
 					"unload": false,
 				}
 				//err = v.DeleteBuffer(0, map[string]bool{})
-				err := v.DeleteBuffer(0, deleteBufferOpts)
+				err := v.DeleteBuffer(p.vbuf, deleteBufferOpts)
 				if err != nil {
 					sess.showOrgMessage("DeleteBuffer error %v", err)
 				} else {
@@ -219,6 +219,10 @@ func editorProcessKey(c int) bool { //bool returned is whether to redraw
 				if len(editors) > 0 {
 
 					p = editors[0] //kluge should move in some logical fashion
+					err = v.SetCurrentBuffer(p.vbuf)
+					if err != nil {
+						sess.showOrgMessage("Error setting current buffer: %v", err)
+					}
 					sess.positionEditors()
 					sess.eraseRightScreen()
 					sess.drawEditors()

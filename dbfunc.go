@@ -492,7 +492,7 @@ func readNoteIntoBuffer(id int) {
 
 	p.bb = bytes.Split([]byte(note), []byte("\n")) // yes, you need to do it this way
 
-	//func (v *Nvim) CreateBuffer(listed bool, scratch bool) (buffer Buffer, err error) {
+	// CreateBuffer(listed bool, scratch bool) (buffer Buffer, err error)
 	p.vbuf, err = v.CreateBuffer(true, false)
 	if err != nil {
 		sess.showOrgMessage("%v", err)
@@ -503,19 +503,25 @@ func readNoteIntoBuffer(id int) {
 	} else {
 		sess.showOrgMessage("%v", p.vbuf)
 	}
-	v.SetBufferLines(p.vbuf, 0, -1, true, p.bb)
-	fileName := fmt.Sprintf("scratch%d", p.vbuf)
-	if _, err = os.Stat(fileName); err == nil {
-		err = os.Remove(fileName)
-		if err != nil {
-			log.Fatal(err)
-			sess.showOrgMessage("Error removing scratch file: %v", err)
-		}
-	}
-	cmd := fmt.Sprintf(":w %s\n", fileName)
-	_, err = v.Input(cmd)
+	err = v.SetBufferLines(p.vbuf, 0, -1, true, p.bb)
 	if err != nil {
-		sess.showEdMessage("Error in nvim.Input in dbfuc: %v", err)
+		sess.showEdMessage("Error in SetBufferLines in dbfuc: %v", err)
+	}
+	/*
+	 set hidden allows redirect of messages
+	 to work since current buffer does
+	 not need to be saved
+	 alternative is to use v.Input(":set hidden\n")
+	*/
+	err = v.SetBufferOption(p.vbuf, "hidden", true)
+	if err != nil {
+		sess.showEdMessage("Error in SetBufferLines in dbfuc: %v", err)
+	}
+
+	//alternative is just to use v.Input(":w ...")
+	err = v.Command(fmt.Sprintf("w temp/buf%d", p.vbuf))
+	if err != nil {
+		sess.showEdMessage("Error in writing file in dbfuc: %v", err)
 	}
 }
 

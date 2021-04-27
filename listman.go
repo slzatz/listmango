@@ -148,6 +148,15 @@ func main() {
 	sess.returnCursor()
 	sess.run = true
 
+	err = os.RemoveAll("temp")
+	if err != nil {
+		sess.showOrgMessage("Error deleting temp directory: %v", err)
+	}
+	err = os.Mkdir("temp", 0700)
+	if err != nil {
+		sess.showOrgMessage("Error creating temp directory: %v", err)
+	}
+
 	for sess.run {
 
 		key, err := terminal.ReadKey()
