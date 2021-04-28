@@ -61,6 +61,7 @@ func main() {
 		nvim.ChildProcessLogf(log.Printf),
 	}
 
+	os.Setenv("VIMRUNTIME", "/home/slzatz/neovim/runtime")
 	opts = append(opts, nvim.ChildProcessCommand("/home/slzatz/neovim/build/bin/nvim"))
 
 	var err error

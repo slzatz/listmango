@@ -25,6 +25,7 @@ var e_lookup_C = map[string]func(*Editor){
 	"savefile": (*Editor).saveNoteToFile,
 	"render":   (*Editor).showMarkdown, //leader+m does this in normal mode; may remove this
 	"syntax":   (*Editor).toggleSyntaxHighlighting,
+	"ha":       (*Editor).printNote,
 	"modified": (*Editor).modified,
 }
 
@@ -284,6 +285,13 @@ func (e *Editor) toggleSyntaxHighlighting() {
 	}
 	e.refreshScreen()
 	sess.showEdMessage("Syntax highlighting is %v", e.highlightSyntax)
+}
+
+func (e *Editor) printNote() {
+	err := v.Command("ha")
+	if err != nil {
+		sess.showEdMessage("Error printing: %v", err)
+	}
 }
 
 func (e *Editor) modified() {
