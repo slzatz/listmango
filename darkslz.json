@@ -54,7 +54,7 @@
   },
   "hr": {
     "color": "240",
-    "format": "\n----------------------\n"
+    "format": "\n----------------------------------\n"
   },
   "task": {
     "ticked": "[✓] ",
@@ -77,15 +77,14 @@
     "format": "Image: {{.text}} →"
   },
   "code": {
-    "color": "203",
-    "background_color": "236"
+    "color": "203"
   },
   "code_block": {
     "color": "244",
     "margin": 4,
     "chroma": {
       "text": {
-        "color": "#a4997c"
+        "color": "#ff5f5f"
       },
       "error": {
         "color": "#F1F1F1",
