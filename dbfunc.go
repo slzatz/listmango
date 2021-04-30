@@ -1131,7 +1131,7 @@ func copyEntry() {
 	}
 }
 
-func highlight_terms_string(text string, word_positions [][]int) string {
+func highlightTerms(text string, word_positions [][]int) string {
 
 	delimiters := " |,.;?:()[]{}&#/`-'\"—_<>$~@=&*^%+!\t\n\\" //must have \f if using it as placeholder
 
@@ -1146,6 +1146,11 @@ func highlight_terms_string(text string, word_positions [][]int) string {
 		end := -1
 		var start int
 
+		// need to be non-punctuation because syntax highlighting
+		// appears to strip some punctuation
+		pre := "uuu"
+		post := "yyy"
+		add := len(pre) + len(post)
 		for _, wp := range v {
 
 			for {
@@ -1165,9 +1170,11 @@ func highlight_terms_string(text string, word_positions [][]int) string {
 				}
 
 				if wp == word_num {
-					text = text[:start+end] + "\x1b[48;5;235m" + text[start+end:]
-					text = text[:start] + "\x1b[48;5;31m" + text[start:]
-					end += 21
+					//text = text[:start+end] + "\x1b[48;5;235m" + text[start+end:]
+					text = fmt.Sprintf("%s%s%s", text[:start+end], post, text[start+end:])
+					//text = text[:start] + "\x1b[48;5;31m" + text[start:]
+					text = fmt.Sprintf("%s%s%s", text[:start], pre, text[start:])
+					end += add
 					break // this breaks out of loop that was looking for the current highlighted word position
 				}
 			}
@@ -1177,6 +1184,7 @@ func highlight_terms_string(text string, word_positions [][]int) string {
 }
 
 // not currently in use but more general than generateWWString2
+// has a length parameter and takes a ret param
 func generateWWString_(text string, width int, length int, ret string) string {
 
 	if text == "" {
@@ -1240,7 +1248,7 @@ func generateWWString_(text string, width int, length int, ret string) string {
 	return ab.String()
 }
 
-func generateWWString2(text string, width int) string {
+func generateWWString(text string, width int) string {
 	if text == "" {
 		return ""
 	}

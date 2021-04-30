@@ -366,12 +366,15 @@ func (o *Organizer) drawPreview() {
 	tid := getFolderTid(id)
 	o.altRowoff = 0
 	note := readNoteIntoString(id)
-	note = generateWWString2(note, o.totaleditorcols)
+	note = generateWWString(note, o.totaleditorcols)
 	sess.eraseRightScreen()
+
 	if o.taskview == BY_FIND {
 		wp := getNoteSearchPositions(id)
-		o.note = highlight_terms_string(note, wp)
-	} else if tid == 18 || tid == 14 { //&& !e.is_subeditor {
+		note = highlightTerms(note, wp)
+	}
+
+	if tid == 18 || tid == 14 { //&& !e.is_subeditor {
 		var lang string
 		var buf bytes.Buffer
 		switch tid {
@@ -381,7 +384,8 @@ func (o *Organizer) drawPreview() {
 			lang = "go"
 		}
 		_ = Highlight(&buf, note, lang, "terminal16m", sess.style[sess.styleIndex])
-		o.note = buf.String()
+		//o.note = buf.String()
+		note = buf.String()
 	} else { // render as markdown
 		r, _ := glamour.NewTermRenderer(
 			glamour.WithStylePath("/home/slzatz/listmango/darkslz.json"),
@@ -389,8 +393,19 @@ func (o *Organizer) drawPreview() {
 		)
 		note, _ = r.Render(note)
 		ix := strings.Index(note, "\n") //works for ix = -1
-		o.note = note[ix+1:]
+		//o.note = note[ix+1:]
+		note = note[ix+1:]
 	}
+
+	if o.taskview == BY_FIND {
+		// could use strings.Count to make sure they are balanced
+		// n0 = strings.Count(o.note, "^^")
+		// n1 = strings.Count(o.note, "%%")
+		// ...
+		note = strings.ReplaceAll(note, "uuu", "\x1b[48;5;31m") //^^
+		note = strings.ReplaceAll(note, "yyy", "\x1b[0m")       // %%
+	}
+	o.note = note
 	o.drawNoteReadOnly()
 }
 

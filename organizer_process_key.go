@@ -283,7 +283,7 @@ func organizerProcessKey(c int) {
 			sess.eraseRightScreen()
 			org.altRowoff = 0
 			note := readSyncLog(org.rows[org.fr].id)
-			org.note = generateWWString2(note, org.totaleditorcols)
+			org.note = generateWWString(note, org.totaleditorcols)
 			org.drawNoteReadOnly()
 		case ARROW_DOWN, 'j':
 			if org.fr == len(org.rows)-1 {
@@ -293,7 +293,7 @@ func organizerProcessKey(c int) {
 			sess.eraseRightScreen()
 			org.altRowoff = 0
 			note := readSyncLog(org.rows[org.fr].id)
-			org.note = generateWWString2(note, org.totaleditorcols)
+			org.note = generateWWString(note, org.totaleditorcols)
 			org.drawNoteReadOnly()
 		case ':':
 			sess.showOrgMessage(":")
