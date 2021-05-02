@@ -12,4 +12,5 @@ require (
 	github.com/mattn/go-sqlite3 v1.14.7
 	github.com/neovim/go-client v1.1.7
 	golang.org/x/sys v0.0.0-20210330210617-4fbd30eecc44
+	golang.org/x/term v0.0.0-20210429154555-c04ba851c2a4 // indirect
 )

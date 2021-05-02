@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/charmbracelet/glamour"
@@ -176,25 +177,51 @@ func (o *Organizer) drawAltRows() {
 // for drawing preview and sync log (note)
 func (o *Organizer) drawNoteReadOnly() {
 
+	fmt.Print("\x1b_Ga=d\x1b\\") //delete any images
 	if len(o.note) == 0 {
 		return
 	}
-	rows := strings.Split(o.note, "\n")
-	var ab strings.Builder
-	fmt.Fprintf(&ab, "\x1b[%d;%dH", TOP_MARGIN+1, o.divider+1) // was +2
-	lf_ret := fmt.Sprintf("\r\n\x1b[%dC", o.divider+0)         // was + 1
+	//var ab strings.Builder
+	//fmt.Fprintf(&ab, "\x1b[%d;%dH", TOP_MARGIN+1, o.divider+1) // was +2
+	fmt.Fprintf(os.Stdout, "\x1b[%d;%dH", TOP_MARGIN+1, o.divider+1) // was +2
+	lf_ret := fmt.Sprintf("\r\n\x1b[%dC", o.divider+0)               // was + 1
 
-	for y := 0; y < o.textLines; y++ {
+	//for y := 0; y < o.textLines; y++ {
+	fr := o.altRowoff - 1
+	y := 0
+	for {
 
-		fr := y + o.altRowoff
-		if fr > len(rows)-1 {
+		//fr := y + o.altRowoff
+		fr++
+		if fr > len(o.note)-1 || y > o.textLines-1 {
 			break
 		}
-
-		ab.WriteString(rows[fr])
-		ab.WriteString(lf_ret)
+		/*
+			if line contains Image
+			draw the image
+			advance the number of
+			rows occupied by the image
+			keep on drawing lines
+			need to check that image
+			can fit in remaining space
+		*/
+		if strings.Contains(o.note[fr], "Image") {
+			path := getStringInBetween(o.note[fr], "|", "|")
+			bounds := displayImage(path)
+			//ab.WriteString(lf_ret)
+			fmt.Print(lf_ret)
+			height := bounds.Max.Y / 60
+			//fmt.Fprintf(&ab, "\x1b[%dB", height) //move cursor down
+			//fmt.Fprintf(os.Stdout, "\x1b[%dB", height) //move cursor down
+			y += height
+		} else {
+			//ab.WriteString(o.note[fr])
+			//ab.WriteString(lf_ret)
+			fmt.Fprintf(os.Stdout, "%s%s", o.note[fr], lf_ret)
+			y++
+		}
 	}
-	fmt.Print(ab.String())
+	//fmt.Print(ab.String())
 }
 
 func (o *Organizer) drawStatusBar() {
@@ -393,7 +420,6 @@ func (o *Organizer) drawPreview() {
 		)
 		note, _ = r.Render(note)
 		ix := strings.Index(note, "\n") //works for ix = -1
-		//o.note = note[ix+1:]
 		note = note[ix+1:]
 	}
 
@@ -405,18 +431,7 @@ func (o *Organizer) drawPreview() {
 		note = strings.ReplaceAll(note, "uuu", "\x1b[48;5;31m") //^^
 		note = strings.ReplaceAll(note, "yyy", "\x1b[0m")       // %%
 	}
-	o.note = note
-	o.drawNoteReadOnly()
-}
-
-func (o *Organizer) renderMarkdown(note string) {
-	//note := readNoteIntoString(o.rows[o.fr].id)
-	o.note, _ = glamour.Render(note, "dark")
-	/*
-		if err != nil {
-			sess.showOrgMessage("Error in rendering markdown: %v", err)
-		}
-	*/
-	sess.eraseRightScreen()
+	// I think the note should be split here
+	o.note = strings.Split(note, "\n")
 	o.drawNoteReadOnly()
 }

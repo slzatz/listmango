@@ -1121,17 +1121,31 @@ func (e *Editor) drawPreview() {
 	}
 
 	fmt.Fprintf(&ab, "\x1b[%d;%dH", e.top_margin, e.left_margin+1)
-	for y := 0; y < e.screenlines; y++ {
+	fmt.Print(ab.String())
 
-		fr := y + e.previewLineOffset
-		if fr > len(rows)-1 {
+	//for y := 0; y < e.screenlines; y++ {
+	fr := e.previewLineOffset - 1
+	y := 0
+	for {
+
+		//fr := y + e.previewLineOffset
+		fr++
+		if fr > len(rows)-1 || y > e.screenlines-1 {
 			break
 		}
 
-		ab.WriteString(rows[fr])
-		ab.WriteString(lf_ret)
+		if strings.Contains(rows[fr], "Image") {
+			path := getStringInBetween(rows[fr], "|", "|")
+			bounds := displayImage(path)
+			fmt.Print(lf_ret)
+			//fmt.Fprintf(&ab, "bounds.Min = %v; bound.Max", bounds.Min, bounds.Max.Y)
+			height := bounds.Max.Y / 60
+			y += height
+		} else {
+			fmt.Fprintf(os.Stdout, "%s%s", rows[fr], lf_ret)
+			y++
+		}
 	}
-	fmt.Print(ab.String())
 }
 
 func (e *Editor) isModified() bool {

@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	"strings"
 
 	"github.com/neovim/go-client/nvim"
 )
@@ -237,6 +238,19 @@ type BufLinesEvent struct {
 }
 
 var leader = " "
+
+func getStringInBetween(str string, start string, end string) (result string) {
+	s := strings.Index(str, start)
+	if s == -1 {
+		return
+	}
+	s += len(start)
+	e := strings.Index(str[s:], end)
+	if e == -1 {
+		return
+	}
+	return str[s : s+e]
+}
 
 /*
 struct Lsp {

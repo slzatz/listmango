@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -50,6 +51,7 @@ var cmd_lookup = map[string]func(*Organizer, int){
 	"delmarks":       (*Organizer).deleteMarks,
 	"delm":           (*Organizer).deleteMarks,
 	"copy":           (*Organizer).copyEntry,
+	"savelog":        (*Organizer).savelog,
 	"save":           (*Organizer).save,
 	//"showmarkdown":   (*Organizer).showMarkdown,
 	//"showm":          (*Organizer).showMarkdown,
@@ -96,7 +98,8 @@ func (o *Organizer) log(unused int) {
 
 	// show first row's note
 	o.eraseRightScreen()
-	o.note = readSyncLog(o.rows[o.fr].id)
+	note := readSyncLog(o.rows[o.fr].id)
+	o.note = strings.Split(note, "\n")
 	o.drawNoteReadOnly()
 	o.clearMarkedEntries()
 	o.showOrgMessage("")
@@ -297,7 +300,8 @@ func (o *Organizer) editNote(id int) {
 	}
 
 	sess.positionEditors()
-	sess.eraseRightScreen() //erases editor area + statusbar + msg
+	sess.eraseRightScreen()      //erases editor area + statusbar + msg
+	fmt.Print("\x1b_Ga=d\x1b\\") //delete any images
 	sess.drawEditors()
 	p.mode = NORMAL
 
@@ -455,7 +459,8 @@ func (o *Organizer) sync(unused int) {
 	}
 	o.command_line = ""
 	o.eraseRightScreen()
-	o.note = generateWWString(log, org.totaleditorcols)
+	note := generateWWString(log, org.totaleditorcols)
+	o.note = strings.Split(note, "\n")
 	o.drawNoteReadOnly()
 	o.mode = PREVIEW_SYNC_LOG
 }
@@ -677,12 +682,34 @@ func (o *Organizer) copyEntry(unused int) {
 	sess.showOrgMessage("Entry copied")
 }
 
-func (o *Organizer) save(unused int) {
+func (o *Organizer) savelog(unused int) {
 	if o.last_mode == PREVIEW_SYNC_LOG {
 		title := fmt.Sprintf("%v", time.Now().Format("Mon Jan 2 15:04:05"))
-		insertSyncEntry(title, o.note)
+		insertSyncEntry(title, strings.Join(o.note, "\n"))
 		sess.showOrgMessage("Sync log save to database")
 		o.command_line = ""
 		o.mode = o.last_mode
 	} // otherwise should save to file
+}
+
+func (o *Organizer) save(pos int) {
+	if pos == 0 {
+		sess.showOrgMessage("You need to provide a filename")
+		return
+	}
+	filename := o.command_line[pos+1:]
+	f, err := os.Create(filename)
+	if err != nil {
+		sess.showOrgMessage("Error creating file %s: %v", filename, err)
+		return
+	}
+	defer f.Close()
+
+	//_, err = f.Write(bytes.Join(e.bb, []byte("\n")))
+	_, err = f.WriteString(strings.Join(o.note, "\n"))
+	if err != nil {
+		sess.showOrgMessage("Error writing file %s: %v", filename, err)
+		return
+	}
+	sess.showOrgMessage("Note written to file %s", filename)
 }

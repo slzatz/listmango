@@ -1,7 +1,7 @@
 package main
 
 import (
-	//"fmt"
+	"fmt"
 	"strings"
 	//"sync/atomic"
 
@@ -57,6 +57,11 @@ func editorProcessKey(c int) bool { //bool returned is whether to redraw
 		}
 		p.command = ""
 		p.command_line = ""
+
+		if p.mode == PREVIEW_MARKDOWN {
+			fmt.Print("\x1b_Ga=d\x1b\\") //delete any images
+		}
+
 		p.mode = NORMAL
 
 		/*
