@@ -6,6 +6,7 @@ import (
 	_ "image/jpeg"
 	_ "image/png"
 	"io"
+	"net/http"
 	"os"
 	"regexp"
 	"strconv"
@@ -14,6 +15,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/disintegration/imaging"
 	"golang.org/x/term"
 )
 
@@ -23,15 +25,38 @@ var (
 	E_TIMED_OUT       = errors.New("TERM RESPONSE TIMED OUT")
 )
 
-func loadImage(path string) (iImg image.Image, imgFmt string, E error) {
+func loadImage(path string) (img image.Image, imgFmt string, err error) {
 
-	pF, err := os.Open(path)
+	f, err := os.Open(path)
 	if err != nil {
 		return
 	}
-	defer pF.Close()
+	defer f.Close()
 
-	return image.Decode(pF)
+	img, imgFmt, err = image.Decode(f)
+	if img.Bounds().Max.Y > sess.imgSizeY {
+		img = imaging.Resize(img, 0, sess.imgSizeY, imaging.Lanczos)
+	}
+	return
+}
+
+func loadWebImage(URL string) (img image.Image, imgFmt string, err error) {
+	//Get the response bytes from the url
+	response, err := http.Get(URL)
+	if err != nil {
+		return
+	}
+	defer response.Body.Close()
+
+	if response.StatusCode != 200 {
+		err = errors.New("Received non 200 response code")
+		return
+	}
+	img, imgFmt, err = image.Decode(response.Body)
+	if img.Bounds().Max.Y > sess.imgSizeY {
+		img = imaging.Resize(img, 0, sess.imgSizeY, imaging.Lanczos)
+	}
+	return
 }
 
 // transforms given open/close terminal escapes to pass through tmux to parent terminal

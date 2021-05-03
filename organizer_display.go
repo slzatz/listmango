@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/glamour"
+	"image"
 )
 
 // should probably be named drawOrgRows
@@ -193,10 +194,20 @@ func (o *Organizer) drawNoteReadOnly() {
 		}
 		if strings.Contains(o.note[fr], "Image") {
 			path := getStringInBetween(o.note[fr], "|", "|")
-			img, _, err := loadImage(path)
-			if err != nil {
-				sess.showOrgMessage("Error loading image: %v", err)
-				continue
+			var img image.Image
+			var err error
+			if strings.Contains(path, "http") {
+				img, _, err = loadWebImage(path)
+				if err != nil {
+					sess.showOrgMessage("Error loading Web image: %v", err)
+					continue
+				}
+			} else {
+				img, _, err = loadImage(path)
+				if err != nil {
+					sess.showOrgMessage("Error loading file image: %v", err)
+					continue
+				}
 			}
 			height := img.Bounds().Max.Y / 30
 			y += height

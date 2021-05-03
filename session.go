@@ -23,6 +23,7 @@ type Session struct {
 	run              bool
 	editorMode       bool
 	preview          bool
+	imgSizeY         int
 	fts_search_terms string
 	origTermCfg      []byte //from GoKilo
 	cfg              Config

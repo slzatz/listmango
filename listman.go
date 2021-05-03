@@ -34,6 +34,8 @@ func main() {
 
 	sess.style = [7]string{"dracula", "fruity", "monokai", "native", "paraiso-dark", "rrt", "solarized-dark256"} //vim is dark but unusable
 	sess.styleIndex = 2
+	sess.preview = false
+	sess.imgSizeY = 800
 
 	signal_chan := make(chan os.Signal, 1)
 	signal.Notify(signal_chan, syscall.SIGWINCH)
