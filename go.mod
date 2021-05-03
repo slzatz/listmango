@@ -8,6 +8,7 @@ go 1.16
 require (
 	github.com/alecthomas/chroma v0.8.2
 	github.com/charmbracelet/glamour v0.3.0
+	github.com/disintegration/imaging v1.6.2 // indirect
 	github.com/lib/pq v1.10.1
 	github.com/mattn/go-sqlite3 v1.14.7
 	github.com/neovim/go-client v1.1.7

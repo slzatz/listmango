@@ -22,6 +22,7 @@ type Session struct {
 	lmBrowser        bool
 	run              bool
 	editorMode       bool
+	preview          bool
 	fts_search_terms string
 	origTermCfg      []byte //from GoKilo
 	cfg              Config

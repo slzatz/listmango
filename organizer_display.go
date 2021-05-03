@@ -181,47 +181,37 @@ func (o *Organizer) drawNoteReadOnly() {
 	if len(o.note) == 0 {
 		return
 	}
-	//var ab strings.Builder
-	//fmt.Fprintf(&ab, "\x1b[%d;%dH", TOP_MARGIN+1, o.divider+1) // was +2
 	fmt.Fprintf(os.Stdout, "\x1b[%d;%dH", TOP_MARGIN+1, o.divider+1) // was +2
 	lf_ret := fmt.Sprintf("\r\n\x1b[%dC", o.divider+0)               // was + 1
 
-	//for y := 0; y < o.textLines; y++ {
 	fr := o.altRowoff - 1
 	y := 0
 	for {
-
-		//fr := y + o.altRowoff
 		fr++
 		if fr > len(o.note)-1 || y > o.textLines-1 {
 			break
 		}
-		/*
-			if line contains Image
-			draw the image
-			advance the number of
-			rows occupied by the image
-			keep on drawing lines
-			need to check that image
-			can fit in remaining space
-		*/
 		if strings.Contains(o.note[fr], "Image") {
 			path := getStringInBetween(o.note[fr], "|", "|")
-			bounds := displayImage(path)
-			//ab.WriteString(lf_ret)
-			fmt.Print(lf_ret)
-			height := bounds.Max.Y / 60
-			//fmt.Fprintf(&ab, "\x1b[%dB", height) //move cursor down
-			//fmt.Fprintf(os.Stdout, "\x1b[%dB", height) //move cursor down
+			img, _, err := loadImage(path)
+			if err != nil {
+				sess.showOrgMessage("Error loading image: %v", err)
+				continue
+			}
+			height := img.Bounds().Max.Y / 30
 			y += height
+			if y > o.textLines-1 {
+				break
+			}
+			displayImage2(img)
+
+			// appears necessary to reposition cursor after image draw
+			fmt.Fprintf(os.Stdout, "\x1b[%d;%dH", TOP_MARGIN+1+y, o.divider+1)
 		} else {
-			//ab.WriteString(o.note[fr])
-			//ab.WriteString(lf_ret)
 			fmt.Fprintf(os.Stdout, "%s%s", o.note[fr], lf_ret)
 			y++
 		}
 	}
-	//fmt.Print(ab.String())
 }
 
 func (o *Organizer) drawStatusBar() {
@@ -385,7 +375,7 @@ func (o *Organizer) drawSearchRows() {
 }
 
 func (o *Organizer) drawPreview() {
-	if o.mode == NO_ROWS {
+	if o.mode == NO_ROWS || !sess.preview {
 		sess.eraseRightScreen()
 		return
 	}

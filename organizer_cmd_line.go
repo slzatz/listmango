@@ -53,6 +53,7 @@ var cmd_lookup = map[string]func(*Organizer, int){
 	"copy":           (*Organizer).copyEntry,
 	"savelog":        (*Organizer).savelog,
 	"save":           (*Organizer).save,
+	"preview":        (*Organizer).preview,
 	//"showmarkdown":   (*Organizer).showMarkdown,
 	//"showm":          (*Organizer).showMarkdown,
 	/*
@@ -712,4 +713,19 @@ func (o *Organizer) save(pos int) {
 		return
 	}
 	sess.showOrgMessage("Note written to file %s", filename)
+}
+
+func (o *Organizer) preview(pos int) {
+	if pos == 0 {
+		sess.showOrgMessage("You need to provide an option ('on' or 'off')")
+		return
+	}
+	opt := o.command_line[pos+1:]
+	if opt == "on" {
+		sess.preview = true
+	} else if opt == "off" {
+		sess.preview = false
+	} else {
+		sess.showOrgMessage("Your choice of options is 'on' or 'off'")
+	}
 }

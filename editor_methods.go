@@ -1110,6 +1110,8 @@ func (e *Editor) readFileIntoNote(filename string) error {
 }
 
 func (e *Editor) drawPreview() {
+	fmt.Print("\x1b_Ga=d\x1b\\") //delete any images
+
 	rows := strings.Split(e.renderedNote, "\n")
 	var ab strings.Builder
 	fmt.Fprintf(&ab, "\x1b[?25l\x1b[%d;%dH", e.top_margin, e.left_margin+1)
@@ -1127,20 +1129,26 @@ func (e *Editor) drawPreview() {
 	fr := e.previewLineOffset - 1
 	y := 0
 	for {
-
-		//fr := y + e.previewLineOffset
 		fr++
 		if fr > len(rows)-1 || y > e.screenlines-1 {
 			break
 		}
-
 		if strings.Contains(rows[fr], "Image") {
 			path := getStringInBetween(rows[fr], "|", "|")
-			bounds := displayImage(path)
-			fmt.Print(lf_ret)
-			//fmt.Fprintf(&ab, "bounds.Min = %v; bound.Max", bounds.Min, bounds.Max.Y)
-			height := bounds.Max.Y / 60
+			img, _, err := loadImage(path)
+			if err != nil {
+				sess.showOrgMessage("Error loading image: %v", err)
+				continue
+			}
+			height := img.Bounds().Max.Y / 30
 			y += height
+			if y > e.screenlines-1 {
+				break
+			}
+			displayImage2(img)
+
+			// appears necessary to reposition cursor after image draw
+			fmt.Fprintf(os.Stdout, "\x1b[%d;%dH", e.top_margin+y, e.left_margin+1)
 		} else {
 			fmt.Fprintf(os.Stdout, "%s%s", rows[fr], lf_ret)
 			y++

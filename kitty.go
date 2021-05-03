@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"image"
 	//	_ "image/jpg"
+	//	"github.com/disintegration/imaging"
 	"image/png"
 	"io"
 	"os"
@@ -83,6 +84,12 @@ func KittyCopyPNGInline(out io.Writer, in io.Reader, nLen int64) (E error) {
 
 func displayImage(path string) image.Rectangle {
 	iImg, _, err := loadImage(path)
+	/*
+		if iImg.Bounds().Max.Y > 600 {
+			iImg = imaging.Resize(iImg, 0, 600, imaging.Lanczos)
+		}
+	*/
+
 	if err != nil {
 		sess.showOrgMessage("Error loading image: %v", err)
 	}
@@ -90,5 +97,20 @@ func displayImage(path string) image.Rectangle {
 	if err != nil {
 		sess.showOrgMessage("Error writing image: %v", err)
 	}
+	sess.showOrgMessage("bounds = %v", iImg.Bounds())
 	return iImg.Bounds()
+}
+
+func displayImage2(img image.Image) {
+	/*
+		if iImg.Bounds().Max.Y > 600 {
+			iImg = imaging.Resize(iImg, 0, 600, imaging.Lanczos)
+		}
+	*/
+
+	err := KittyWriteImage(os.Stdout, img)
+	if err != nil {
+		sess.showOrgMessage("Error writing image: %v", err)
+	}
+	sess.showOrgMessage("bounds = %v", img.Bounds())
 }
