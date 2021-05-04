@@ -10,19 +10,17 @@ import (
 	"golang.org/x/sys/unix"
 )
 
-// GetWindowSize returns the number of rows and columns in that order
-// in the current console
-func GetWindowSize() (int, int, error) {
+func GetWindowSize() (*unix.Winsize, error) {
 
 	ws, err := unix.IoctlGetWinsize(unix.Stdout, unix.TIOCGWINSZ)
 	if err != nil {
-		return 0, 0, fmt.Errorf("error fetching window size: %w", err)
+		return nil, fmt.Errorf("error fetching window size: %w", err)
 	}
 	if ws.Row == 0 || ws.Col == 0 {
-		return 0, 0, fmt.Errorf("Got a zero size column or row")
+		return nil, fmt.Errorf("Got a zero size column or row")
 	}
 
-	return int(ws.Row), int(ws.Col), nil
+	return ws, nil
 
 }
 

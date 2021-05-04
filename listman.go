@@ -95,14 +95,11 @@ func main() {
 
 	sess.editorMode = false
 
-	// get the screen dimensions and create a view
-	sess.screenLines, sess.screenCols, err = rawmode.GetWindowSize()
+	err = sess.GetWindowSize()
 	if err != nil {
-		//SafeExit(fmt.Errorf("couldn't get window size: %v", err))
+		fmt.Fprintf(os.Stderr, "Error getting window size: %v", err)
 		os.Exit(1)
 	}
-
-	sess.showOrgMessage("hello")
 
 	org.cx = 0               //cursor x position
 	org.cy = 0               //cursor y position
@@ -119,7 +116,7 @@ func main() {
 	org.last_mode = NORMAL
 	org.command = ""
 	org.command_line = ""
-	org.repeat = 0 //number of times to repeat commands like x,s,yy also used for visual line mode x,y
+	org.repeat = 0 //number of times to repeat commands like x,s,yy ? also used for visual line mode x,y
 
 	org.view = TASK
 	org.taskview = BY_FOLDER

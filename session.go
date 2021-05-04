@@ -28,6 +28,7 @@ type Session struct {
 	cfg              Config
 	style            [7]string
 	styleIndex       int
+	ws               unix.Winsize //Row,Col,Xpixel,Ypixel unint16
 	//images           map[string]*image.Image
 }
 
@@ -172,19 +173,16 @@ func (s *Session) drawEditors() {
 	fmt.Fprint(os.Stdout, ab.String())
 }
 
-//not in use at moment - using rawmode.GetWindowSize
 func (s *Session) GetWindowSize() error {
 
-	ws, err := unix.IoctlGetWinsize(unix.Stdout, unix.TIOCGWINSZ)
+	ws, err := rawmode.GetWindowSize()
 	if err != nil {
-		return fmt.Errorf("error in getWindowSize: %w", err)
-	}
-	if ws.Row == 0 || ws.Col == 0 {
-		return fmt.Errorf("Got a zero size column or row")
+		return err
 	}
 
 	s.screenCols = int(ws.Col)
 	s.screenLines = int(ws.Row)
+	s.ws = *ws
 
 	return nil
 }
@@ -477,8 +475,9 @@ func (s *Session) quitApp() {
 
 func (s *Session) signalHandler() {
 	//s.GetWindowSize()
-	var err error
-	s.screenLines, s.screenCols, err = rawmode.GetWindowSize()
+	//var err error
+	//s.screenLines, s.screenCols, err = rawmode.GetWindowSize()
+	err := s.GetWindowSize()
 	if err != nil {
 		//SafeExit(fmt.Errorf("couldn't get window size: %v", err))
 		os.Exit(1)

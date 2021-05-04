@@ -209,7 +209,8 @@ func (o *Organizer) drawNoteReadOnly() {
 					continue
 				}
 			}
-			height := img.Bounds().Max.Y / 30
+			//height := img.Bounds().Max.Y / 30
+			height := img.Bounds().Max.Y / (int(sess.ws.Ypixel) / sess.screenLines)
 			y += height
 			if y > o.textLines-1 {
 				break
