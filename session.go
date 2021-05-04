@@ -19,7 +19,6 @@ type Session struct {
 	totaleditorcols  int
 	initialFileRow   int
 	temporaryTID     int
-	lmBrowser        bool
 	run              bool
 	editorMode       bool
 	preview          bool
@@ -29,6 +28,7 @@ type Session struct {
 	cfg              Config
 	style            [7]string
 	styleIndex       int
+	//images           map[string]*image.Image
 }
 
 type Config struct {

@@ -53,7 +53,8 @@ var cmd_lookup = map[string]func(*Organizer, int){
 	"copy":           (*Organizer).copyEntry,
 	"savelog":        (*Organizer).savelog,
 	"save":           (*Organizer).save,
-	"preview":        (*Organizer).preview,
+	"image":          (*Organizer).setImage,
+	"images":         (*Organizer).setImage,
 	//"showmarkdown":   (*Organizer).showMarkdown,
 	//"showm":          (*Organizer).showMarkdown,
 	/*
@@ -715,7 +716,7 @@ func (o *Organizer) save(pos int) {
 	sess.showOrgMessage("Note written to file %s", filename)
 }
 
-func (o *Organizer) preview(pos int) {
+func (o *Organizer) setImage(pos int) {
 	if pos == 0 {
 		sess.showOrgMessage("You need to provide an option ('on' or 'off')")
 		return
@@ -728,4 +729,7 @@ func (o *Organizer) preview(pos int) {
 	} else {
 		sess.showOrgMessage("Your choice of options is 'on' or 'off'")
 	}
+	o.mode = o.last_mode
+	o.drawPreview()
+	o.command_line = ""
 }

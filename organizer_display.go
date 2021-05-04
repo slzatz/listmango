@@ -225,6 +225,27 @@ func (o *Organizer) drawNoteReadOnly() {
 	}
 }
 
+func (o *Organizer) drawCodePreview() {
+
+	fmt.Print("\x1b_Ga=d\x1b\\") //delete any images
+	if len(o.note) == 0 {
+		return
+	}
+	fmt.Fprintf(os.Stdout, "\x1b[%d;%dH", TOP_MARGIN+1, o.divider+1) // was +2
+	lf_ret := fmt.Sprintf("\r\n\x1b[%dC", o.divider+0)               // was + 1
+
+	fr := o.altRowoff - 1
+	y := 0
+	for {
+		fr++
+		if fr > len(o.note)-1 || y > o.textLines-1 {
+			break
+		}
+		fmt.Fprintf(os.Stdout, "%s%s", o.note[fr], lf_ret)
+		y++
+	}
+}
+
 func (o *Organizer) drawStatusBar() {
 
 	var ab strings.Builder
@@ -386,7 +407,7 @@ func (o *Organizer) drawSearchRows() {
 }
 
 func (o *Organizer) drawPreview() {
-	if o.mode == NO_ROWS || !sess.preview {
+	if o.mode == NO_ROWS {
 		sess.eraseRightScreen()
 		return
 	}
@@ -434,5 +455,10 @@ func (o *Organizer) drawPreview() {
 	}
 	// I think the note should be split here
 	o.note = strings.Split(note, "\n")
-	o.drawNoteReadOnly()
+	//if code {
+	if sess.preview {
+		o.drawNoteReadOnly()
+	} else {
+		o.drawCodePreview()
+	}
 }
