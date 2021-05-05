@@ -6,8 +6,9 @@ import (
 	"os"
 	"strings"
 
-	"github.com/charmbracelet/glamour"
 	"image"
+
+	"github.com/charmbracelet/glamour"
 )
 
 // should probably be named drawOrgRows
@@ -199,17 +200,24 @@ func (o *Organizer) drawNoteReadOnly() {
 			if strings.Contains(path, "http") {
 				img, _, err = loadWebImage(path)
 				if err != nil {
-					sess.showOrgMessage("Error loading Web image: %v", err)
+					// you might want to also print the error to the screen
+					fmt.Fprintf(os.Stdout, "%sError:%s %s%s", BOLD, RESET, o.note[fr], lf_ret)
+					y++
 					continue
 				}
 			} else {
-				img, _, err = loadImage(path)
+				maxWidth := o.totaleditorcols * int(sess.ws.Xpixel) / sess.screenCols
+				img, _, err = loadImage(path, maxWidth-5)
 				if err != nil {
-					sess.showOrgMessage("Error loading file image: %v", err)
+					// you might want to also print the error to the screen
+					fmt.Fprintf(os.Stdout, "%sError:%s %s%s", BOLD, RESET, o.note[fr], lf_ret)
+					//sess.showOrgMessage("Error loading file image with path %q: %v", path, err)
+					y++
+					// only needed if you move cursor with sess.showOrgMessage(...)
+					//fmt.Fprintf(os.Stdout, "\x1b[%d;%dH", TOP_MARGIN+1+y, o.divider+1)
 					continue
 				}
 			}
-			//height := img.Bounds().Max.Y / 30
 			height := img.Bounds().Max.Y / (int(sess.ws.Ypixel) / sess.screenLines)
 			y += height
 			if y > o.textLines-1 {

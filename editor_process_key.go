@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"strings"
+
 	//"sync/atomic"
 
 	"github.com/neovim/go-client/nvim"
@@ -59,7 +60,11 @@ func editorProcessKey(c int) bool { //bool returned is whether to redraw
 		p.command_line = ""
 
 		if p.mode == PREVIEW_MARKDOWN {
+			// don't need to check WindowCursor - no change in pos
 			fmt.Print("\x1b_Ga=d\x1b\\") //delete any images
+			sess.showEdMessage("")
+			p.mode = NORMAL
+			return true
 		}
 
 		p.mode = NORMAL

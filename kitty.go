@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"image"
+
 	//	_ "image/jpg"
 	"image/png"
 	"io"
@@ -81,8 +82,8 @@ func KittyCopyPNGInline(out io.Writer, in io.Reader, nLen int64) (E error) {
 	return
 }
 
-func displayImage(path string) image.Rectangle {
-	img, _, err := loadImage(path)
+func displayImage___(path string) image.Rectangle {
+	img, _, err := loadImage(path, 500)
 	/*
 		if img.Bounds().Max.Y > 600 {
 			img = imaging.Resize(iImg, 0, 600, imaging.Lanczos)

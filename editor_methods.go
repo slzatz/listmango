@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
+	"image"
 	"os"
 	"strings"
 )
@@ -812,7 +813,8 @@ func (e *Editor) generateWWStringFromBuffer2() string {
 	var ab strings.Builder
 	y := 0
 	filerow := 0
-	width := e.screencols - e.left_margin_offset
+	//width := e.screencols - e.left_margin_offset
+	width := e.screencols //05042021
 
 	for {
 		if filerow == numRows {
@@ -1113,19 +1115,15 @@ func (e *Editor) drawPreview() {
 	fmt.Print("\x1b_Ga=d\x1b\\") //delete any images
 
 	rows := strings.Split(e.renderedNote, "\n")
-	var ab strings.Builder
-	fmt.Fprintf(&ab, "\x1b[?25l\x1b[%d;%dH", e.top_margin, e.left_margin+1)
+	fmt.Fprintf(os.Stdout, "\x1b[?25l\x1b[%d;%dH", e.top_margin, e.left_margin+1)
 	lf_ret := fmt.Sprintf("\r\n\x1b[%dC", e.left_margin)
 	erase_chars := fmt.Sprintf("\x1b[%dX", e.screencols)
 	for i := 0; i < e.screenlines; i++ {
-		ab.WriteString(erase_chars)
-		ab.WriteString(lf_ret)
+		fmt.Fprintf(os.Stdout, "%s%s", erase_chars, lf_ret)
 	}
 
-	fmt.Fprintf(&ab, "\x1b[%d;%dH", e.top_margin, e.left_margin+1)
-	fmt.Print(ab.String())
+	fmt.Fprintf(os.Stdout, "\x1b[%d;%dH", e.top_margin, e.left_margin+1)
 
-	//for y := 0; y < e.screenlines; y++ {
 	fr := e.previewLineOffset - 1
 	y := 0
 	for {
@@ -1135,12 +1133,31 @@ func (e *Editor) drawPreview() {
 		}
 		if strings.Contains(rows[fr], "Image") {
 			path := getStringInBetween(rows[fr], "|", "|")
-			img, _, err := loadImage(path)
-			if err != nil {
-				sess.showOrgMessage("Error loading image: %v", err)
-				continue
+			var img image.Image
+			var err error
+			if strings.Contains(path, "http") {
+				img, _, err = loadWebImage(path)
+				if err != nil {
+					// you might want to also print the error to the screen
+					fmt.Fprintf(os.Stdout, "%sError:%s %s%s", BOLD, RESET, rows[fr], lf_ret)
+					y++
+					continue
+				}
+			} else {
+				//img, _, err = loadImage(path, e.screencols-5)
+				maxWidth := e.screencols * int(sess.ws.Xpixel) / sess.screenCols
+				img, _, err = loadImage(path, maxWidth-5)
+				if err != nil {
+					// you might want to also print the error to the screen
+					fmt.Fprintf(os.Stdout, "%sError:%s %s%s", BOLD, RESET, rows[fr], lf_ret)
+					//sess.showOrgMessage("Error loading file image with path %q: %v", path, err)
+					y++
+					// only needed if you move cursor with sess.showOrgMessage(...)
+					//fmt.Fprintf(os.Stdout, "\x1b[%d;%dH", TOP_MARGIN+1+y, o.divider+1)
+					continue
+				}
 			}
-			height := img.Bounds().Max.Y / 30
+			height := img.Bounds().Max.Y / (int(sess.ws.Ypixel) / sess.screenLines)
 			y += height
 			if y > e.screenlines-1 {
 				break
