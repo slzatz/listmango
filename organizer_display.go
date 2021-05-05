@@ -207,7 +207,8 @@ func (o *Organizer) drawNoteReadOnly() {
 				}
 			} else {
 				maxWidth := o.totaleditorcols * int(sess.ws.Xpixel) / sess.screenCols
-				img, _, err = loadImage(path, maxWidth-5)
+				maxHeight := int(sess.ws.Ypixel)
+				img, _, err = loadImage(path, maxWidth-5, maxHeight-300)
 				if err != nil {
 					// you might want to also print the error to the screen
 					fmt.Fprintf(os.Stdout, "%sError:%s %s%s", BOLD, RESET, o.note[fr], lf_ret)

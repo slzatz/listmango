@@ -25,7 +25,7 @@ var (
 	E_TIMED_OUT       = errors.New("TERM RESPONSE TIMED OUT")
 )
 
-func loadImage(path string, maxWidth int) (img image.Image, imgFmt string, err error) {
+func loadImage(path string, maxWidth, maxHeight int) (img image.Image, imgFmt string, err error) {
 
 	f, err := os.Open(path)
 	if err != nil {
@@ -34,10 +34,9 @@ func loadImage(path string, maxWidth int) (img image.Image, imgFmt string, err e
 	defer f.Close()
 
 	img, imgFmt, err = image.Decode(f)
-	//if img.Bounds().Max.Y > sess.imgSizeY {
-	if img.Bounds().Max.Y > maxWidth {
-		//img = imaging.Resize(img, 0, sess.imgSizeY, imaging.Lanczos)
-		img = imaging.Resize(img, maxWidth, 0, imaging.Lanczos)
+	if img.Bounds().Max.X > maxWidth || img.Bounds().Max.Y > maxHeight {
+		//img = imaging.Resize(img, maxWidth, 0, imaging.Lanczos)
+		img = imaging.Fit(img, maxWidth, maxHeight, imaging.Lanczos)
 	}
 	return
 }

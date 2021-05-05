@@ -1146,7 +1146,8 @@ func (e *Editor) drawPreview() {
 			} else {
 				//img, _, err = loadImage(path, e.screencols-5)
 				maxWidth := e.screencols * int(sess.ws.Xpixel) / sess.screenCols
-				img, _, err = loadImage(path, maxWidth-5)
+				maxHeight := e.screenlines * int(sess.ws.Ypixel) / sess.screenLines
+				img, _, err = loadImage(path, maxWidth-5, maxHeight-150)
 				if err != nil {
 					// you might want to also print the error to the screen
 					fmt.Fprintf(os.Stdout, "%sError:%s %s%s", BOLD, RESET, rows[fr], lf_ret)
