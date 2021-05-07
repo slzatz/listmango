@@ -28,7 +28,7 @@ func IsTermKitty() bool {
 Encode image using the Kitty terminal graphics protocol:
 https://sw.kovidgoyal.net/kitty/graphics-protocol.html
 */
-func KittyWriteImage(out io.Writer, iImg image.Image) error {
+func KittyWriteImage__(out io.Writer, iImg image.Image) error {
 
 	pBuf := new(bytes.Buffer)
 	if err := png.Encode(pBuf, iImg); err != nil {
@@ -57,7 +57,6 @@ func KittyCopyPNGInline(out io.Writer, in io.Reader, nLen int64) (E error) {
 	// SEND IN 4K CHUNKS
 	oWC := NewWriteChunker(out, 4096)
 	defer oWC.Flush()
-	//fmt.Printf("\x1b[%d;%dH", 10, 65) //y, x
 	bsHdr := []byte(fmt.Sprintf("a=T,f=100,z=-1,S=%d,", nLen))
 	//bsHdr := []byte(fmt.Sprintf("a=T,f=100,z=-1,w=300,h=200,x=300,y=200,S=%d,", nLen))
 	oWC.CustomWriFunc = func(iWri io.Writer, bsDat []byte) (int, error) {
@@ -82,13 +81,19 @@ func KittyCopyPNGInline(out io.Writer, in io.Reader, nLen int64) (E error) {
 	return
 }
 
-func displayImage2(img image.Image) {
+func displayImage(img image.Image) {
 
-	err := KittyWriteImage(os.Stdout, img)
+	buf := new(bytes.Buffer)
+	err := png.Encode(buf, img)
 	if err != nil {
-		sess.showOrgMessage("Error writing image: %v", err)
+		sess.showOrgMessage("Error encoding image: %v", err)
+		return
 	}
-	sess.showOrgMessage("bounds = %v", img.Bounds())
+
+	err = KittyCopyPNGInline(os.Stdout, buf, int64(buf.Len()))
+	if err != nil {
+		sess.showOrgMessage("Error in KittyCopyPNG...: %v", err)
+	}
 }
 
 /*
@@ -112,6 +117,5 @@ func displayImage3(img image.Image, format string) {
 			sess.showOrgMessage("Error writing image: %v", err)
 		}
 	}
-
 }
 */

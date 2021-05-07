@@ -54,6 +54,7 @@ func loadImage(path string, maxWidth, maxHeight int) (img image.Image, imgFmt st
 		//img = imaging.Resize(img, maxWidth, 0, imaging.Lanczos)
 		img = imaging.Fit(img, maxWidth, maxHeight, imaging.Lanczos)
 	}
+	//sess.showOrgMessage("bounds = %v", img.Bounds())
 	return
 }
 

@@ -1163,7 +1163,7 @@ func (e *Editor) drawPreview() {
 			if y > e.screenlines-1 {
 				break
 			}
-			displayImage2(img)
+			displayImage(img)
 
 			// appears necessary to reposition cursor after image draw
 			fmt.Fprintf(os.Stdout, "\x1b[%d;%dH", e.top_margin+y, e.left_margin+1)

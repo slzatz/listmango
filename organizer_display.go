@@ -197,9 +197,10 @@ func (o *Organizer) drawNoteReadOnly() {
 			path := getStringInBetween(o.note[fr], "|", "|")
 			var img image.Image
 			var err error
-			var format string
+			//var format string
 			if strings.Contains(path, "http") {
-				img, format, err = loadWebImage(path)
+				//img, format, err = loadWebImage(path)
+				img, _, err = loadWebImage(path)
 				if err != nil {
 					// you might want to also print the error to the screen
 					fmt.Fprintf(os.Stdout, "%sError:%s %s%s", BOLD, RESET, o.note[fr], lf_ret)
@@ -207,27 +208,13 @@ func (o *Organizer) drawNoteReadOnly() {
 					continue
 				}
 			} else {
-				/*
-					if filepath.Ext(strings.TrimSpace(path)) == ".png" {
-						err = readPNGIntoBuffer(path)
-						if err != nil {
-							fmt.Fprintf(os.Stdout, "%sPNG Error:%s %s%s", BOLD, RESET, o.note[fr], lf_ret)
-						}
-						y++
-						continue
-					}
-				*/
 				maxWidth := o.totaleditorcols * int(sess.ws.Xpixel) / sess.screenCols
 				maxHeight := int(sess.ws.Ypixel)
-				//img, _, err = loadImage(path, maxWidth-5, maxHeight-300)
-				img, format, err = loadImage(path, maxWidth-5, maxHeight-300)
+				img, _, err = loadImage(path, maxWidth-5, maxHeight-300)
 				if err != nil {
 					// you might want to also print the error to the screen
 					fmt.Fprintf(os.Stdout, "%sError:%s %s%s", BOLD, RESET, o.note[fr], lf_ret)
-					//sess.showOrgMessage("Error loading file image with path %q: %v", path, err)
 					y++
-					// only needed if you move cursor with sess.showOrgMessage(...)
-					//fmt.Fprintf(os.Stdout, "\x1b[%d;%dH", TOP_MARGIN+1+y, o.divider+1)
 					continue
 				}
 			}
@@ -236,12 +223,11 @@ func (o *Organizer) drawNoteReadOnly() {
 			if y > o.textLines-1 {
 				break
 			}
-			//displayImage3(img, format)
-			displayImage2(img)
+			displayImage(img)
 
 			// appears necessary to reposition cursor after image draw
 			fmt.Fprintf(os.Stdout, "\x1b[%d;%dH", TOP_MARGIN+1+y, o.divider+1)
-			fmt.Fprintf(os.Stdout, "The format is %s%s", format, lf_ret)
+			//fmt.Fprintf(os.Stdout, "The format is %s%s", format, lf_ret)
 		} else {
 			fmt.Fprintf(os.Stdout, "%s%s", o.note[fr], lf_ret)
 			y++
