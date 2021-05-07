@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	//	"time"
 
 	"image"
 
@@ -194,6 +195,7 @@ func (o *Organizer) drawNoteReadOnly() {
 			break
 		}
 		if strings.Contains(o.note[fr], "Image") {
+			fmt.Fprintf(os.Stdout, "Loading Image ... \x1b[%dG", o.divider+1)
 			path := getStringInBetween(o.note[fr], "|", "|")
 			var img image.Image
 			var err error
@@ -221,8 +223,27 @@ func (o *Organizer) drawNoteReadOnly() {
 			height := img.Bounds().Max.Y / (int(sess.ws.Ypixel) / sess.screenLines)
 			y += height
 			if y > o.textLines-1 {
-				break
+				fmt.Fprintf(os.Stdout, "\x1b[3m\x1b[4mImage %s doesn't fit!\x1b[0m \x1b[%dG", path, o.divider+1)
+				y = y - height + 1
+				fmt.Fprintf(os.Stdout, "\x1b[%d;%dH", TOP_MARGIN+1+y, o.divider+1)
+				continue
 			}
+			/*
+				ch := make(chan int)
+				go func() {
+					var s string
+					for i := 0; i < 4; i++ {
+						//for {
+						_, ok := <-ch
+						if !ok {
+							return
+						}
+						s += "..."
+						fmt.Fprintf(os.Stdout, "Loading %s\x1b[%dG", s, o.divider+1)
+						time.Sleep(100 * time.Millisecond)
+					}
+				}()
+			*/
 			displayImage(img)
 
 			// appears necessary to reposition cursor after image draw
