@@ -90,3 +90,28 @@ func displayImage2(img image.Image) {
 	}
 	sess.showOrgMessage("bounds = %v", img.Bounds())
 }
+
+/*
+func displayImage3(img image.Image, format string) {
+
+	if format == "jpg" {
+		pBuf := new(bytes.Buffer)
+		err := png.Encode(pBuf, img)
+		if err != nil {
+			sess.showOrgMessage("Error encoding image: %v", err)
+			return
+		}
+
+		err := KittyCopyPNGInline(os.Stdout, pBuf, int64(pBuf.Len()))
+		if err != nil {
+			sess.showOrgMessage("Error writing image: %v", err)
+		}
+	} else {
+		err := KittyCopyPNGInline(os.Stdout, img, len(img))
+		if err != nil {
+			sess.showOrgMessage("Error writing image: %v", err)
+		}
+	}
+
+}
+*/

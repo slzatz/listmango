@@ -1,7 +1,9 @@
 package main
 
 import (
+	"bufio"
 	"errors"
+	"fmt"
 	"image"
 	_ "image/jpeg"
 	_ "image/png"
@@ -24,6 +26,20 @@ var (
 	E_NON_TTY         = errors.New("NON TTY")
 	E_TIMED_OUT       = errors.New("TERM RESPONSE TIMED OUT")
 )
+
+// diplayPNGFromFile
+func readPNGIntoBuffer(path string) (err error) {
+	f, err := os.Open(path)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	defer f.Close()
+
+	reader := bufio.NewReader(f)
+
+	return KittyCopyPNGInline(os.Stdout, reader, int64(reader.Size()))
+}
 
 func loadImage(path string, maxWidth, maxHeight int) (img image.Image, imgFmt string, err error) {
 
