@@ -124,7 +124,6 @@ func synchronize(reportOnly bool) (log string) {
 	}
 
 	nn := 0 //number of changes
-	//defer writeLog(&lg, &nn, reportOnly)
 
 	row := db.QueryRow("SELECT timestamp FROM sync WHERE machine=$1;", "client")
 	var raw_client_t string
@@ -174,9 +173,9 @@ func synchronize(reportOnly bool) (log string) {
 	}
 	if len(server_updated_contexts) > 0 {
 		nn += len(server_updated_contexts)
-		fmt.Fprintf(&lg, "Updated (new and modified) server Contexts since last sync: %d\n", len(server_updated_contexts))
+		fmt.Fprintf(&lg, "- Updated (new and modified) server `Contexts` since last sync: **%d**\n", len(server_updated_contexts))
 	} else {
-		lg.WriteString("No updated (new and modified) server Contexts the last sync.\n")
+		lg.WriteString("- No updated (new and modified) server `Contexts` the last sync.\n")
 	}
 
 	//server deleted contexts
@@ -200,9 +199,9 @@ func synchronize(reportOnly bool) (log string) {
 	}
 	if len(server_deleted_contexts) > 0 {
 		nn += len(server_deleted_contexts)
-		fmt.Fprintf(&lg, "Deleted server Contexts since last sync: %d\n", len(server_deleted_contexts))
+		fmt.Fprintf(&lg, "- Deleted server `Contexts` since last sync: %d\n", len(server_deleted_contexts))
 	} else {
-		lg.WriteString("No server Contexts deleted since last sync.\n")
+		lg.WriteString("- No server `Contexts` deleted since last sync.\n")
 	}
 
 	//server updated folders
@@ -228,9 +227,9 @@ func synchronize(reportOnly bool) (log string) {
 	}
 	if len(server_updated_folders) > 0 {
 		nn += len(server_updated_contexts)
-		fmt.Fprintf(&lg, "Updated (new and modified) server Folders since last sync: %d\n", len(server_updated_folders))
+		fmt.Fprintf(&lg, "- Updated (new and modified) server `Folders` since last sync: %d\n", len(server_updated_folders))
 	} else {
-		lg.WriteString("No updated (new and modified) server Folders the last sync.\n")
+		lg.WriteString("- No updated (new and modified) server `Folders` the last sync.\n")
 	}
 
 	//server deleted folders
@@ -254,9 +253,9 @@ func synchronize(reportOnly bool) (log string) {
 	}
 	if len(server_deleted_folders) > 0 {
 		nn += len(server_deleted_folders)
-		fmt.Fprintf(&lg, "Deleted server Folders since last sync: %d\n", len(server_updated_folders))
+		fmt.Fprintf(&lg, "- Deleted server `Folders` since last sync: %d\n", len(server_updated_folders))
 	} else {
-		lg.WriteString("No server Folders deleted since last sync.\n")
+		lg.WriteString("- No server `Folders` deleted since last sync.\n")
 	}
 
 	//server updated keywords
@@ -281,9 +280,9 @@ func synchronize(reportOnly bool) (log string) {
 	}
 	if len(server_updated_keywords) > 0 {
 		nn += len(server_updated_contexts)
-		fmt.Fprintf(&lg, "Updated (new and modified) server Keywords since last sync: %d\n", len(server_updated_keywords))
+		fmt.Fprintf(&lg, "- Updated (new and modified) server `Keywords` since last sync: %d\n", len(server_updated_keywords))
 	} else {
-		lg.WriteString("No updated (new and modified) server Keywords the last sync.\n")
+		lg.WriteString("- No updated (new and modified) server `Keywords` the last sync.\n")
 	}
 
 	//server deleted keywords
@@ -306,9 +305,9 @@ func synchronize(reportOnly bool) (log string) {
 	}
 	if len(server_deleted_keywords) > 0 {
 		nn += len(server_deleted_keywords)
-		fmt.Fprintf(&lg, "Deleted server Keywords since last sync: %d\n", len(server_updated_keywords))
+		fmt.Fprintf(&lg, "- Deleted server `Keywords` since last sync: %d\n", len(server_updated_keywords))
 	} else {
-		lg.WriteString("No server Keywords deleted since last sync.\n")
+		lg.WriteString("- No server `Keywords` deleted since last sync.\n")
 	}
 	//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	//server updated entries
@@ -337,17 +336,15 @@ func synchronize(reportOnly bool) (log string) {
 	}
 	if len(server_updated_entries) > 0 {
 		nn += len(server_updated_entries)
-		fmt.Fprintf(&lg, "Updated (new and modified) server Entries since last sync: %d\n", len(server_updated_entries))
+		fmt.Fprintf(&lg, "- Updated (new and modified) server `Entries` since last sync: %d\n", len(server_updated_entries))
 	} else {
-		lg.WriteString("No updated (new and modified) server Entries since last sync.\n")
+		lg.WriteString("- No updated (new and modified) server `Entries` since last sync.\n")
 	}
-	//sess.showEdMessage("Number of changes that server needs to transmit to client: %v", len(server_updated_entries))
 	for _, e := range server_updated_entries {
 		fmt.Fprintf(&lg, "id: %d %q; star: %t; modified: %v\n", e.id, truncate(e.title, 15), e.star, tc(e.modified, 19, false))
 	}
 
 	//server deleted entries
-	//rows, err = pdb.Query("SELECT id,title,star,created,modified FROM task WHERE task.modified > $1 AND task.deleted = $2;", server_t, true)
 	rows, err = pdb.Query("SELECT id, title FROM task WHERE modified > $1 AND deleted = $2;", server_t, true)
 	if err != nil {
 		fmt.Fprintf(&lg, "Error in SELECT for server_deleted_entries: %v", err)
@@ -360,17 +357,14 @@ func synchronize(reportOnly bool) (log string) {
 		rows.Scan(
 			&e.id,
 			&e.title,
-			//&e.star,
-			//&e.created,
-			//&e.modified,
 		)
 		server_deleted_entries = append(server_deleted_entries, e)
 	}
 	if len(server_deleted_entries) > 0 {
 		nn += len(server_deleted_entries)
-		fmt.Fprintf(&lg, "Deleted server Entries since last sync: %d\n", len(server_deleted_entries))
+		fmt.Fprintf(&lg, "- Deleted server `Entries` since last sync: %d\n", len(server_deleted_entries))
 	} else {
-		lg.WriteString("No server Entries deleted since last sync.\n")
+		lg.WriteString("- No server `Entries` deleted since last sync.\n")
 	}
 
 	//Client changes
@@ -399,13 +393,12 @@ func synchronize(reportOnly bool) (log string) {
 	}
 	if len(client_updated_contexts) > 0 {
 		nn += len(client_updated_contexts)
-		fmt.Fprintf(&lg, "Updated (new and modified) client Contexts since last sync: %d\n", len(client_updated_contexts))
+		fmt.Fprintf(&lg, "- Updated (new and modified) client `Contexts` since last sync: %d\n", len(client_updated_contexts))
 	} else {
-		lg.WriteString("No updated (new and modified) client Contexts the last sync.\n")
+		lg.WriteString("- No updated (new and modified) client `Contexts` the last sync.\n")
 	}
 
 	//client deleted contexts
-	//rows, err = db.Query("SELECT id, title, \"default\", created, modified FROM context WHERE context.modified > $1 AND context.deleted = $2;", client_t, true)
 	rows, err = db.Query("SELECT id, tid, title FROM context WHERE substr(context.modified, 1, 19) > $1 AND context.deleted = $2;", client_t, true)
 	if err != nil {
 		fmt.Fprintf(&lg, "Error in SELECT for client_deleted_contexts: %v", err)
@@ -419,17 +412,14 @@ func synchronize(reportOnly bool) (log string) {
 			&c.id,
 			&c.tid,
 			&c.title,
-			//&c.star,
-			//&c.created,
-			//&c.modified,
 		)
 		client_deleted_contexts = append(client_deleted_contexts, c)
 	}
 	if len(client_deleted_contexts) > 0 {
 		nn += len(client_deleted_contexts)
-		fmt.Fprintf(&lg, "Deleted client Contexts since last sync: %d\n", len(client_deleted_contexts))
+		fmt.Fprintf(&lg, "- Deleted client `Contexts` since last sync: %d\n", len(client_deleted_contexts))
 	} else {
-		lg.WriteString("No client Contexts deleted since last sync.\n")
+		lg.WriteString("- No client `Contexts` deleted since last sync.\n")
 	}
 
 	//client updated folders
@@ -456,9 +446,9 @@ func synchronize(reportOnly bool) (log string) {
 	}
 	if len(client_updated_folders) > 0 {
 		nn += len(client_updated_folders)
-		fmt.Fprintf(&lg, "Updated (new and modified) client Folders since last sync: %d\n", len(client_updated_folders))
+		fmt.Fprintf(&lg, "- Updated (new and modified) client `Folders` since last sync: %d\n", len(client_updated_folders))
 	} else {
-		lg.WriteString("No updated (new and modified) client Folders the last sync.\n")
+		lg.WriteString("- No updated (new and modified) client `Folders` the last sync.\n")
 	}
 
 	//client deleted folders
@@ -475,17 +465,14 @@ func synchronize(reportOnly bool) (log string) {
 			&c.id,
 			&c.tid,
 			&c.title,
-			//&c.star,
-			//&c.created,
-			//&c.modified,
 		)
 		client_deleted_folders = append(client_deleted_folders, c)
 	}
 	if len(client_deleted_folders) > 0 {
 		nn += len(client_deleted_folders)
-		fmt.Fprintf(&lg, "Deleted client Folders since last sync: %d\n", len(client_updated_folders))
+		fmt.Fprintf(&lg, "- Deleted client `Folders` since last sync: %d\n", len(client_updated_folders))
 	} else {
-		lg.WriteString("No client Folders deleted since last sync.\n")
+		lg.WriteString("- No client `Folders` deleted since last sync.\n")
 	}
 
 	//client updated keywords
@@ -511,13 +498,12 @@ func synchronize(reportOnly bool) (log string) {
 	}
 	if len(client_updated_keywords) > 0 {
 		nn += len(client_updated_keywords)
-		fmt.Fprintf(&lg, "Updated (new and modified) client Keywords since last sync: %d\n", len(client_updated_keywords))
+		fmt.Fprintf(&lg, "- Updated (new and modified) client `Keywords` since last sync: %d\n", len(client_updated_keywords))
 	} else {
-		lg.WriteString("No updated (new and modified) client Keywords the last sync.\n")
+		lg.WriteString("- No updated (new and modified) client `Keywords` the last sync.\n")
 	}
 
 	//client deleted keywords
-	//rows, err = db.Query("SELECT id, tid, name, star, modified FROM keyword WHERE keyword.modified > $1 AND keyword.deleted = $2;", client_t, true)
 	rows, err = db.Query("SELECT id, tid, name FROM keyword WHERE substr(keyword.modified, 1, 19) > $1 AND keyword.deleted = $2;", client_t, true)
 	if err != nil {
 		fmt.Fprintf(&lg, "Error in SELECT for client_deleted_keywords: %v", err)
@@ -531,16 +517,14 @@ func synchronize(reportOnly bool) (log string) {
 			&c.id,
 			&c.tid,
 			&c.title,
-			//&c.star,
-			//&c.modified,
 		)
 		client_deleted_keywords = append(client_deleted_keywords, c)
 	}
 	if len(client_deleted_keywords) > 0 {
 		nn += len(client_deleted_keywords)
-		fmt.Fprintf(&lg, "Deleted client Keywords since last sync: %d\n", len(client_deleted_keywords))
+		fmt.Fprintf(&lg, "- Deleted client `Keywords` since last sync: %d\n", len(client_deleted_keywords))
 	} else {
-		lg.WriteString("No client Keywords deleted since last sync.\n")
+		lg.WriteString("- No client `Keywords` deleted since last sync.\n")
 	}
 
 	//client updated entries
@@ -578,16 +562,16 @@ func synchronize(reportOnly bool) (log string) {
 	}
 	if len(client_updated_entries) > 0 {
 		nn += len(client_updated_entries)
-		fmt.Fprintf(&lg, "Updated (new and modified) client Entries since last sync: %d\n", len(client_updated_entries))
+		fmt.Fprintf(&lg, "- Updated (new and modified) client `Entries` since last sync: %d\n", len(client_updated_entries))
 	} else {
-		lg.WriteString("No updated (new and modified) client Entries since last sync.\n")
+		lg.WriteString("- No updated (new and modified) client `Entries` since last sync.\n")
 	}
 	for _, e := range client_updated_entries {
 		fmt.Fprintf(&lg, "id: %d; tid: %d %q; star: %t; modified: %v\n", e.id, e.tid, tc(e.title, 15, true), e.star, tc(e.modified, 19, false))
 	}
 
 	//client deleted entries
-	rows, err = db.Query("SELECT id, tid, title FROM task WHERE substr(modified, 1, 19) > $1 AND deleted = $2;", client_t, true) //not sure need task.modified??
+	rows, err = db.Query("SELECT id, tid, title FROM task WHERE substr(modified, 1, 19) > $1 AND deleted = $2;", client_t, true)
 	if err != nil {
 		fmt.Fprintf(&lg, "Error with retrieving client deleted entries: %v", err)
 		return
@@ -610,16 +594,14 @@ func synchronize(reportOnly bool) (log string) {
 	}
 	if len(client_deleted_entries) > 0 {
 		nn += len(client_deleted_entries)
-		fmt.Fprintf(&lg, "Deleted client Entries since last sync: %d\n", len(client_deleted_entries))
+		fmt.Fprintf(&lg, "- Deleted client `Entries` since last sync: %d\n", len(client_deleted_entries))
 	} else {
-		lg.WriteString("No client Entries deleted since last sync.\n")
+		lg.WriteString("- No client `Entries` deleted since last sync.\n")
 	}
 
-	fmt.Fprintf(&lg, "Number of changes (before accounting for server/client conflicts) is: %d\n\n", nn)
+	fmt.Fprintf(&lg, "Number of changes (before accounting for server/client conflicts) is: **%d**\n\n", nn)
 	if reportOnly {
-		//sess.drawPreviewText2(lg.String())
-		//sess.drawPreviewBox()
-		// note there is a defer writeLog
+		// note there is a defer log.String()
 		return
 	}
 
@@ -1024,14 +1006,14 @@ func synchronize(reportOnly bool) (log string) {
 			fmt.Fprintf(&lg, "Error trying to change server/postgres entry context to 'No Context' for a deleted context: %v\n", err)
 		} else {
 			rowsAffected, _ := res.RowsAffected()
-			fmt.Fprintf(&lg, "The number of server entries that were changed to 'No Context' (might be zero): %d\n", rowsAffected)
+			fmt.Fprintf(&lg, "The number of server entries that were changed to 'No Context' (might be zero): **%d**\n", rowsAffected)
 		}
 		res, err = db.Exec("Update task SET context_tid=1, modified=datetime('now') WHERE context_tid=?;", c.id)
 		if err != nil {
 			fmt.Fprintf(&lg, "Error trying to change client/sqlite entry contexts for a deleted context: %v\n", err)
 		} else {
 			rowsAffected, _ := res.RowsAffected()
-			fmt.Fprintf(&lg, "The number of client entries that were changed to 'No Context' (might be zero): %d\n", rowsAffected)
+			fmt.Fprintf(&lg, "The number of client entries that were changed to 'No Context' (might be zero): **%d**\n", rowsAffected)
 		}
 
 		_, err = db.Exec("DELETE FROM context WHERE tid=?", c.id)
@@ -1049,14 +1031,14 @@ func synchronize(reportOnly bool) (log string) {
 			fmt.Fprintf(&lg, "Error trying to change server/postgres entry contexts for a deleted context: %v\n", err)
 		} else {
 			rowsAffected, _ := res.RowsAffected()
-			fmt.Fprintf(&lg, "The number of server entries that were changed to No Context: %d\n", rowsAffected)
+			fmt.Fprintf(&lg, "The number of server entries that were changed to No Context: **%d**\n", rowsAffected)
 		}
 		res, err = db.Exec("Update task SET context_tid=1, modified=now() WHERE context_tid=?;", c.tid)
 		if err != nil {
 			fmt.Fprintf(&lg, "Error trying to change client/sqlite entry contexts for a deleted context: %v\n", err)
 		} else {
 			rowsAffected, _ := res.RowsAffected()
-			fmt.Fprintf(&lg, "The number of client entries that were changed to No Context: %d\n", rowsAffected)
+			fmt.Fprintf(&lg, "The number of client entries that were changed to No Context: **%d**\n", rowsAffected)
 		}
 		// since on server, we just set deleted to true
 		// since may have to sync with other clients
@@ -1082,14 +1064,14 @@ func synchronize(reportOnly bool) (log string) {
 			fmt.Fprintf(&lg, "Error trying to change server/postgres entry folder to 'No Folder' for a deleted folder: %v\n", err)
 		} else {
 			rowsAffected, _ := res.RowsAffected()
-			fmt.Fprintf(&lg, "The number of server entries that were changed to 'No Folder' (might be zero): %d\n", rowsAffected)
+			fmt.Fprintf(&lg, "The number of server entries that were changed to 'No Folder' (might be zero): **%d**\n", rowsAffected)
 		}
 		res, err = db.Exec("Update task SET folder_tid=1, modified=datetime('now') WHERE folder_tid=?;", c.id)
 		if err != nil {
 			fmt.Fprintf(&lg, "Error trying to change client/sqlite entry folders for a deleted folder: %v\n", err)
 		} else {
 			rowsAffected, _ := res.RowsAffected()
-			fmt.Fprintf(&lg, "The number of client entries that were changed to 'No Folder' (might be zero): %d\n", rowsAffected)
+			fmt.Fprintf(&lg, "The number of client entries that were changed to 'No Folder' (might be zero): **%d**\n", rowsAffected)
 		}
 
 		_, err = db.Exec("DELETE FROM folder WHERE tid=?", c.id)
@@ -1108,14 +1090,14 @@ func synchronize(reportOnly bool) (log string) {
 			continue
 		} else {
 			rowsAffected, _ := res.RowsAffected()
-			fmt.Fprintf(&lg, "The number of server entries that were changed to No Folder: %d\n", rowsAffected)
+			fmt.Fprintf(&lg, "The number of server entries that were changed to No Folder: **%d**\n", rowsAffected)
 		}
 		res, err = db.Exec("Update task SET folder_tid=1, modified=now() WHERE folder_tid=?;", c.tid)
 		if err != nil {
 			fmt.Fprintf(&lg, "Error trying to change client/sqlite entry folders for a deleted folder: %v\n", err)
 		} else {
 			rowsAffected, _ := res.RowsAffected()
-			fmt.Fprintf(&lg, "The number of client entries that were changed to No Folder: %d\n", rowsAffected)
+			fmt.Fprintf(&lg, "The number of client entries that were changed to No Folder: **%d**\n", rowsAffected)
 		}
 		// since on server, we just set deleted to true
 		// since may have to sync with other clients

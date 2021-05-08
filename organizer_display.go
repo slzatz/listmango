@@ -178,7 +178,7 @@ func (o *Organizer) drawAltRows() {
 }
 
 // for drawing preview and sync log (note)
-func (o *Organizer) drawNoteReadOnly() {
+func (o *Organizer) drawMarkdownPreview() {
 
 	fmt.Print("\x1b_Ga=d\x1b\\") //delete any images
 	if len(o.note) == 0 {
@@ -196,6 +196,7 @@ func (o *Organizer) drawNoteReadOnly() {
 		}
 		if strings.Contains(o.note[fr], "Image") {
 			fmt.Fprintf(os.Stdout, "Loading Image ... \x1b[%dG", o.divider+1)
+			prevY := y
 			path := getStringInBetween(o.note[fr], "|", "|")
 			var img image.Image
 			var err error
@@ -245,8 +246,8 @@ func (o *Organizer) drawNoteReadOnly() {
 				}()
 			*/
 			displayImage(img)
-
-			// appears necessary to reposition cursor after image draw
+			// erases "Loading image ..."
+			fmt.Fprintf(os.Stdout, "\x1b[%d;%dH\x1b[0K", TOP_MARGIN+1+prevY, o.divider+1)
 			fmt.Fprintf(os.Stdout, "\x1b[%d;%dH", TOP_MARGIN+1+y, o.divider+1)
 			//fmt.Fprintf(os.Stdout, "The format is %s%s", format, lf_ret)
 		} else {
@@ -472,8 +473,11 @@ func (o *Organizer) drawPreview() {
 			glamour.WithWordWrap(0),
 		)
 		note, _ = r.Render(note)
-		ix := strings.Index(note, "\n") //works for ix = -1
-		note = note[ix+1:]
+		// glamour seems to add a '\n' at the start
+		// probably better to use a string strip white space
+		if note[0] == '\n' {
+			note = note[1:]
+		}
 	}
 
 	if o.taskview == BY_FIND {
@@ -488,7 +492,7 @@ func (o *Organizer) drawPreview() {
 	o.note = strings.Split(note, "\n")
 	//if code {
 	if sess.preview {
-		o.drawNoteReadOnly()
+		o.drawMarkdownPreview()
 	} else {
 		o.drawCodePreview()
 	}

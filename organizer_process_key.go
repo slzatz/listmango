@@ -285,7 +285,7 @@ func organizerProcessKey(c int) {
 			note := readSyncLog(org.rows[org.fr].id)
 			note = generateWWString(note, org.totaleditorcols)
 			org.note = strings.Split(note, "\n")
-			org.drawNoteReadOnly()
+			org.drawMarkdownPreview()
 		case ARROW_DOWN, 'j':
 			if org.fr == len(org.rows)-1 {
 				return
@@ -296,7 +296,7 @@ func organizerProcessKey(c int) {
 			note := readSyncLog(org.rows[org.fr].id)
 			note = generateWWString(note, org.totaleditorcols)
 			org.note = strings.Split(note, "\n")
-			org.drawNoteReadOnly()
+			org.drawMarkdownPreview()
 		case ':':
 			sess.showOrgMessage(":")
 			org.command_line = ""
@@ -307,13 +307,13 @@ func organizerProcessKey(c int) {
 		case PAGE_DOWN:
 			org.altRowoff++
 			sess.eraseRightScreen()
-			org.drawNoteReadOnly()
+			org.drawMarkdownPreview()
 		case PAGE_UP:
 			if org.altRowoff > 0 {
 				org.altRowoff--
 			}
 			sess.eraseRightScreen()
-			org.drawNoteReadOnly()
+			org.drawMarkdownPreview()
 		case ctrlKey('d'):
 			if len(org.marked_entries) == 0 {
 				deleteSyncItem(org.rows[org.fr].id)
@@ -340,13 +340,13 @@ func organizerProcessKey(c int) {
 		case PAGE_DOWN, ARROW_DOWN, 'j':
 			org.altRowoff++
 			sess.eraseRightScreen()
-			org.drawNoteReadOnly()
+			org.drawMarkdownPreview()
 		case PAGE_UP, ARROW_UP, 'k':
 			if org.altRowoff > 0 {
 				org.altRowoff--
 			}
 			sess.eraseRightScreen()
-			org.drawNoteReadOnly()
+			org.drawMarkdownPreview()
 		}
 	} // end switch o.mode
 } // end func organizerProcessKey(c int)

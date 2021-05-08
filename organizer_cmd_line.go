@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/charmbracelet/glamour"
 	"os"
 	"strconv"
 	"strings"
@@ -102,7 +103,7 @@ func (o *Organizer) log(unused int) {
 	o.eraseRightScreen()
 	note := readSyncLog(o.rows[o.fr].id)
 	o.note = strings.Split(note, "\n")
-	o.drawNoteReadOnly()
+	o.drawMarkdownPreview()
 	o.clearMarkedEntries()
 	o.showOrgMessage("")
 }
@@ -462,8 +463,17 @@ func (o *Organizer) sync(unused int) {
 	o.command_line = ""
 	o.eraseRightScreen()
 	note := generateWWString(log, org.totaleditorcols)
+	// below draw log as markeup
+	r, _ := glamour.NewTermRenderer(
+		glamour.WithStylePath("/home/slzatz/listmango/darkslz.json"),
+		glamour.WithWordWrap(0),
+	)
+	note, _ = r.Render(note)
+	if note[0] == '\n' {
+		note = note[1:]
+	}
 	o.note = strings.Split(note, "\n")
-	o.drawNoteReadOnly()
+	o.drawMarkdownPreview()
 	o.mode = PREVIEW_SYNC_LOG
 }
 

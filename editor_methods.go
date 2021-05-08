@@ -1132,6 +1132,8 @@ func (e *Editor) drawPreview() {
 			break
 		}
 		if strings.Contains(rows[fr], "Image") {
+			fmt.Fprintf(os.Stdout, "Loading Image ... \x1b[%dG", e.left_margin+1)
+			prevY := y
 			path := getStringInBetween(rows[fr], "|", "|")
 			var img image.Image
 			var err error
@@ -1161,11 +1163,14 @@ func (e *Editor) drawPreview() {
 			height := img.Bounds().Max.Y / (int(sess.ws.Ypixel) / sess.screenLines)
 			y += height
 			if y > e.screenlines-1 {
-				break
+				fmt.Fprintf(os.Stdout, "\x1b[3m\x1b[4mImage %s doesn't fit!\x1b[0m \x1b[%dG", path, e.left_margin+1)
+				y = y - height + 1
+				fmt.Fprintf(os.Stdout, "\x1b[%d;%dH", TOP_MARGIN+1+y, e.left_margin+1)
+				continue
 			}
 			displayImage(img)
-
-			// appears necessary to reposition cursor after image draw
+			// erases "Loading image ..."
+			fmt.Fprintf(os.Stdout, "\x1b[%d;%dH\x1b[0K", e.top_margin+prevY, e.left_margin+1)
 			fmt.Fprintf(os.Stdout, "\x1b[%d;%dH", e.top_margin+y, e.left_margin+1)
 		} else {
 			fmt.Fprintf(os.Stdout, "%s%s", rows[fr], lf_ret)
