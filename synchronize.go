@@ -159,6 +159,8 @@ func synchronize(reportOnly bool) (log string) {
 
 	defer rows.Close()
 
+	fmt.Fprint(&lg, "## Server Changes\n")
+
 	var server_updated_contexts []Container
 	for rows.Next() {
 		var c Container
@@ -173,9 +175,9 @@ func synchronize(reportOnly bool) (log string) {
 	}
 	if len(server_updated_contexts) > 0 {
 		nn += len(server_updated_contexts)
-		fmt.Fprintf(&lg, "- Updated (new and modified) server `Contexts` since last sync: **%d**\n", len(server_updated_contexts))
+		fmt.Fprintf(&lg, "- Updated `Contexts`(new and modified): **%d**\n", len(server_updated_contexts))
 	} else {
-		lg.WriteString("- No updated (new and modified) server `Contexts` the last sync.\n")
+		lg.WriteString("- No `Contexts` updated (new and modified).\n")
 	}
 
 	//server deleted contexts
@@ -199,9 +201,9 @@ func synchronize(reportOnly bool) (log string) {
 	}
 	if len(server_deleted_contexts) > 0 {
 		nn += len(server_deleted_contexts)
-		fmt.Fprintf(&lg, "- Deleted server `Contexts` since last sync: %d\n", len(server_deleted_contexts))
+		fmt.Fprintf(&lg, "- Deleted `Contexts`: %d\n", len(server_deleted_contexts))
 	} else {
-		lg.WriteString("- No server `Contexts` deleted since last sync.\n")
+		lg.WriteString("- No `Contexts` deleted.\n")
 	}
 
 	//server updated folders
@@ -227,9 +229,9 @@ func synchronize(reportOnly bool) (log string) {
 	}
 	if len(server_updated_folders) > 0 {
 		nn += len(server_updated_contexts)
-		fmt.Fprintf(&lg, "- Updated (new and modified) server `Folders` since last sync: %d\n", len(server_updated_folders))
+		fmt.Fprintf(&lg, "- `Folders` Updated: %d\n", len(server_updated_folders))
 	} else {
-		lg.WriteString("- No updated (new and modified) server `Folders` the last sync.\n")
+		lg.WriteString("- No `Folders` updated.\n")
 	}
 
 	//server deleted folders
@@ -253,9 +255,9 @@ func synchronize(reportOnly bool) (log string) {
 	}
 	if len(server_deleted_folders) > 0 {
 		nn += len(server_deleted_folders)
-		fmt.Fprintf(&lg, "- Deleted server `Folders` since last sync: %d\n", len(server_updated_folders))
+		fmt.Fprintf(&lg, "- Deleted `Folders`: %d\n", len(server_updated_folders))
 	} else {
-		lg.WriteString("- No server `Folders` deleted since last sync.\n")
+		lg.WriteString("- No `Folders` deleted.\n")
 	}
 
 	//server updated keywords
@@ -280,9 +282,9 @@ func synchronize(reportOnly bool) (log string) {
 	}
 	if len(server_updated_keywords) > 0 {
 		nn += len(server_updated_contexts)
-		fmt.Fprintf(&lg, "- Updated (new and modified) server `Keywords` since last sync: %d\n", len(server_updated_keywords))
+		fmt.Fprintf(&lg, "- Updated `Keywords`: %d\n", len(server_updated_keywords))
 	} else {
-		lg.WriteString("- No updated (new and modified) server `Keywords` the last sync.\n")
+		lg.WriteString("- No `Keywords` updated.\n")
 	}
 
 	//server deleted keywords
@@ -305,9 +307,9 @@ func synchronize(reportOnly bool) (log string) {
 	}
 	if len(server_deleted_keywords) > 0 {
 		nn += len(server_deleted_keywords)
-		fmt.Fprintf(&lg, "- Deleted server `Keywords` since last sync: %d\n", len(server_updated_keywords))
+		fmt.Fprintf(&lg, "- Deleted server `Keywords`: %d\n", len(server_updated_keywords))
 	} else {
-		lg.WriteString("- No server `Keywords` deleted since last sync.\n")
+		lg.WriteString("- No `Keywords` deleted.\n")
 	}
 	//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	//server updated entries
@@ -336,12 +338,12 @@ func synchronize(reportOnly bool) (log string) {
 	}
 	if len(server_updated_entries) > 0 {
 		nn += len(server_updated_entries)
-		fmt.Fprintf(&lg, "- Updated (new and modified) server `Entries` since last sync: %d\n", len(server_updated_entries))
+		fmt.Fprintf(&lg, "- Updated `Entries`: %d\n", len(server_updated_entries))
 	} else {
-		lg.WriteString("- No updated (new and modified) server `Entries` since last sync.\n")
+		lg.WriteString("- No `Entries` updated.\n")
 	}
 	for _, e := range server_updated_entries {
-		fmt.Fprintf(&lg, "id: %d %q; star: %t; modified: %v\n", e.id, truncate(e.title, 15), e.star, tc(e.modified, 19, false))
+		fmt.Fprintf(&lg, "    - id: %d %q; modified: %v\n", e.id, truncate(e.title, 15), tc(e.modified, 19, false))
 	}
 
 	//server deleted entries
@@ -362,9 +364,9 @@ func synchronize(reportOnly bool) (log string) {
 	}
 	if len(server_deleted_entries) > 0 {
 		nn += len(server_deleted_entries)
-		fmt.Fprintf(&lg, "- Deleted server `Entries` since last sync: %d\n", len(server_deleted_entries))
+		fmt.Fprintf(&lg, "- Deleted `Entries`: %d\n", len(server_deleted_entries))
 	} else {
-		lg.WriteString("- No server `Entries` deleted since last sync.\n")
+		lg.WriteString("- No `Entries` deleted.\n")
 	}
 
 	//Client changes
@@ -377,6 +379,7 @@ func synchronize(reportOnly bool) (log string) {
 	}
 
 	//defer rows.Close()
+	fmt.Fprint(&lg, "## Client Changes\n")
 
 	var client_updated_contexts []Container
 	for rows.Next() {
@@ -393,9 +396,9 @@ func synchronize(reportOnly bool) (log string) {
 	}
 	if len(client_updated_contexts) > 0 {
 		nn += len(client_updated_contexts)
-		fmt.Fprintf(&lg, "- Updated (new and modified) client `Contexts` since last sync: %d\n", len(client_updated_contexts))
+		fmt.Fprintf(&lg, "- `Contexts` updated: %d\n", len(client_updated_contexts))
 	} else {
-		lg.WriteString("- No updated (new and modified) client `Contexts` the last sync.\n")
+		lg.WriteString("- No `Contexts` updated.\n")
 	}
 
 	//client deleted contexts
@@ -417,9 +420,9 @@ func synchronize(reportOnly bool) (log string) {
 	}
 	if len(client_deleted_contexts) > 0 {
 		nn += len(client_deleted_contexts)
-		fmt.Fprintf(&lg, "- Deleted client `Contexts` since last sync: %d\n", len(client_deleted_contexts))
+		fmt.Fprintf(&lg, "- Deleted client `Contexts`: %d\n", len(client_deleted_contexts))
 	} else {
-		lg.WriteString("- No client `Contexts` deleted since last sync.\n")
+		lg.WriteString("- No `Contexts` deleted.\n")
 	}
 
 	//client updated folders
@@ -446,9 +449,9 @@ func synchronize(reportOnly bool) (log string) {
 	}
 	if len(client_updated_folders) > 0 {
 		nn += len(client_updated_folders)
-		fmt.Fprintf(&lg, "- Updated (new and modified) client `Folders` since last sync: %d\n", len(client_updated_folders))
+		fmt.Fprintf(&lg, "- Updated `Folders`: %d\n", len(client_updated_folders))
 	} else {
-		lg.WriteString("- No updated (new and modified) client `Folders` the last sync.\n")
+		lg.WriteString("- No `Folders` updated.\n")
 	}
 
 	//client deleted folders
@@ -470,9 +473,9 @@ func synchronize(reportOnly bool) (log string) {
 	}
 	if len(client_deleted_folders) > 0 {
 		nn += len(client_deleted_folders)
-		fmt.Fprintf(&lg, "- Deleted client `Folders` since last sync: %d\n", len(client_updated_folders))
+		fmt.Fprintf(&lg, "- Deleted client `Folders`: %d\n", len(client_updated_folders))
 	} else {
-		lg.WriteString("- No client `Folders` deleted since last sync.\n")
+		lg.WriteString("- No `Folders` deleted.\n")
 	}
 
 	//client updated keywords
@@ -498,9 +501,9 @@ func synchronize(reportOnly bool) (log string) {
 	}
 	if len(client_updated_keywords) > 0 {
 		nn += len(client_updated_keywords)
-		fmt.Fprintf(&lg, "- Updated (new and modified) client `Keywords` since last sync: %d\n", len(client_updated_keywords))
+		fmt.Fprintf(&lg, "- Updated `Keywords`: %d\n", len(client_updated_keywords))
 	} else {
-		lg.WriteString("- No updated (new and modified) client `Keywords` the last sync.\n")
+		lg.WriteString("- No `Keywords` updated.\n")
 	}
 
 	//client deleted keywords
@@ -522,9 +525,9 @@ func synchronize(reportOnly bool) (log string) {
 	}
 	if len(client_deleted_keywords) > 0 {
 		nn += len(client_deleted_keywords)
-		fmt.Fprintf(&lg, "- Deleted client `Keywords` since last sync: %d\n", len(client_deleted_keywords))
+		fmt.Fprintf(&lg, "- Deleted `Keywords`: %d\n", len(client_deleted_keywords))
 	} else {
-		lg.WriteString("- No client `Keywords` deleted since last sync.\n")
+		lg.WriteString("- No `Keywords` deleted.\n")
 	}
 
 	//client updated entries
@@ -562,12 +565,12 @@ func synchronize(reportOnly bool) (log string) {
 	}
 	if len(client_updated_entries) > 0 {
 		nn += len(client_updated_entries)
-		fmt.Fprintf(&lg, "- Updated (new and modified) client `Entries` since last sync: %d\n", len(client_updated_entries))
+		fmt.Fprintf(&lg, "- Updated `Entries`: %d\n", len(client_updated_entries))
 	} else {
-		lg.WriteString("- No updated (new and modified) client `Entries` since last sync.\n")
+		lg.WriteString("- No `Entries` updated.\n")
 	}
 	for _, e := range client_updated_entries {
-		fmt.Fprintf(&lg, "id: %d; tid: %d %q; star: %t; modified: %v\n", e.id, e.tid, tc(e.title, 15, true), e.star, tc(e.modified, 19, false))
+		fmt.Fprintf(&lg, "    - id: %d; tid: %d %q; modified: %v\n", e.id, e.tid, tc(e.title, 15, true), tc(e.modified, 19, false))
 	}
 
 	//client deleted entries
@@ -594,9 +597,9 @@ func synchronize(reportOnly bool) (log string) {
 	}
 	if len(client_deleted_entries) > 0 {
 		nn += len(client_deleted_entries)
-		fmt.Fprintf(&lg, "- Deleted client `Entries` since last sync: %d\n", len(client_deleted_entries))
+		fmt.Fprintf(&lg, "- Deleted `Entries`: %d\n", len(client_deleted_entries))
 	} else {
-		lg.WriteString("- No client `Entries` deleted since last sync.\n")
+		lg.WriteString("- No `Entries` deleted.\n")
 	}
 
 	fmt.Fprintf(&lg, "Number of changes (before accounting for server/client conflicts) is: **%d**\n\n", nn)
