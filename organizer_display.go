@@ -3,11 +3,9 @@ package main
 import (
 	"bytes"
 	"fmt"
+	"image"
 	"os"
 	"strings"
-	//	"time"
-
-	"image"
 
 	"github.com/charmbracelet/glamour"
 )
@@ -30,10 +28,9 @@ func (o *Organizer) refreshScreen() {
 	// put cursor at upper left after erasing
 	ab.WriteString(fmt.Sprintf("\x1b[%d;%dH", TOP_MARGIN+1, LEFT_MARGIN+1))
 
-	//fmt.Fprint(os.Stdout, ab.String())
 	fmt.Print(ab.String())
 
-	if o.mode == FIND || o.last_mode == FIND {
+	if o.mode == FIND {
 		o.drawSearchRows()
 	} else if o.mode == ADD_CHANGE_FILTER {
 		o.drawAltRows()
@@ -450,7 +447,8 @@ func (o *Organizer) drawPreview() {
 	note = generateWWString(note, o.totaleditorcols)
 	sess.eraseRightScreen()
 
-	if o.taskview == BY_FIND {
+	//if o.taskview == BY_FIND {
+	if o.mode == FIND {
 		wp := getNoteSearchPositions(id)
 		note = highlightTerms(note, wp)
 	}
@@ -480,7 +478,8 @@ func (o *Organizer) drawPreview() {
 		}
 	}
 
-	if o.taskview == BY_FIND {
+	//if o.taskview == BY_FIND {
+	if o.mode == FIND {
 		// could use strings.Count to make sure they are balanced
 		// n0 = strings.Count(o.note, "^^")
 		// n1 = strings.Count(o.note, "%%")

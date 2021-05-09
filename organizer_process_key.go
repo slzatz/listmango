@@ -37,7 +37,7 @@ func organizerProcessKey(c int) {
 
 	case FIND:
 		switch c {
-		case ARROW_UP, ARROW_DOWN, ARROW_LEFT, ARROW_RIGHT, PAGE_UP, PAGE_DOWN:
+		case ARROW_UP, ARROW_DOWN, PAGE_UP, PAGE_DOWN:
 			org.moveCursor(c)
 		default:
 			org.mode = NORMAL
@@ -71,7 +71,6 @@ func organizerProcessKey(c int) {
 		default:
 			org.insertChar(c)
 		}
-		//return // ? necessary
 
 	case NORMAL:
 

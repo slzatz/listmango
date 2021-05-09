@@ -380,14 +380,12 @@ func (o *Organizer) insertChar(c int) {
 	if *t == "" {
 		*t = string(c)
 	} else {
-		//*t = (*t)[:o.fc+1] + string(c) + (*t)[o.fc+1:]
 		*t = (*t)[:o.fc] + string(c) + (*t)[o.fc:]
 	}
 	o.fc++
 	o.rows[o.fr].dirty = true
 }
 
-// corrected mistaken need to do (*row) when go able to figure out it's a pointer
 func (o *Organizer) writeTitle() {
 	row := &o.rows[o.fr]
 
@@ -398,21 +396,6 @@ func (o *Organizer) writeTitle() {
 
 	if o.view == TASK {
 		updateTitle()
-		//msg = "Updated id {} to {} (+fts)";
-		/*
-		     if (sess.lm_browser) {
-		       int folder_tid = getFolderTid(org.rows.at(org.fr).id);
-		       if (!(folder_tid == 18 || folder_tid == 14)) sess.updateHTMLFile("assets/" + CURRENT_NOTE_FILE);
-		     }
-
-		   } else if (org.view == CONTEXT || org.view == FOLDER) {
-		     updateContainerTitle();
-		     msg = "Updated id {} to {}";
-		   } else if (org.view == KEYWORD) {
-		     updateKeywordTitle();
-		     msg = "Updated id {} to {}";
-		   }
-		*/
 	} else {
 		updateContainerTitle()
 	}

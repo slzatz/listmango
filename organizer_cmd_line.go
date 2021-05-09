@@ -2,11 +2,12 @@ package main
 
 import (
 	"fmt"
-	"github.com/charmbracelet/glamour"
 	"os"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/charmbracelet/glamour"
 )
 
 var cmd_lookup = map[string]func(*Organizer, int){
@@ -382,7 +383,9 @@ func (o *Organizer) newEntry(unused int) {
 func (o *Organizer) refresh(unused int) {
 	if o.view == TASK {
 		if o.taskview == BY_FIND {
-			//o.rows = nil
+			// if the view was BY_FIND put the mode back to FIND
+			//o.last_mode = FIND
+			o.mode = FIND
 			o.fc, o.fr, o.rowoff = 0, 0, 0
 			o.rows = searchEntries(sess.fts_search_terms, o.show_deleted, false)
 			if len(o.rows) == 0 {
@@ -390,10 +393,10 @@ func (o *Organizer) refresh(unused int) {
 				o.mode = NO_ROWS
 			}
 			if unused != -1 { //complete kluge has to do with refreshing when syncing
-				//o.drawPreviewWindow()
 				o.drawPreview()
 			}
 		} else {
+			o.mode = o.last_mode
 			o.fc, o.fr, o.rowoff = 0, 0, 0
 			o.rows = filterEntries(o.taskview, o.filter, o.show_deleted, o.sort, MAX)
 			if len(o.rows) == 0 {
@@ -401,12 +404,12 @@ func (o *Organizer) refresh(unused int) {
 				o.mode = NO_ROWS
 			}
 			if unused != -1 { //complete kluge has to do with refreshing when syncing
-				//o.drawPreviewWindow()
 				o.drawPreview()
 			}
 		}
 		sess.showOrgMessage("Entries will be refreshed")
 	} else {
+		o.mode = o.last_mode
 		getContainers()
 		if org.mode != NO_ROWS && unused != -1 {
 			c := getContainerInfo(o.rows[o.fr].id)
@@ -415,14 +418,14 @@ func (o *Organizer) refresh(unused int) {
 		}
 		sess.showOrgMessage("view refreshed")
 	}
-	o.mode = o.last_mode
+	//o.mode = o.last_mode
 	o.clearMarkedEntries()
 }
 
 func (o *Organizer) find(pos int) {
 
 	if pos == 0 {
-		sess.showOrgMessage("You did not something to find!")
+		sess.showOrgMessage("You did not enter something to find!")
 		o.mode = NORMAL
 		return
 	}
@@ -434,30 +437,26 @@ func (o *Organizer) find(pos int) {
 		return
 	}
 
-	//o.context = ""
-	//o.folder = ""
 	o.filter = ""
 	o.taskview = BY_FIND
-	//o.rows = nil
 	o.fc, o.fr, o.rowoff = 0, 0, 0
 
 	sess.showOrgMessage("Searching for '%s'", searchTerms)
-	org.mode = FIND
+	o.mode = FIND
 	o.rows = searchEntries(searchTerms, o.show_deleted, false)
 	if len(o.rows) == 0 {
 		sess.showOrgMessage("No results were returned")
 		o.mode = NO_ROWS
 	}
-	//o.drawPreviewWindow()
 	o.drawPreview()
 }
 
 func (o *Organizer) sync(unused int) {
 	var log string
 	if o.command_line == "test" {
+		// true => reportOnly
 		log = synchronize(true)
 	} else {
-		//o.refresh(0) //param is unused
 		log = synchronize(false)
 	}
 	o.command_line = ""
@@ -485,8 +484,6 @@ func (o *Organizer) contexts(pos int) {
 		o.view = CONTEXT
 		getContainers()
 		if o.mode != NO_ROWS {
-			// two lines below show first context's info
-			//c := getContainerInfo(o.rows[o.fr].id)
 			c := getContainerInfo(o.rows[0].id)
 			sess.displayContainerInfo(&c)
 			sess.drawPreviewBox()
