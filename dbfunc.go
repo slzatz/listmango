@@ -964,7 +964,8 @@ func addTaskKeyword(keyword_id, entry_id int, update_fts bool) {
 	}
 }
 
-func getNoteSearchPositions(id int) [][]int {
+// not in use but worked
+func getNoteSearchPositions__(id int) [][]int {
 	row := fts_db.QueryRow("SELECT rowid FROM fts WHERE lm_id=?;", id)
 	var rowid int
 	err := row.Scan(&rowid)
@@ -1131,7 +1132,8 @@ func copyEntry() {
 	}
 }
 
-func highlightTerms(text string, word_positions [][]int) string {
+// not in use but worked
+func highlightTerms__(text string, word_positions [][]int) string {
 
 	delimiters := " |,.;?:()[]{}&#/`-'\"—_<>$~@=&*^%+!\t\n\\" //must have \f if using it as placeholder
 
@@ -1181,6 +1183,25 @@ func highlightTerms(text string, word_positions [][]int) string {
 		}
 	}
 	return text
+}
+
+// current method in use
+func highlightTerms2(id int) string {
+	if id == -1 {
+		return "" // id given to new and unsaved entries
+	}
+
+	row := fts_db.QueryRow("SELECT highlight(fts, 1, 'qx', 'qy') "+
+		"FROM fts WHERE lm_id=$1 AND fts MATCH $2;", id, sess.fts_search_terms)
+
+	var note string
+	err := row.Scan(&note)
+	sess.showOrgMessage("%v", err)
+	if err != nil {
+		return ""
+	}
+
+	return note
 }
 
 // not currently in use but more general than generateWWString2

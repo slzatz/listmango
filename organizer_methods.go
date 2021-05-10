@@ -86,13 +86,13 @@ func (o *Organizer) moveCursor(key int) {
 	case PAGE_DOWN:
 		org.altRowoff++
 		sess.eraseRightScreen()
-		org.drawMarkdownPreview()
+		org.drawPreview()
 	case PAGE_UP:
 		if org.altRowoff > 0 {
 			org.altRowoff--
 		}
 		sess.eraseRightScreen()
-		org.drawMarkdownPreview()
+		org.drawPreview()
 	}
 
 	t := &o.rows[o.fr].title

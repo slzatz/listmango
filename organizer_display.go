@@ -175,7 +175,7 @@ func (o *Organizer) drawAltRows() {
 }
 
 // for drawing preview and sync log (note)
-func (o *Organizer) drawMarkdownPreview() {
+func (o *Organizer) drawPreviewWithImages() {
 
 	fmt.Print("\x1b_Ga=d\x1b\\") //delete any images
 	if len(o.note) == 0 {
@@ -254,7 +254,7 @@ func (o *Organizer) drawMarkdownPreview() {
 	}
 }
 
-func (o *Organizer) drawCodePreview() {
+func (o *Organizer) drawPreviewWithoutImages() {
 
 	fmt.Print("\x1b_Ga=d\x1b\\") //delete any images
 	if len(o.note) == 0 {
@@ -443,17 +443,26 @@ func (o *Organizer) drawPreview() {
 	id := o.rows[o.fr].id
 	tid := getFolderTid(id)
 	o.altRowoff = 0
-	note := readNoteIntoString(id)
+	var note string
+	if o.mode != FIND {
+		note = readNoteIntoString(id)
+	} else {
+		note = highlightTerms2(id)
+	}
 	note = generateWWString(note, o.totaleditorcols)
 	sess.eraseRightScreen()
 
-	//if o.taskview == BY_FIND {
-	if o.mode == FIND {
-		wp := getNoteSearchPositions(id)
-		note = highlightTerms(note, wp)
-	}
+	/* below old way - a lot of extra processing
+	   so that word wrap doesn't have extra letters
+		if o.mode == FIND {
+			wp := getNoteSearchPositions(id)
+			note = highlightTerms(note, wp)
+		}
+	*/
 
-	if tid == 18 || tid == 14 { //&& !e.is_subeditor {
+	var code bool
+	if tid == 18 || tid == 14 {
+		code = true
 		var lang string
 		var buf bytes.Buffer
 		switch tid {
@@ -463,7 +472,6 @@ func (o *Organizer) drawPreview() {
 			lang = "go"
 		}
 		_ = Highlight(&buf, note, lang, "terminal16m", sess.style[sess.styleIndex])
-		//o.note = buf.String()
 		note = buf.String()
 	} else { // render as markdown
 		r, _ := glamour.NewTermRenderer(
@@ -472,27 +480,22 @@ func (o *Organizer) drawPreview() {
 		)
 		note, _ = r.Render(note)
 		// glamour seems to add a '\n' at the start
-		// probably better to use a string strip white space
-		if note[0] == '\n' {
-			note = note[1:]
-		}
+		note = strings.TrimSpace(note)
 	}
 
-	//if o.taskview == BY_FIND {
 	if o.mode == FIND {
 		// could use strings.Count to make sure they are balanced
 		// n0 = strings.Count(o.note, "^^")
 		// n1 = strings.Count(o.note, "%%")
 		// ...
-		note = strings.ReplaceAll(note, "uuu", "\x1b[48;5;31m") //^^
-		note = strings.ReplaceAll(note, "yyy", "\x1b[0m")       // %%
+		note = strings.ReplaceAll(note, "qx", "\x1b[48;5;31m") //^^
+		note = strings.ReplaceAll(note, "qy", "\x1b[0m")       // %%
 	}
 	// I think the note should be split here
 	o.note = strings.Split(note, "\n")
-	//if code {
-	if sess.preview {
-		o.drawMarkdownPreview()
+	if code || !sess.imagePreview {
+		o.drawPreviewWithoutImages()
 	} else {
-		o.drawCodePreview()
+		o.drawPreviewWithImages()
 	}
 }

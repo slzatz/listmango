@@ -21,7 +21,7 @@ type Session struct {
 	temporaryTID     int
 	run              bool
 	editorMode       bool
-	preview          bool
+	imagePreview     bool
 	imgSizeY         int
 	fts_search_terms string
 	origTermCfg      []byte //from GoKilo

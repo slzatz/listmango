@@ -104,7 +104,7 @@ func (o *Organizer) log(unused int) {
 	o.eraseRightScreen()
 	note := readSyncLog(o.rows[o.fr].id)
 	o.note = strings.Split(note, "\n")
-	o.drawMarkdownPreview()
+	o.drawPreviewWithoutImages()
 	o.clearMarkedEntries()
 	o.showOrgMessage("")
 }
@@ -472,7 +472,7 @@ func (o *Organizer) sync(unused int) {
 		note = note[1:]
 	}
 	o.note = strings.Split(note, "\n")
-	o.drawMarkdownPreview()
+	o.drawPreviewWithoutImages()
 	o.mode = PREVIEW_SYNC_LOG
 }
 
@@ -730,9 +730,9 @@ func (o *Organizer) setImage(pos int) {
 	}
 	opt := o.command_line[pos+1:]
 	if opt == "on" {
-		sess.preview = true
+		sess.imagePreview = true
 	} else if opt == "off" {
-		sess.preview = false
+		sess.imagePreview = false
 	} else {
 		sess.showOrgMessage("Your choice of options is 'on' or 'off'")
 	}
