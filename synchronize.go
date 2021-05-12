@@ -6,14 +6,13 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	_ "github.com/lib/pq"
-	_ "github.com/mattn/go-sqlite3"
 	"io"
 	"io/ioutil"
-	//	"log"
-	//"os"
 	"strings"
 	"time"
+
+	_ "github.com/lib/pq"
+	_ "github.com/mattn/go-sqlite3"
 )
 
 type dbConfig struct {
@@ -67,7 +66,7 @@ func addTaskKeywordS(dbase *sql.DB, plg io.Writer, keyword_id, entry_id int) {
 		fmt.Fprintf(plg, "Error in addTaskKeywordS = INSERT INTO task_keyword: %v\n", err)
 		return
 	} else {
-		fmt.Fprintf(plg, "Inserted into task_keyword entry id %d and keyword_id %d\n", entry_id, keyword_id)
+		fmt.Fprintf(plg, "Inserted into task_keyword entry id **%d** and keyword_id **%d**\n", entry_id, keyword_id)
 	}
 }
 
@@ -842,13 +841,13 @@ func synchronize(reportOnly bool) (log string) {
 				fmt.Fprintf(&lg, "Error updating sqlite for an entry with tid: %d: %v\n", e.id, err3)
 				continue
 			}
-			fmt.Fprintf(&lg, "Updated local entry %q with id %d and tid: %d\n", truncate(e.title, 15), client_id, e.id)
+			fmt.Fprintf(&lg, "Updated local entry %q with id **%d** and tid **%d**\n", truncate(e.title, 15), client_id, e.id)
 
 			_, err4 := fts_db.Exec("UPDATE fts SET title=?, note=? WHERE lm_id=?;", e.title, e.note, client_id)
 			if err4 != nil {
 				fmt.Fprintf(&lg, "Error updating fts_db for entry %s; id: %d; %v\n", truncate(e.title, 15), client_id, err4)
 			} else {
-				fmt.Fprintf(&lg, "and updated fts_db for entry with id %d and tid %d\n", client_id, e.id)
+				fmt.Fprint(&lg, "and updated fts_db for the entry.\n")
 			}
 		}
 		// Update the client entry's keywords
@@ -869,7 +868,7 @@ func synchronize(reportOnly bool) (log string) {
 		if err != nil {
 			fmt.Fprintf(&lg, "Error in Update tag in fts: %v\n", err)
 		} else {
-			fmt.Fprintf(&lg, "Set fts_db tag(keywords) for client id %d to %q\n", client_id, tag)
+			fmt.Fprintf(&lg, "Set fts_db tag(keywords) for client id **%d** to *%q*\n", client_id, tag)
 		}
 	}
 
@@ -894,7 +893,7 @@ func synchronize(reportOnly bool) (log string) {
 			if err3 != nil {
 				fmt.Fprintf(&lg, "Error updating server entry %q with id %d: %v", truncate(e.title, 15), e.tid, err3)
 			} else {
-				fmt.Fprintf(&lg, "Updated server entry %q with id %d.\n", truncate(e.title, 15), e.tid)
+				fmt.Fprintf(&lg, "Updated server entry *%q* with id **%d**.\n", truncate(e.title, 15), e.tid)
 			}
 			server_id = e.tid // needed below for keywords
 		case !exists:
@@ -925,7 +924,7 @@ func synchronize(reportOnly bool) (log string) {
 		}
 		kwns := getTaskKeywordsS(db, &lg, e.id) // returns []string
 		if len(kwns) == 0 {
-			fmt.Fprintf(&lg, "There were no keywords to add to server entry id %d.\n\n", server_id)
+			fmt.Fprint(&lg, "There were no keywords to add to the server entry.\n\n")
 			continue
 		}
 		for _, kwn := range kwns {
