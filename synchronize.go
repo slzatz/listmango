@@ -830,7 +830,7 @@ func synchronize(reportOnly bool) (log string) {
 				fmt.Fprintf(&lg, "Error inserting into fts_db for entry with id %d: %v\n", client_id, err2)
 				break
 			}
-			fmt.Fprintf(&lg, "Created new local entry %q with id %d and tid %d\n", truncate(e.title, 15), client_id, e.id)
+			fmt.Fprintf(&lg, "Created new local entry *%q* with id **%d** and tid **%d**\n", truncate(e.title, 15), client_id, e.id)
 		case err != nil:
 			fmt.Fprintf(&lg, "Error querying sqlite for a entry with tid: %v: %w\n", e.id, err)
 			continue
@@ -841,7 +841,7 @@ func synchronize(reportOnly bool) (log string) {
 				fmt.Fprintf(&lg, "Error updating sqlite for an entry with tid: %d: %v\n", e.id, err3)
 				continue
 			}
-			fmt.Fprintf(&lg, "Updated local entry %q with id **%d** and tid **%d**\n", truncate(e.title, 15), client_id, e.id)
+			fmt.Fprintf(&lg, "Updated local entry *%q* with id **%d** and tid **%d**\n", truncate(e.title, 15), client_id, e.id)
 
 			_, err4 := fts_db.Exec("UPDATE fts SET title=?, note=? WHERE lm_id=?;", e.title, e.note, client_id)
 			if err4 != nil {
