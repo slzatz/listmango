@@ -310,7 +310,7 @@ func synchronize(reportOnly bool) (log string) {
 	} else {
 		lg.WriteString("- No `Keywords` deleted.\n")
 	}
-	//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 	//server updated entries
 	rows, err = pdb.Query("SELECT id, title, star, note, created, modified, added, completed, context_tid, folder_tid FROM task WHERE modified > $1 AND deleted = $2;", server_t, false)
 	if err != nil {
@@ -909,7 +909,7 @@ func synchronize(reportOnly bool) (log string) {
 				fmt.Fprintf(&lg, "Error setting tid for client entry %q with id %d to tid %d: %v\n", truncate(e.title, 15), e.id, server_id, err2)
 				break
 			}
-			fmt.Fprintf(&lg, "Created new server entry %q with id %d\n", truncate(e.title, 15), server_id)
+			fmt.Fprintf(&lg, "Created new server entry *%q* with id **%d**\n", truncate(e.title, 15), server_id)
 			fmt.Fprintf(&lg, "and set tid for client entry (id %d) to tid %d\n", e.id, server_id)
 
 		default:
@@ -980,7 +980,7 @@ func synchronize(reportOnly bool) (log string) {
 
 		// since on server, we just set deleted to true
 		// since may have to sync with other clients
-		// also client task may have been new (never synced) and deleted (tid=0)
+		// also note client task may have been new (never synced) and deleted (tid=0)
 		if e.tid == 0 {
 			fmt.Fprintf(&lg, "There is no server entry to delete for client id %d\n", e.id)
 			continue
@@ -1193,25 +1193,3 @@ func synchronize(reportOnly bool) (log string) {
 
 	return
 }
-
-/* Task
-0: id = 1
-1: tid = 1
-2: priority = 3
-3: title = Parents refrigerator broken.
-4: tag =
-5: folder_tid = 1
-6: context_tid = 1
-7: duetime = NULL
-8: star = 0
-9: added = 2009-07-04
-10: completed = 2009-12-20
-11: duedate = NULL
-12: note = new one coming on Monday, June 6, 2009.
-13: repeat = NULL
-14: deleted = 0
-15: created = 2016-08-05 23:05:16.256135
-16: modified = 2016-08-05 23:05:16.256135
-17: startdate = 2009-07-04
-18: remind = NULL
-*/
