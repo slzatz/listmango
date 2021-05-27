@@ -60,6 +60,7 @@ func (o *Organizer) moveCursor(key int) {
 		o.fc, o.coloff = 0, 0
 
 		if o.view == TASK {
+			o.altRowoff = 0
 			o.drawPreview()
 		} else {
 			c := getContainerInfo(o.rows[o.fr].id)
@@ -75,6 +76,7 @@ func (o *Organizer) moveCursor(key int) {
 		}
 		o.fc, o.coloff = 0, 0
 		if o.view == TASK {
+			o.altRowoff = 0
 			o.drawPreview()
 		} else {
 			c := getContainerInfo(o.rows[o.fr].id)
@@ -84,15 +86,15 @@ func (o *Organizer) moveCursor(key int) {
 			}
 		}
 	case PAGE_DOWN:
-		org.altRowoff++
+		o.altRowoff++
 		sess.eraseRightScreen()
-		org.drawPreview()
+		o.drawPreview()
 	case PAGE_UP:
-		if org.altRowoff > 0 {
-			org.altRowoff--
+		if o.altRowoff > 0 {
+			o.altRowoff--
 		}
 		sess.eraseRightScreen()
-		org.drawPreview()
+		o.drawPreview()
 	}
 
 	t := &o.rows[o.fr].title
