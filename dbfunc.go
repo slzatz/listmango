@@ -208,25 +208,25 @@ func updateTaskFolder(new_folder string, id int) {
 	}
 }
 
-func updateNote() {
+func updateNote(e *Editor) {
 
-	text := p.bufferToString()
+	text := e.bufferToString()
 
 	_, err := db.Exec("UPDATE task SET note=?, modified=datetime('now') WHERE id=?;",
-		text, p.id)
+		text, e.id)
 	if err != nil {
-		sess.showOrgMessage("Error in updateNote for entry with id %d: %v", p.id, err)
+		sess.showOrgMessage("Error in updateNote for entry with id %d: %v", e.id, err)
 		return
 	}
 
 	/***************fts virtual table update*********************/
 
-	_, err = fts_db.Exec("UPDATE fts SET note=? WHERE lm_id=?;", text, p.id)
+	_, err = fts_db.Exec("UPDATE fts SET note=? WHERE lm_id=?;", text, e.id)
 	if err != nil {
-		sess.showOrgMessage("Error in updateNote updating fts for entry with id %d: %v", p.id, err)
+		sess.showOrgMessage("Error in updateNote updating fts for entry with id %d: %v", e.id, err)
 	}
 
-	sess.showOrgMessage("Updated note and fts entry for item %d", p.id)
+	sess.showOrgMessage("Updated note and fts entry for item %d", e.id)
 }
 
 func getSyncItems(max int) {
@@ -478,7 +478,7 @@ func readNoteIntoString(id int) string {
 	return note
 }
 
-func readNoteIntoBuffer(id int) {
+func readNoteIntoBuffer(e *Editor, id int) {
 	if id == -1 {
 		return // id given to new and unsaved entries
 	}
@@ -490,20 +490,20 @@ func readNoteIntoBuffer(id int) {
 		return
 	}
 
-	p.bb = bytes.Split([]byte(note), []byte("\n")) // yes, you need to do it this way
+	e.bb = bytes.Split([]byte(note), []byte("\n")) // yes, you need to do it this way
 
 	// CreateBuffer(listed bool, scratch bool) (buffer Buffer, err error)
-	p.vbuf, err = v.CreateBuffer(true, false)
+	e.vbuf, err = v.CreateBuffer(true, false)
 	if err != nil {
 		sess.showOrgMessage("%v", err)
 	}
-	err = v.SetCurrentBuffer(p.vbuf)
+	err = v.SetCurrentBuffer(e.vbuf)
 	if err != nil {
 		sess.showOrgMessage("%v", err)
 	} else {
-		sess.showOrgMessage("%v", p.vbuf)
+		sess.showOrgMessage("%v", e.vbuf)
 	}
-	err = v.SetBufferLines(p.vbuf, 0, -1, true, p.bb)
+	err = v.SetBufferLines(e.vbuf, 0, -1, true, e.bb)
 	if err != nil {
 		sess.showEdMessage("Error in SetBufferLines in dbfuc: %v", err)
 	}
@@ -513,13 +513,13 @@ func readNoteIntoBuffer(id int) {
 	 not need to be saved
 	 alternative is to use v.Input(":set hidden\n")
 	*/
-	err = v.SetBufferOption(p.vbuf, "hidden", true)
+	err = v.SetBufferOption(e.vbuf, "hidden", true)
 	if err != nil {
 		sess.showEdMessage("Error in SetBufferLines in dbfuc: %v", err)
 	}
 
 	//alternative is just to use v.Input(":w ...")
-	err = v.Command(fmt.Sprintf("w temp/buf%d", p.vbuf))
+	err = v.Command(fmt.Sprintf("w temp/buf%d", e.vbuf))
 	if err != nil {
 		sess.showEdMessage("Error in writing file in dbfuc: %v", err)
 	}
@@ -1314,11 +1314,11 @@ func generateWWString(text string, width int) string {
 	return ab.String()
 }
 
-func updateCodeFile() {
+func updateCodeFile(e *Editor) {
 	sess.showOrgMessage("got here")
 
 	var filePath string
-	if tid := getFolderTid(p.id); tid == 18 {
+	if tid := getFolderTid(e.id); tid == 18 {
 		filePath = "/home/slzatz/clangd_examples/test.cpp"
 		//lsp_name = "clangd";
 	} else {
@@ -1335,8 +1335,8 @@ func updateCodeFile() {
 
 	f.Truncate(0)
 
-	//n, err := f.WriteString(sess.p.code)
-	f.WriteString(p.code)
+	//n, err := f.WriteString(sess.e.code)
+	f.WriteString(e.code)
 
 	f.Sync()
 

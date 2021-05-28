@@ -167,7 +167,7 @@ func editorProcessKey(c int) bool { //bool returned is whether to redraw
 						sess.showEdMessage("You can't save the contents of the Output Window")
 						return false
 					}
-					updateNote()
+					updateNote(p)
 					/*
 						deleteBufferOpts := map[string]bool{
 							"force":  true,

@@ -299,7 +299,7 @@ func (o *Organizer) editNote(id int) {
 			p.linked_editor.linked_editor = p
 			//p.left_margin_offset = LEFT_MARGIN_OFFSET //in NewEditor
 		}
-		readNoteIntoBuffer(id)
+		readNoteIntoBuffer(p, id)
 
 	}
 

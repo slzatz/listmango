@@ -77,7 +77,7 @@ func (e *Editor) writeNote() {
 		return
 	}
 
-	updateNote()
+	updateNote(e)
 	//v.Input(":w\n") // sets editor.isModified to false
 	err := v.Command("w")
 	if err != nil {
@@ -87,7 +87,7 @@ func (e *Editor) writeNote() {
 	folder_tid := getFolderTid(e.id)
 	if folder_tid == 18 || folder_tid == 14 {
 		e.code = e.bufferToString()
-		updateCodeFile()
+		updateCodeFile(e)
 	}
 	e.drawStatusBar() //need this since now refresh won't do it unless redraw =true
 	sess.showEdMessage("")
