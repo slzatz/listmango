@@ -129,6 +129,11 @@ func (e *Editor) controlK() {
 }
 
 func controlH() {
+	if p.isModified() {
+		sess.showEdMessage("You need to save first")
+		return
+	}
+
 	if len(editors) == 1 {
 
 		if sess.divider < 10 {
@@ -186,6 +191,10 @@ func controlH() {
 }
 
 func controlL() {
+	if p.isModified() {
+		sess.showEdMessage("You need to save first")
+		return
+	}
 
 	temp := []*Editor{}
 	for _, e := range editors {

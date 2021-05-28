@@ -155,6 +155,28 @@ func editorProcessKey(c int) bool { //bool returned is whether to redraw
 				cmd = p.command_line
 			}
 
+			if cmd == "wa" {
+				p.writeNote()
+				// pointless because only current buffer can be in modified state
+				for _, e := range editors {
+					if e != p {
+						err := v.SetCurrentBuffer(e.vbuf)
+						if err != nil {
+							sess.showEdMessage("Problem setting current buffer: %d", e.vbuf)
+							return false
+						}
+						e.writeNote()
+					}
+				}
+				err := v.SetCurrentBuffer(p.vbuf)
+				if err != nil {
+					sess.showEdMessage("Problem setting current buffer")
+					return false
+				}
+				p.command_line = ""
+				p.mode = NORMAL
+				return false
+			}
 			// note that right now we are not calling editor commands like E_write_close_C
 			// and E_quit_C and E_quit0_C
 			//sess.showOrgMessage("You hit return and command is %v", cmd) //debugging
