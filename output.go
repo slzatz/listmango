@@ -103,6 +103,34 @@ func (o *Output) drawText(rows []string) {
 		}
 	}
 	fmt.Print(ab.String())
+	o.drawStatusBar()
+}
+
+func (o *Output) drawStatusBar() {
+	var ab strings.Builder
+	fmt.Fprintf(&ab, "\x1b[%d;%dH", o.screenlines+o.top_margin, o.left_margin+1)
+
+	//erase from start of an Editor's status bar to the end of the Editor's status bar
+	fmt.Fprintf(&ab, "\x1b[%dX", o.screencols)
+
+	ab.WriteString("\x1b[7m ") //switches to inverted colors
+
+	/*
+		title := getTitle(e.id)
+		if len(title) > 30 {
+			title = title[:30]
+		}
+		status := fmt.Sprintf("%d - %s ... %s", e.id, title, sub)
+	*/
+
+	status := "Output"
+
+	if len(status) > o.screencols-1 {
+		status = status[:o.screencols-1]
+	}
+	fmt.Fprintf(&ab, "%-*s", o.screencols, status)
+	ab.WriteString("\x1b[0m") //switches back to normal formatting
+	fmt.Print(ab.String())
 }
 
 func (o *Output) setLinesMargins() { //also sets top margin

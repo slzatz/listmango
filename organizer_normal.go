@@ -252,7 +252,7 @@ func switchToEditorMode() {
 	}
 
 	sess.eraseRightScreen()
-	sess.drawEditors()
+	sess.drawRightScreen()
 
 	sess.editorMode = true
 }

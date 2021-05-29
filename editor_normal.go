@@ -61,7 +61,7 @@ func (e *Editor) moveOutputWindowRight() {
 
 	sess.positionWindows()
 	sess.eraseRightScreen()
-	sess.drawEditors()
+	sess.drawRightScreen()
 	//editorSetMessage("top_margin = %d", top_margin);
 
 }
@@ -76,7 +76,7 @@ func (e *Editor) moveOutputWindowBelow() {
 
 	sess.positionWindows()
 	sess.eraseRightScreen()
-	sess.drawEditors()
+	sess.drawRightScreen()
 	//editorSetMessage("top_margin = %d", top_margin);
 }
 

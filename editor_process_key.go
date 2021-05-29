@@ -255,7 +255,7 @@ func editorProcessKey(c int) bool { //bool returned is whether to redraw
 					}
 					sess.positionWindows()
 					sess.eraseRightScreen()
-					sess.drawEditors()
+					sess.drawRightScreen()
 
 				} else { // we've quit the last remaining editor(s)
 					// unless commented out earlier sess.p.quit <- causes panic

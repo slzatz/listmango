@@ -287,23 +287,15 @@ func (o *Organizer) editNote(id int) {
 
 	if !active {
 		p = NewEditor()
-		//editors = append(editors, p)
 		windows = append(windows, p)
 		p.id = id
 		p.top_margin = TOP_MARGIN + 1
 
 		folder_tid := getFolderTid(o.rows[o.fr].id)
 		if folder_tid == 18 || folder_tid == 14 {
-			//p.linked_editor = &Editor{}
 			p.output = &Output{}
-			//editors = append(editors, p.linked_editor)
-			windows = append(windows, p.output)
-			//p.linked_editor.id = id
-			//p.linked_editor.is_subeditor = true
-			//p.linked_editor.is_below = true
 			p.output.is_below = true
-			//p.linked_editor.linked_editor = p
-			//p.left_margin_offset = LEFT_MARGIN_OFFSET //in NewEditor
+			windows = append(windows, p.output)
 		}
 		readNoteIntoBuffer(p, id)
 
@@ -312,7 +304,7 @@ func (o *Organizer) editNote(id int) {
 	sess.positionWindows()
 	sess.eraseRightScreen()      //erases editor area + statusbar + msg
 	fmt.Print("\x1b_Ga=d\x1b\\") //delete any images
-	sess.drawEditors()
+	sess.drawRightScreen()
 	p.mode = NORMAL
 
 	o.command = ""

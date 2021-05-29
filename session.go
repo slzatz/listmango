@@ -138,6 +138,98 @@ func (s *Session) eraseRightScreen() {
 	fmt.Fprint(os.Stdout, ab.String())
 }
 
+// should probably draw output windows too
+func (s *Session) drawRightScreen_() {
+	var ab strings.Builder
+	for _, w := range windows {
+		if e, ok := w.(*Editor); ok {
+			e.drawText()
+			ab.WriteString("\x1b(0") // Enter line drawing mode
+
+			for j := 1; j < e.screenlines+1; j++ {
+				fmt.Fprintf(&ab, "\x1b[%d;%dH", e.top_margin-1+j, e.left_margin+e.screencols+1)
+				// below x = 0x78 vertical line (q = 0x71 is horizontal) 37 = white; 1m = bold (note
+				// only need one 'm'
+				ab.WriteString("\x1b[37;1mx")
+			}
+
+			if !e.is_below {
+				//'T' corner = w or right top corner = k
+				fmt.Fprintf(&ab, "\x1b[%d;%dH", e.top_margin-1, e.left_margin+e.screencols+1)
+
+				if e.left_margin+e.screencols > s.screenCols-4 {
+					ab.WriteString("\x1b[37;1mk") //draw corner
+				} else {
+					ab.WriteString("\x1b[37;1mw")
+				}
+			}
+
+			//exit line drawing mode
+			ab.WriteString("\x1b(B")
+		}
+	}
+	ab.WriteString("\x1b[?25h") //shows the cursor
+	ab.WriteString("\x1b[0m")   //or else subsequent editors are bold
+
+	fmt.Print(ab.String())
+}
+
+func (s *Session) drawRightScreen() {
+	var ab strings.Builder
+	for _, w := range windows {
+		switch v := w.(type) {
+		case *Editor:
+			v.drawText()
+			ab.WriteString("\x1b(0") // Enter line drawing mode
+
+			for j := 1; j < v.screenlines+1; j++ {
+				fmt.Fprintf(&ab, "\x1b[%d;%dH", v.top_margin-1+j, v.left_margin+v.screencols+1)
+				// below x = 0x78 vertical line (q = 0x71 is horizontal) 37 = white; 1m = bold (note
+				// only need one 'm'
+				ab.WriteString("\x1b[37;1mx")
+			}
+
+			//'T' corner = w or right top corner = k
+			fmt.Fprintf(&ab, "\x1b[%d;%dH", v.top_margin-1, v.left_margin+v.screencols+1)
+
+			if v.left_margin+v.screencols > s.screenCols-4 {
+				ab.WriteString("\x1b[37;1mk") //draw corner
+			} else {
+				ab.WriteString("\x1b[37;1mw")
+			}
+
+			//exit line drawing mode
+			ab.WriteString("\x1b(B")
+
+		case *Output:
+			v.drawText([]string{"Hello"})
+			ab.WriteString("\x1b(0") // Enter line drawing mode
+
+			for j := 1; j < v.screenlines+1; j++ {
+				fmt.Fprintf(&ab, "\x1b[%d;%dH", v.top_margin-1+j, v.left_margin+v.screencols+1)
+				// below x = 0x78 vertical line (q = 0x71 is horizontal) 37 = white; 1m = bold (note
+				// only need one 'm'
+				ab.WriteString("\x1b[37;1mx")
+			}
+
+			//'T' corner = w or right top corner = k
+			fmt.Fprintf(&ab, "\x1b[%d;%dH", v.top_margin-1, v.left_margin+v.screencols+1)
+
+			if v.left_margin+v.screencols > s.screenCols-4 {
+				ab.WriteString("\x1b[37;1mk") //draw corner
+			} else {
+				ab.WriteString("\x1b[37;1mw")
+			}
+
+			//exit line drawing mode
+			ab.WriteString("\x1b(B")
+		}
+	}
+	ab.WriteString("\x1b[?25h") //shows the cursor
+	ab.WriteString("\x1b[0m")   //or else subsequent editors are bold
+
+	fmt.Print(ab.String())
+}
 func (s *Session) positionWindows() {
 	windowSlots := 0
 	for _, w := range windows {
@@ -170,42 +262,6 @@ func (s *Session) positionWindows() {
 			v.setLinesMargins()
 		}
 	}
-}
-
-// should probably draw output windows too
-func (s *Session) drawEditors() {
-	var ab strings.Builder
-	for _, w := range windows {
-		if e, ok := w.(*Editor); ok {
-			e.drawText()
-			ab.WriteString("\x1b(0") // Enter line drawing mode
-
-			for j := 1; j < e.screenlines+1; j++ {
-				fmt.Fprintf(&ab, "\x1b[%d;%dH", e.top_margin-1+j, e.left_margin+e.screencols+1)
-				// below x = 0x78 vertical line (q = 0x71 is horizontal) 37 = white; 1m = bold (note
-				// only need one 'm'
-				ab.WriteString("\x1b[37;1mx")
-			}
-
-			if !e.is_below {
-				//'T' corner = w or right top corner = k
-				fmt.Fprintf(&ab, "\x1b[%d;%dH", e.top_margin-1, e.left_margin+e.screencols+1)
-
-				if e.left_margin+e.screencols > s.screenCols-4 {
-					ab.WriteString("\x1b[37;1mk") //draw corner
-				} else {
-					ab.WriteString("\x1b[37;1mw")
-				}
-			}
-
-			//exit line drawing mode
-			ab.WriteString("\x1b(B")
-		}
-	}
-	ab.WriteString("\x1b[?25h") //shows the cursor
-	ab.WriteString("\x1b[0m")   //or else subsequent editors are bold
-
-	fmt.Fprint(os.Stdout, ab.String())
 }
 
 func (s *Session) GetWindowSize() error {
