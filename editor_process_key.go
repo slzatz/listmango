@@ -21,7 +21,7 @@ var termcodes = map[int]string{
 	PAGE_DOWN:   "\x80kN",
 }
 
-var quit_cmds = map[string]struct{}{"quit": z0, "q": z0, "quit!": z0, "q!": z0, "x": z0}
+var quit_cmds = map[string]struct{}{"quit": z0, "q": z0, "quit!": z0, "q!": z0, "x": z0, "qa": z0}
 
 func highlightInfo(v *nvim.Nvim) [2][4]int {
 	var bufnum, lnum, col, off int
@@ -158,14 +158,16 @@ func editorProcessKey(c int) bool { //bool returned is whether to redraw
 			if cmd == "wa" {
 				p.writeNote()
 				// pointless because only current buffer can be in modified state
-				for _, e := range editors {
-					if e != p {
-						err := v.SetCurrentBuffer(e.vbuf)
-						if err != nil {
-							sess.showEdMessage("Problem setting current buffer: %d", e.vbuf)
-							return false
+				for _, w := range windows {
+					if e, ok := w.(*Editor); ok {
+						if e != p {
+							err := v.SetCurrentBuffer(e.vbuf)
+							if err != nil {
+								sess.showEdMessage("Problem setting current buffer: %d", e.vbuf)
+								return false
+							}
+							e.writeNote()
 						}
-						e.writeNote()
 					}
 				}
 				err := v.SetCurrentBuffer(p.vbuf)
@@ -227,35 +229,31 @@ func editorProcessKey(c int) bool { //bool returned is whether to redraw
 				}
 
 				index := -1
-				for i := range editors {
-					if editors[i] == p {
-						index = i
-						break
-					}
-				}
-				copy(editors[index:], editors[index+1:])
-				editors = editors[:len(editors)-1]
-
-				if p.linked_editor != nil {
-					index := -1
-					for i := range editors {
-						if editors[i] == p.linked_editor {
+				for i, w := range windows {
+					if e, ok := w.(*Editor); ok {
+						if e == p {
 							index = i
 							break
 						}
 					}
-					copy(editors[index:], editors[index+1:])
-					editors = editors[:len(editors)-1]
+				}
+				if p.output != nil {
+					copy(windows[index:], windows[index+2:])
+					windows = windows[:len(windows)-2]
+				} else {
+					copy(windows[index:], windows[index+1:])
+					windows = windows[:len(windows)-1]
 				}
 
-				if len(editors) > 0 {
+				if len(windows) > 0 {
 
-					p = editors[0] //kluge should move in some logical fashion
+					// easier to just go to first window which has to be an editor (at least right now)
+					p = windows[0].(*Editor)
 					err = v.SetCurrentBuffer(p.vbuf)
 					if err != nil {
 						sess.showOrgMessage("Error setting current buffer: %v", err)
 					}
-					sess.positionEditors()
+					sess.positionWindows()
 					sess.eraseRightScreen()
 					sess.drawEditors()
 
@@ -290,7 +288,7 @@ func editorProcessKey(c int) bool { //bool returned is whether to redraw
 				}
 				p.command_line = ""
 				p.mode = NORMAL
-				p.refreshScreen()
+				p.drawText()
 				return true
 			}
 

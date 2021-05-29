@@ -18,6 +18,7 @@ var sess Session
 var org = Organizer{Session: &sess}
 var p *Editor
 var editors []*Editor
+var windows []interface{}
 
 var v *nvim.Nvim
 var w nvim.Window
@@ -180,7 +181,7 @@ func main() {
 
 			if textChange {
 				p.scroll()
-				p.refreshScreen()
+				p.drawText()
 			}
 		} else {
 			organizerProcessKey(k)

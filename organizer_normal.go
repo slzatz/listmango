@@ -246,7 +246,7 @@ func entryInfo() {
 }
 
 func switchToEditorMode() {
-	if len(editors) == 0 {
+	if len(windows) == 0 {
 		sess.showOrgMessage("There are no active editors")
 		return
 	}

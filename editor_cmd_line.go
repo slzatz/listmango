@@ -181,16 +181,11 @@ func (e *Editor) compile() {
 
 	rows = append(rows, "------------------------")
 
-	le := e.linked_editor
-	le.fr = 0
-	le.fc = 0
-	le.cy = 0
-	le.cx = 0
-	le.lineOffset = 0
-	le.first_visible_row = 0
-	le.last_visible_row = 0
-	le.drawOutputWinText(rows)
-	//e.linked_editor.refreshScreen()
+	op := e.output
+	op.lineOffset = 0        // not in use (yet)
+	op.first_visible_row = 0 // in use
+	op.last_visible_row = 0  // not in use and probably never
+	op.drawText(rows)
 }
 
 func (e *Editor) runLocal() {
@@ -256,16 +251,11 @@ func (e *Editor) runLocal() {
 
 	rows = append(rows, "------------------------")
 
-	le := e.linked_editor
-	le.fr = 0
-	le.fc = 0
-	le.cy = 0
-	le.cx = 0
-	le.lineOffset = 0
-	le.first_visible_row = 0
-	le.last_visible_row = 0
-
-	le.drawOutputWinText(rows)
+	op := e.output
+	op.lineOffset = 0
+	op.first_visible_row = 0 // only one in use
+	op.last_visible_row = 0
+	op.drawText(rows)
 }
 
 func (e *Editor) sync() {
@@ -283,7 +273,7 @@ func (e *Editor) toggleSyntaxHighlighting() {
 	} else {
 		e.left_margin_offset = 0
 	}
-	e.refreshScreen()
+	e.drawText()
 	sess.showEdMessage("Syntax highlighting is %v", e.highlightSyntax)
 }
 

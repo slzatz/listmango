@@ -26,6 +26,7 @@ type Editor struct {
 	search_string       string //word under cursor works with *, n, N etc.
 	id                  int    //listmanager db id of the row
 	linked_editor       *Editor
+	output              *Output
 	is_subeditor        bool
 	is_below            bool
 	//nuspell::Dictionary dict;

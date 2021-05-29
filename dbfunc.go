@@ -1377,7 +1377,7 @@ func moveDivider(pct int) {
 	}
 
 	if sess.editorMode {
-		sess.positionEditors()
+		sess.positionWindows()
 		sess.eraseRightScreen() //erases editor area + statusbar + msg
 		sess.drawEditors()
 	} else if org.view == TASK && org.mode != NO_ROWS {

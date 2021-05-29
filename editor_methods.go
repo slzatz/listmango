@@ -222,23 +222,13 @@ func (e *Editor) drawHighlightedBraces() {
 
 func (e *Editor) setLinesMargins() { //also sets top margin
 
-	if e.linked_editor != nil {
-		if e.is_subeditor {
-			if e.is_below {
-				e.screenlines = LINKED_NOTE_HEIGHT
-				e.top_margin = sess.textLines - LINKED_NOTE_HEIGHT + 2
-			} else {
-				e.screenlines = sess.textLines
-				e.top_margin = TOP_MARGIN + 1
-			}
+	if e.output != nil {
+		if e.output.is_below {
+			e.screenlines = sess.textLines - LINKED_NOTE_HEIGHT - 1
+			e.top_margin = TOP_MARGIN + 1
 		} else {
-			if e.linked_editor.is_below {
-				e.screenlines = sess.textLines - LINKED_NOTE_HEIGHT - 1
-				e.top_margin = TOP_MARGIN + 1
-			} else {
-				e.screenlines = sess.textLines
-				e.top_margin = TOP_MARGIN + 1
-			}
+			e.screenlines = sess.textLines
+			e.top_margin = TOP_MARGIN + 1
 		}
 	} else {
 		e.screenlines = sess.textLines
@@ -404,7 +394,7 @@ func (e *Editor) getLineInRowWW(r, c int) int {
 	return lines
 }
 
-func (e *Editor) refreshScreen() {
+func (e *Editor) drawText() {
 	var ab strings.Builder
 
 	fmt.Fprintf(&ab, "\x1b[?25l\x1b[%d;%dH", e.top_margin, e.left_margin+1)
@@ -429,7 +419,7 @@ func (e *Editor) refreshScreen() {
 	e.drawStatusBar()
 }
 
-func (e *Editor) drawOutputWinText(rows []string) {
+func (e *Editor) drawOutputText___(rows []string) {
 	// probably unnecessary
 	if len(rows) == 0 {
 		return
@@ -1107,7 +1097,7 @@ func (e *Editor) readFileIntoNote(filename string) error {
 
 	e.fr, e.fc, e.cy, e.cx, e.lineOffset, e.first_visible_row, e.last_visible_row = 0, 0, 0, 0, 0, 0, 0
 
-	e.refreshScreen()
+	e.drawText()
 	return nil
 }
 

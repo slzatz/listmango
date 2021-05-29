@@ -24,58 +24,42 @@ var e_lookup2 = map[string]interface{}{
 }
 
 func (e *Editor) changeSplit(flag int) {
-	if e.linked_editor == nil {
+	if e.output == nil {
 		return
 	}
 
-	le := e.linked_editor
-	var subnote_height int
+	op := e.output
+	var outputHeight int
 	if flag == '=' {
-		subnote_height = sess.textLines / 2
+		outputHeight = sess.textLines / 2
 	} else if flag == '_' {
-		subnote_height = LINKED_NOTE_HEIGHT
+		outputHeight = LINKED_NOTE_HEIGHT
 	} else {
 		return
 	}
 
 	if !e.is_subeditor {
-		e.screenlines = sess.textLines - subnote_height - 1
-		le.screenlines = subnote_height
-		le.top_margin = sess.textLines - subnote_height + 2
+		e.screenlines = sess.textLines - outputHeight - 1
+		op.screenlines = outputHeight
+		op.top_margin = sess.textLines - outputHeight + 2
 	} else {
-		le.screenlines = sess.textLines - subnote_height - 1
-		e.screenlines = subnote_height
-		e.top_margin = sess.textLines - subnote_height + 2
+		op.screenlines = sess.textLines - outputHeight - 1
+		e.screenlines = outputHeight
+		e.top_margin = sess.textLines - outputHeight + 2
 	}
-	le.refreshScreen()
-	e.refreshScreen()
+	//op.drawText() //right now rows is temporary
+	e.drawText()
 }
 
 func (e *Editor) moveOutputWindowRight() {
-	if e.linked_editor == nil { // && e.is_subeditor && e.is_below) {
+	if e.output == nil { // && e.is_subeditor && e.is_below) {
 		return
 	}
 	//top_margin = TOP_MARGIN + 1;
 	//screenlines = total_screenlines - 1;
-	e.linked_editor.is_below = false
+	e.output.is_below = false
 
-	editor_slots := 0
-	for _, e := range editors {
-		if !e.is_below {
-			editor_slots++
-		}
-	}
-
-	s_cols := -1 + (sess.screenCols-sess.divider)/editor_slots
-	i := -1 //i = number of columns of editors -1
-	for _, e := range editors {
-		if !e.is_below {
-			i++
-		}
-		e.left_margin = sess.divider + i*s_cols + i
-		e.screencols = s_cols
-		e.setLinesMargins()
-	}
+	sess.positionWindows()
 	sess.eraseRightScreen()
 	sess.drawEditors()
 	//editorSetMessage("top_margin = %d", top_margin);
@@ -83,30 +67,14 @@ func (e *Editor) moveOutputWindowRight() {
 }
 
 func (e *Editor) moveOutputWindowBelow() {
-	if e.linked_editor == nil { // && e.is_subeditor && e.is_below) {
+	if e.output == nil { // && e.is_subeditor && e.is_below) {
 		return
 	}
 	//top_margin = TOP_MARGIN + 1;
 	//screenlines = total_screenlines - 1;
-	e.linked_editor.is_below = true
+	e.output.is_below = true
 
-	editor_slots := 0
-	for _, e := range editors {
-		if !e.is_below {
-			editor_slots++
-		}
-	}
-
-	s_cols := -1 + (sess.screenCols-sess.divider)/editor_slots
-	i := -1 //i = number of columns of editors -1
-	for _, e := range editors {
-		if !e.is_below {
-			i++
-		}
-		e.left_margin = sess.divider + i*s_cols + i
-		e.screencols = s_cols
-		e.setLinesMargins()
-	}
+	sess.positionWindows()
 	sess.eraseRightScreen()
 	sess.drawEditors()
 	//editorSetMessage("top_margin = %d", top_margin);
@@ -134,7 +102,7 @@ func controlH() {
 		return
 	}
 
-	if len(editors) == 1 {
+	if sess.numberOfEditors() == 1 {
 
 		if sess.divider < 10 {
 			sess.cfg.ed_pct = 80
@@ -149,25 +117,19 @@ func controlH() {
 		return
 	}
 
-	temp := []*Editor{}
-	for _, e := range editors {
-		if !e.is_subeditor {
-			temp = append(temp, e)
-		}
-	}
-
+	eds := sess.editors()
 	index := 0
-	for i, e := range temp {
+	for i, e := range eds {
 		if e == p {
 			index = i
 			break
 		}
 	}
 
-	sess.showEdMessage("index: %d; length: %d", index, len(temp))
+	sess.showEdMessage("index: %d; length: %d", index, len(eds))
 
 	if index > 0 {
-		p = temp[index-1]
+		p = eds[index-1]
 		err := v.SetCurrentBuffer(p.vbuf)
 		if err != nil {
 			sess.showEdMessage("Problem setting current buffer")
@@ -196,25 +158,18 @@ func controlL() {
 		return
 	}
 
-	temp := []*Editor{}
-	for _, e := range editors {
-		if !e.is_below {
-			temp = append(temp, e)
-		}
-	}
-
+	eds := sess.editors()
 	index := 0
-	for i, e := range temp {
+	for i, e := range eds {
 		if e == p {
 			index = i
 			break
 		}
 	}
+	sess.showEdMessage("index: %d; length: %d", index, len(eds))
 
-	sess.showEdMessage("index: %d; length: %d", index, len(temp))
-
-	if index < len(temp)-1 {
-		p = temp[index+1]
+	if index < len(eds)-1 {
+		p = eds[index+1]
 		p.mode = NORMAL
 		err := v.SetCurrentBuffer(p.vbuf)
 		if err != nil {

@@ -41,13 +41,33 @@ type Config struct {
 	ed_pct   int
 }
 
-func contains(s []int, x int) bool {
+func contains___(s []int, x int) bool {
 	for _, y := range s {
 		if x == y {
 			return true
 		}
 	}
 	return false
+}
+
+func (s *Session) numberOfEditors() int {
+	i := 0
+	for _, w := range windows {
+		if _, ok := w.(*Editor); ok {
+			i++
+		}
+	}
+	return i
+}
+
+func (s *Session) editors() []*Editor {
+	eds := []*Editor{}
+	for _, w := range windows {
+		if e, ok := w.(*Editor); ok {
+			eds = append(eds, e)
+		}
+	}
+	return eds
 }
 
 func (s *Session) eraseScreenRedrawLines() {
@@ -118,54 +138,69 @@ func (s *Session) eraseRightScreen() {
 	fmt.Fprint(os.Stdout, ab.String())
 }
 
-func (s *Session) positionEditors() {
-	editorSlots := 0
-	for _, z := range editors {
-		if !z.is_below {
-			editorSlots++
+func (s *Session) positionWindows() {
+	windowSlots := 0
+	for _, w := range windows {
+		switch v := w.(type) {
+		case *Output:
+			if !v.is_below {
+				windowSlots++
+			}
+			// or default
+		case *Editor:
+			windowSlots++
 		}
 	}
 
-	cols := -1 + (s.screenCols-s.divider)/editorSlots
-	i := -1 //i = number of columns of editors -1
-	for _, e := range editors {
-		if !e.is_below {
+	cols := -1 + (s.screenCols-s.divider)/windowSlots
+	i := -1 //i = number of columns of windows -1
+	for _, w := range windows {
+		switch v := w.(type) {
+		case *Output:
+			if !v.is_below {
+				i++
+			}
+			v.left_margin = s.divider + i*cols + i
+			v.screencols = cols
+			v.setLinesMargins()
+		case *Editor:
 			i++
+			v.left_margin = s.divider + i*cols + i
+			v.screencols = cols
+			v.setLinesMargins()
 		}
-		e.left_margin = s.divider + i*cols + i
-		e.screencols = cols
-		e.setLinesMargins()
 	}
 }
 
+// should probably draw output windows too
 func (s *Session) drawEditors() {
 	var ab strings.Builder
-	for _, e := range editors {
-		//for (size_t i=0, max=editors.size(); i!=max; ++i) {
-		//Editor *&e = editors.at(i);
-		e.refreshScreen()
-		ab.WriteString("\x1b(0") // Enter line drawing mode
+	for _, w := range windows {
+		if e, ok := w.(*Editor); ok {
+			e.drawText()
+			ab.WriteString("\x1b(0") // Enter line drawing mode
 
-		for j := 1; j < e.screenlines+1; j++ {
-			fmt.Fprintf(&ab, "\x1b[%d;%dH", e.top_margin-1+j, e.left_margin+e.screencols+1)
-			// below x = 0x78 vertical line (q = 0x71 is horizontal) 37 = white; 1m = bold (note
-			// only need one 'm'
-			ab.WriteString("\x1b[37;1mx")
-		}
-
-		if !e.is_below {
-			//'T' corner = w or right top corner = k
-			fmt.Fprintf(&ab, "\x1b[%d;%dH", e.top_margin-1, e.left_margin+e.screencols+1)
-
-			if e.left_margin+e.screencols > s.screenCols-4 {
-				ab.WriteString("\x1b[37;1mk") //draw corner
-			} else {
-				ab.WriteString("\x1b[37;1mw")
+			for j := 1; j < e.screenlines+1; j++ {
+				fmt.Fprintf(&ab, "\x1b[%d;%dH", e.top_margin-1+j, e.left_margin+e.screencols+1)
+				// below x = 0x78 vertical line (q = 0x71 is horizontal) 37 = white; 1m = bold (note
+				// only need one 'm'
+				ab.WriteString("\x1b[37;1mx")
 			}
-		}
 
-		//exit line drawing mode
-		ab.WriteString("\x1b(B")
+			if !e.is_below {
+				//'T' corner = w or right top corner = k
+				fmt.Fprintf(&ab, "\x1b[%d;%dH", e.top_margin-1, e.left_margin+e.screencols+1)
+
+				if e.left_margin+e.screencols > s.screenCols-4 {
+					ab.WriteString("\x1b[37;1mk") //draw corner
+				} else {
+					ab.WriteString("\x1b[37;1mw")
+				}
+			}
+
+			//exit line drawing mode
+			ab.WriteString("\x1b(B")
+		}
 	}
 	ab.WriteString("\x1b[?25h") //shows the cursor
 	ab.WriteString("\x1b[0m")   //or else subsequent editors are bold
