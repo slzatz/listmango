@@ -185,7 +185,9 @@ func (e *Editor) compile() {
 	op.lineOffset = 0        // not in use (yet)
 	op.first_visible_row = 0 // in use
 	op.last_visible_row = 0  // not in use and probably never
-	op.drawText(rows)
+	op.rows = rows
+	op.drawText()
+	// no need to call drawFrame or drawStatusBar
 }
 
 func (e *Editor) runLocal() {
@@ -255,7 +257,9 @@ func (e *Editor) runLocal() {
 	op.lineOffset = 0
 	op.first_visible_row = 0 // only one in use
 	op.last_visible_row = 0
-	op.drawText(rows)
+	op.rows = rows
+	op.drawText()
+	// no need to call drawFrame or drawStatusBar
 }
 
 func (e *Editor) sync() {
@@ -274,6 +278,7 @@ func (e *Editor) toggleSyntaxHighlighting() {
 		e.left_margin_offset = 0
 	}
 	e.drawText()
+	// no need to call drawFrame or drawStatusBar
 	sess.showEdMessage("Syntax highlighting is %v", e.highlightSyntax)
 }
 

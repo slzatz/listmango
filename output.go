@@ -15,6 +15,7 @@ type Output struct {
 	first_visible_row  int
 	last_visible_row   int
 	is_below           bool
+	rows               []string
 }
 
 func NewOutput() *Output {
@@ -25,9 +26,10 @@ func NewOutput() *Output {
 	}
 }
 
-func (o *Output) drawText(rows []string) {
+func (o *Output) drawText() {
 	// probably unnecessary
-	if len(rows) == 0 {
+	if len(o.rows) == 0 {
+		o.drawStatusBar()
 		return
 	}
 	var ab strings.Builder
@@ -54,11 +56,11 @@ func (o *Output) drawText(rows []string) {
 			break
 		}
 
-		if filerow == len(rows) {
+		if filerow == len(o.rows) {
 			break
 		}
 
-		row := rows[filerow]
+		row := o.rows[filerow]
 
 		if len(row) == 0 {
 			if y == o.screenlines-1 {
@@ -103,7 +105,7 @@ func (o *Output) drawText(rows []string) {
 		}
 	}
 	fmt.Print(ab.String())
-	o.drawStatusBar()
+	//o.drawStatusBar()
 }
 
 func (o *Output) drawStatusBar() {
@@ -142,4 +144,31 @@ func (o *Output) setLinesMargins() { //also sets top margin
 		o.screenlines = sess.textLines
 		o.top_margin = TOP_MARGIN + 1
 	}
+}
+
+func (o *Output) drawFrame() {
+	var ab strings.Builder
+	ab.WriteString("\x1b(0") // Enter line drawing mode
+
+	for j := 1; j < o.screenlines+1; j++ {
+		fmt.Fprintf(&ab, "\x1b[%d;%dH", o.top_margin-1+j, o.left_margin+o.screencols+1)
+		// below x = 0x78 vertical line (q = 0x71 is horizontal) 37 = white; 1m = bold (note
+		// only need one 'm'
+		ab.WriteString("\x1b[37;1mx")
+	}
+
+	//'T' corner = w or right top corner = k
+	fmt.Fprintf(&ab, "\x1b[%d;%dH", o.top_margin-1, o.left_margin+o.screencols+1)
+
+	if o.left_margin+o.screencols > sess.screenCols-4 {
+		ab.WriteString("\x1b[37;1mk") //draw corner
+	} else {
+		ab.WriteString("\x1b[37;1mw")
+	}
+
+	//exit line drawing mode
+	ab.WriteString("\x1b(B")
+	ab.WriteString("\x1b[?25h") //shows the cursor
+	ab.WriteString("\x1b[0m")   //or else subsequent editors are bold
+	fmt.Print(ab.String())
 }

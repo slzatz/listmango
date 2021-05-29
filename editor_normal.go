@@ -23,6 +23,7 @@ var e_lookup2 = map[string]interface{}{
 	leader + "s":         (*Editor).nextStyle,
 }
 
+// needs rewriting
 func (e *Editor) changeSplit(flag int) {
 	if e.output == nil {
 		return
@@ -37,18 +38,14 @@ func (e *Editor) changeSplit(flag int) {
 	} else {
 		return
 	}
+	e.screenlines = sess.textLines - outputHeight - 1
+	op.screenlines = outputHeight
+	op.top_margin = sess.textLines - outputHeight + 2
 
-	if !e.is_subeditor {
-		e.screenlines = sess.textLines - outputHeight - 1
-		op.screenlines = outputHeight
-		op.top_margin = sess.textLines - outputHeight + 2
-	} else {
-		op.screenlines = sess.textLines - outputHeight - 1
-		e.screenlines = outputHeight
-		e.top_margin = sess.textLines - outputHeight + 2
-	}
-	//op.drawText() //right now rows is temporary
-	e.drawText()
+	//op.drawText()
+	//e.drawText()
+	sess.eraseRightScreen()
+	sess.drawRightScreen()
 }
 
 func (e *Editor) moveOutputWindowRight() {

@@ -416,87 +416,7 @@ func (e *Editor) drawText() {
 		e.drawBuffer(&ab)
 		fmt.Print(ab.String())
 	}
-	e.drawStatusBar()
-}
-
-func (e *Editor) drawOutputText___(rows []string) {
-	// probably unnecessary
-	if len(rows) == 0 {
-		return
-	}
-	var ab strings.Builder
-
-	fmt.Fprintf(&ab, "\x1b[?25l\x1b[%d;%dH", e.top_margin, e.left_margin+1)
-	// \x1b[NC moves cursor forward by n columns
-	lf_ret := fmt.Sprintf("\r\n\x1b[%dC", e.left_margin)
-	erase_chars := fmt.Sprintf("\x1b[%dX", e.screencols)
-	for i := 0; i < e.screenlines; i++ {
-		ab.WriteString(erase_chars)
-		ab.WriteString(lf_ret)
-	}
-
-	// format for positioning cursor is "\x1b[%d;%dh"
-	fmt.Fprintf(&ab, "\x1b[%d;%dH", e.top_margin, e.left_margin+1)
-
-	y := 0
-	filerow := e.first_visible_row
-	flag := false
-
-	for {
-
-		if flag {
-			break
-		}
-
-		if filerow == len(rows) {
-			break
-		}
-
-		row := rows[filerow]
-
-		if len(row) == 0 {
-			if y == e.screenlines-1 {
-				break
-			}
-			ab.WriteString(lf_ret)
-			filerow++
-			y++
-			continue
-		}
-
-		pos := 0
-		prev_pos := 0 //except for start -> pos + 1
-		for {
-			/* this is needed because it deals where the end of the line doesn't have a space*/
-			if prev_pos+e.screencols-e.left_margin_offset > len(row)-1 { //? if need -1;cpp generatewwstring had it
-				ab.WriteString(row[prev_pos:])
-				if y == e.screenlines-1 {
-					flag = true
-					break
-				}
-				ab.WriteString(lf_ret)
-				y++
-				filerow++
-				break
-			}
-
-			pos = strings.LastIndex(row[:prev_pos+e.screencols-e.left_margin_offset], " ")
-
-			if pos == -1 || pos == prev_pos-1 {
-				pos = prev_pos + e.screencols - e.left_margin_offset - 1
-			}
-
-			ab.WriteString(row[prev_pos : pos+1]) //? pos+1
-			if y == e.screenlines-1 {
-				flag = true
-				break
-			}
-			ab.WriteString(lf_ret)
-			prev_pos = pos + 1
-			y++
-		}
-	}
-	fmt.Print(ab.String())
+	//e.drawStatusBar()
 }
 
 func (e *Editor) drawVisual(pab *strings.Builder) {
@@ -988,17 +908,40 @@ func (e *Editor) drawStatusBar() {
 	if e.isModified() {
 		title += "[+]"
 	}
-	var sub string
-	if e.is_subeditor {
-		sub = "subeditor"
-	}
-	status := fmt.Sprintf("%d - %s ... %s", e.id, title, sub)
+	status := fmt.Sprintf("%d - %s ...", e.id, title)
 
 	if len(status) > e.screencols-1 {
 		status = status[:e.screencols-1]
 	}
 	fmt.Fprintf(&ab, "%-*s", e.screencols, status)
 	ab.WriteString("\x1b[0m") //switches back to normal formatting
+	fmt.Print(ab.String())
+}
+
+func (e *Editor) drawFrame() {
+	var ab strings.Builder
+	ab.WriteString("\x1b(0") // Enter line drawing mode
+
+	for j := 1; j < e.screenlines+1; j++ {
+		fmt.Fprintf(&ab, "\x1b[%d;%dH", e.top_margin-1+j, e.left_margin+e.screencols+1)
+		// below x = 0x78 vertical line (q = 0x71 is horizontal) 37 = white; 1m = bold (note
+		// only need one 'm'
+		ab.WriteString("\x1b[37;1mx")
+	}
+
+	//'T' corner = w or right top corner = k
+	fmt.Fprintf(&ab, "\x1b[%d;%dH", e.top_margin-1, e.left_margin+e.screencols+1)
+
+	if e.left_margin+e.screencols > sess.screenCols-4 {
+		ab.WriteString("\x1b[37;1mk") //draw corner
+	} else {
+		ab.WriteString("\x1b[37;1mw")
+	}
+
+	//exit line drawing mode
+	ab.WriteString("\x1b(B")
+	ab.WriteString("\x1b[?25h") //shows the cursor
+	ab.WriteString("\x1b[0m")   //or else subsequent editors are bold
 	fmt.Print(ab.String())
 }
 
@@ -1098,6 +1041,7 @@ func (e *Editor) readFileIntoNote(filename string) error {
 	e.fr, e.fc, e.cy, e.cx, e.lineOffset, e.first_visible_row, e.last_visible_row = 0, 0, 0, 0, 0, 0, 0
 
 	e.drawText()
+	e.drawStatusBar() // not sure what state of isModified would be so not sure need to draw statubBar
 	return nil
 }
 

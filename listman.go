@@ -14,11 +14,19 @@ import (
 	"github.com/slzatz/listmango/terminal"
 )
 
+type Window interface {
+	drawText()
+	drawFrame()
+	drawStatusBar()
+}
+
 var sess Session
 var org = Organizer{Session: &sess}
 var p *Editor
 var editors []*Editor
-var windows []interface{}
+
+//var windows []interface{}
+var windows []Window
 
 var v *nvim.Nvim
 var w nvim.Window
@@ -182,6 +190,7 @@ func main() {
 			if textChange {
 				p.scroll()
 				p.drawText()
+				p.drawStatusBar()
 			}
 		} else {
 			organizerProcessKey(k)
