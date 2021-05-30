@@ -23,12 +23,12 @@ type Editor struct {
 	highlightSyntax     bool
 	redraw              bool
 	pos_mispelled_words [][2]int
-	search_string       string //word under cursor works with *, n, N etc.
-	id                  int    //listmanager db id of the row
-	linked_editor       *Editor
-	output              *Output
-	is_subeditor        bool
-	is_below            bool
+	//search_string       string //word under cursor works with *, n, N etc.
+	id int //db id of entry
+	//linked_editor       *Editor
+	output *Output
+	//is_subeditor bool
+	//is_below     bool
 	//nuspell::Dictionary dict;
 	vbuf              nvim.Buffer
 	bb                [][]byte
@@ -40,21 +40,22 @@ type Editor struct {
 
 func NewEditor() *Editor {
 	return &Editor{
-		cx:                 0, //actual cursor x position (takes into account any scroll/offset)
-		cy:                 0, //actual cursor y position ""
-		fc:                 0, //'file' x position as defined by reading sqlite text into rows vector
-		fr:                 0, //'file' y position ""
-		lineOffset:         0, //the number of lines of text at the top scrolled off the screen
-		mode:               NORMAL,
-		command:            "",
-		command_line:       "",
-		first_visible_row:  0,
-		spellcheck:         false,
-		highlightSyntax:    true, // can shut off syntax highlighting; default is ot assume markdown
-		redraw:             false,
-		linked_editor:      nil,
-		is_subeditor:       false,
-		is_below:           false,
+		cx:                0, //actual cursor x position (takes into account any scroll/offset)
+		cy:                0, //actual cursor y position ""
+		fc:                0, //'file' x position as defined by reading sqlite text into rows vector
+		fr:                0, //'file' y position ""
+		lineOffset:        0, //the number of lines of text at the top scrolled off the screen
+		mode:              NORMAL,
+		command:           "",
+		command_line:      "",
+		first_visible_row: 0,
+		spellcheck:        false,
+		highlightSyntax:   true, // can shut off syntax highlighting; default is ot assume markdown
+		redraw:            false,
+		//linked_editor:     nil,
+		output: nil,
+		//is_subeditor:       false,
+		//is_below:           false,
 		left_margin_offset: LEFT_MARGIN_OFFSET, // 0 if not syntax highlighting b/o synt high =>line numbers
 		//E.coloff: 0,  //always zero because currently only word wrap supported
 

@@ -11,6 +11,8 @@ var e_lookup2 = map[string]interface{}{
 	"\x17J":              (*Editor).moveOutputWindowBelow,
 	"\x08":               controlH,
 	"\x0c":               controlL,
+	"\x0a":               (*Editor).controlJ,
+	"\x0b":               (*Editor).controlK,
 	"\x02":               (*Editor).decorateWord,
 	leader + "b":         (*Editor).decorateWord,
 	"\x05":               (*Editor).decorateWord,
@@ -77,19 +79,30 @@ func (e *Editor) moveOutputWindowBelow() {
 	//editorSetMessage("top_margin = %d", top_margin);
 }
 
+// should scroll output down
 func (e *Editor) controlJ() {
-	if e.linked_editor.is_below {
-		e = e.linked_editor
+	op := e.output
+	if op == nil {
+		e.command = ""
+		return
 	}
-	e.mode = NORMAL
+	if op.rowOffset < len(op.rows)-1 {
+		op.rowOffset++
+		op.drawText()
+	}
 	e.command = ""
 }
 
+// should scroll output up
 func (e *Editor) controlK() {
-	if e.is_below {
-		e = e.linked_editor
+	if e.output == nil {
+		e.command = ""
+		return
 	}
-	e.mode = NORMAL
+	if e.output.rowOffset > 0 {
+		e.output.rowOffset--
+	}
+	e.output.drawText()
 	e.command = ""
 }
 

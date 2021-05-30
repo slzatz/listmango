@@ -72,11 +72,6 @@ func (e *Editor) saveNoteToFile() {
 }
 
 func (e *Editor) writeNote() {
-	if e.is_subeditor {
-		sess.showEdMessage("You can't save the contents of the Output Window")
-		return
-	}
-
 	updateNote(e)
 	//v.Input(":w\n") // sets editor.isModified to false
 	err := v.Command("w")
@@ -182,9 +177,9 @@ func (e *Editor) compile() {
 	rows = append(rows, "------------------------")
 
 	op := e.output
-	op.lineOffset = 0        // not in use (yet)
-	op.first_visible_row = 0 // in use
-	op.last_visible_row = 0  // not in use and probably never
+	op.rowOffset = 0 // in use
+	//op.first_visible_row = 0 // notin use
+	//op.last_visible_row = 0  // not in use and probably never
 	op.rows = rows
 	op.drawText()
 	// no need to call drawFrame or drawStatusBar
@@ -254,9 +249,9 @@ func (e *Editor) runLocal() {
 	rows = append(rows, "------------------------")
 
 	op := e.output
-	op.lineOffset = 0
-	op.first_visible_row = 0 // only one in use
-	op.last_visible_row = 0
+	op.rowOffset = 0
+	//op.first_visible_row = 0 // not in use
+	//op.last_visible_row = 0
 	op.rows = rows
 	op.drawText()
 	// no need to call drawFrame or drawStatusBar

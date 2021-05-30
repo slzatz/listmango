@@ -6,23 +6,24 @@ import (
 )
 
 type Output struct {
-	lineOffset         int //first row based on user scroll
-	screenlines        int //number of lines for this Editor
-	screencols         int //number of columns for this Editor
-	left_margin        int //can vary (so could TOP_MARGIN - will do that later
+	rowOffset          int //first row based on user scroll
+	screenlines        int //number of lines for this Window
+	screencols         int //number of columns for this Window
+	left_margin        int
 	left_margin_offset int
 	top_margin         int
-	first_visible_row  int
-	last_visible_row   int
-	is_below           bool
-	rows               []string
+	//first_visible_row  int
+	is_below bool
+	rows     []string
+	id       int // db id of related entry
+	//last_visible_row   int
 }
 
 func NewOutput() *Output {
 	return &Output{
-		lineOffset:        0, //the number of lines of text at the top scrolled off the screen
-		first_visible_row: 0,
-		is_below:          false,
+		rowOffset: 0, //the number of lines of text at the top scrolled off the screen
+		//first_visible_row: 0,
+		is_below: false,
 	}
 }
 
@@ -47,7 +48,7 @@ func (o *Output) drawText() {
 	fmt.Fprintf(&ab, "\x1b[%d;%dH", o.top_margin, o.left_margin+1)
 
 	y := 0
-	filerow := o.first_visible_row
+	filerow := o.rowOffset
 	flag := false
 
 	for {
@@ -125,7 +126,7 @@ func (o *Output) drawStatusBar() {
 		status := fmt.Sprintf("%d - %s ... %s", e.id, title, sub)
 	*/
 
-	status := "Output"
+	status := fmt.Sprintf("%d Output", o.id)
 
 	if len(status) > o.screencols-1 {
 		status = status[:o.screencols-1]

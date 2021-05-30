@@ -295,6 +295,7 @@ func (o *Organizer) editNote(id int) {
 		if folder_tid == 18 || folder_tid == 14 {
 			p.output = &Output{}
 			p.output.is_below = true
+			p.output.id = id
 			windows = append(windows, p.output)
 		}
 		readNoteIntoBuffer(p, id)
@@ -364,18 +365,6 @@ func (o *Organizer) newEntry(unused int) {
 	sess.eraseRightScreen() //erases the note area
 	o.mode = INSERT
 
-	/*
-	  int fd;
-	  std::string fn = "assets/" + CURRENT_NOTE_FILE;
-	  if ((fd = open(fn.c_str(), O_WRONLY|O_CREAT|O_TRUNC, 0666)) != -1) {
-	    sess.lock.l_type = F_WRLCK;
-	    if (fcntl(fd, F_SETLK, &sess.lock) != -1) {
-	    write(fd, " ", 1);
-	    sess.lock.l_type = F_UNLCK;
-	    fcntl(fd, F_SETLK, &sess.lock);
-	    } else sess.showOrgMessage("Couldn't lock file");
-	  } else sess.showOrgMessage("Couldn't open file");
-	*/
 }
 
 func (o *Organizer) refresh(unused int) {

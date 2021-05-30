@@ -102,7 +102,7 @@ func editorProcessKey(c int) bool { //bool returned is whether to redraw
 
 	if p.mode == NORMAL {
 		if len(p.command) == 0 {
-			if strings.IndexAny(string(c), "\x17\x08\x0c\x02\x05\x09\x06 ") != -1 {
+			if strings.IndexAny(string(c), "\x17\x08\x0c\x02\x05\x09\x06\x0a\x0b ") != -1 {
 				p.command = string(c)
 			}
 		} else {
@@ -184,27 +184,7 @@ func editorProcessKey(c int) bool { //bool returned is whether to redraw
 			//sess.showOrgMessage("You hit return and command is %v", cmd) //debugging
 			if _, found := quit_cmds[cmd]; found {
 				if cmd == "x" {
-					if p.is_subeditor {
-						p.mode = NORMAL
-						p.command = ""
-						p.command_line = ""
-						sess.showEdMessage("You can't save the contents of the Output Window")
-						return false
-					}
 					updateNote(p)
-					/*
-						deleteBufferOpts := map[string]bool{
-							"force":  true,
-							"unload": false,
-						}
-						//err := v.DeleteBuffer(0, map[string]bool{})
-						err := v.DeleteBuffer(0, deleteBufferOpts)
-						if err != nil {
-							sess.showOrgMessage("DeleteBuffer error %v", err)
-						} else {
-							sess.showOrgMessage("DeleteBuffer successful")
-						}
-					*/
 
 				} else if cmd == "q!" || cmd == "quit!" {
 					// do nothing = allow editor to be closed

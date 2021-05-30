@@ -36,6 +36,8 @@ var n_lookup = map[string]func(){
 	string(0x2):                starEntry,     //ctrl-b -probably want this go backwards (unimplemented) and use ctrl-e for this
 	string(0x18):               completeEntry, //ctrl-x
 	string(ctrlKey('i')):       entryInfo,     //{{0x9}}
+	string(ctrlKey('j')):       controlJ,
+	string(ctrlKey('k')):       controlK,
 }
 
 func _i() {
@@ -255,4 +257,18 @@ func switchToEditorMode() {
 	sess.drawRightScreen()
 
 	sess.editorMode = true
+}
+
+func controlJ() {
+	org.altRowoff++
+	sess.eraseRightScreen()
+	org.drawPreview()
+}
+
+func controlK() {
+	if org.altRowoff > 0 {
+		org.altRowoff--
+	}
+	sess.eraseRightScreen()
+	org.drawPreview()
 }
