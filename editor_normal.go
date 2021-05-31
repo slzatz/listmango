@@ -23,6 +23,7 @@ var e_lookup2 = map[string]interface{}{
 	leader + "l":         showVimMessageLog,
 	leader + "m":         (*Editor).showMarkdown,
 	leader + "s":         (*Editor).nextStyle,
+	leader + "w":         showWindows,
 }
 
 // needs rewriting
@@ -107,9 +108,9 @@ func (e *Editor) controlK() {
 }
 
 func controlH() {
+	// below "if" really for testing
 	if p.isModified() {
-		sess.showEdMessage("You need to save first")
-		return
+		sess.showEdMessage("Note you left has been modified")
 	}
 
 	if sess.numberOfEditors() == 1 {
@@ -163,9 +164,9 @@ func controlH() {
 }
 
 func controlL() {
+	// below "if" really for testing
 	if p.isModified() {
-		sess.showEdMessage("You need to save first")
-		return
+		sess.showEdMessage("Note you left has been modified")
 	}
 
 	eds := sess.editors()
@@ -319,6 +320,13 @@ func showVimMessageLog() {
 	p.mode = PREVIEW_MARKDOWN
 	p.previewLineOffset = 0
 	p.drawPreview()
+}
+
+// appears to be no way to actually create new standard windows
+// can create floating windows but not sure we want them
+func showWindows() {
+	w, _ := v.Windows()
+	sess.showEdMessage("windows: %v", w)
 }
 
 func (e *Editor) showMarkdown() {

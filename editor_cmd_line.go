@@ -79,7 +79,8 @@ func (e *Editor) saveNoteToFile() {
 
 func (e *Editor) writeNote() {
 	updateNote(e)
-	//v.Input(":w\n") // sets editor.isModified to false
+
+	//uses nvim to write note to file for sole purpose of setting isModified to false
 	err := v.Command("w")
 	if err != nil {
 		sess.showEdMessage("Error in writing file in editor.WriteNote: %v", err)
@@ -313,14 +314,12 @@ func (e *Editor) quitActions() {
 		e.command = ""
 		e.command_line = ""
 		sess.showEdMessage("No write since last change")
-		//return false
 		return
 	}
 	deleteBufferOpts := map[string]bool{
 		"force":  true,
 		"unload": false,
 	}
-	//err = v.DeleteBuffer(0, map[string]bool{})
 	err := v.DeleteBuffer(e.vbuf, deleteBufferOpts)
 	if err != nil {
 		sess.showOrgMessage("DeleteBuffer error %v", err)
@@ -387,19 +386,14 @@ func (e *Editor) quitActions() {
 }
 
 func (e *Editor) writeAll() {
-	e.writeNote()
-
-	// currently pointless because only current buffer can be in modified state
 	for _, w := range windows {
 		if ed, ok := w.(*Editor); ok {
-			if ed != e {
-				err := v.SetCurrentBuffer(ed.vbuf)
-				if err != nil {
-					sess.showEdMessage("Problem setting current buffer: %d", ed.vbuf)
-					return
-				}
-				ed.writeNote()
+			err := v.SetCurrentBuffer(ed.vbuf)
+			if err != nil {
+				sess.showEdMessage("Problem setting current buffer: %d", ed.vbuf)
+				return
 			}
+			ed.writeNote()
 		}
 	}
 	err := v.SetCurrentBuffer(e.vbuf)

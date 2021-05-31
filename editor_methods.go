@@ -1113,6 +1113,8 @@ func (e *Editor) drawPreview() {
 	}
 }
 
+// this func is reason that we are writing notes to file
+// allows easy testing if a file is modified with BufferOption
 func (e *Editor) isModified() bool {
 	var result bool
 	err := v.BufferOption(e.vbuf, "modified", &result)

@@ -497,6 +497,14 @@ func readNoteIntoBuffer(e *Editor, id int) {
 	if err != nil {
 		sess.showOrgMessage("%v", err)
 	}
+
+	// this allows you to change current buffer without saving
+	// isModified still works when hidden is true
+	err = v.SetOption("hidden", true)
+	if err != nil {
+		sess.showEdMessage("hidden option error")
+	}
+
 	err = v.SetCurrentBuffer(e.vbuf)
 	if err != nil {
 		sess.showOrgMessage("%v", err)
