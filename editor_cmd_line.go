@@ -14,6 +14,7 @@ import (
 var e_lookup_C = map[string]func(*Editor){
 	"write":    (*Editor).writeNote,
 	"w":        (*Editor).writeNote,
+	"wa":       (*Editor).writeAll,
 	"read":     (*Editor).readFile,
 	"readfile": (*Editor).readFile,
 	"resize":   (*Editor).resize,
@@ -27,6 +28,11 @@ var e_lookup_C = map[string]func(*Editor){
 	"syntax":   (*Editor).toggleSyntaxHighlighting,
 	"ha":       (*Editor).printNote,
 	"modified": (*Editor).modified,
+	"quit":     (*Editor).quitActions,
+	"q":        (*Editor).quitActions,
+	"quit!":    (*Editor).quitActions,
+	"q!":       (*Editor).quitActions,
+	"x":        (*Editor).quitActions,
 }
 
 /* EDITOR cpp COMMAND_LINE mode lookup
@@ -292,4 +298,115 @@ func (e *Editor) modified() {
 		return
 	}
 	sess.showEdMessage("Modified = %t", result)
+}
+
+func (e *Editor) quitActions() {
+	cmd := e.command_line
+	if cmd == "x" {
+		updateNote(e)
+
+	} else if cmd == "q!" || cmd == "quit!" {
+		// do nothing = allow editor to be closed
+
+	} else if e.isModified() {
+		e.mode = NORMAL
+		e.command = ""
+		e.command_line = ""
+		sess.showEdMessage("No write since last change")
+		//return false
+		return
+	}
+	deleteBufferOpts := map[string]bool{
+		"force":  true,
+		"unload": false,
+	}
+	//err = v.DeleteBuffer(0, map[string]bool{})
+	err := v.DeleteBuffer(e.vbuf, deleteBufferOpts)
+	if err != nil {
+		sess.showOrgMessage("DeleteBuffer error %v", err)
+	} else {
+		sess.showOrgMessage("DeleteBuffer successful")
+	}
+
+	index := -1
+	for i, w := range windows {
+		if w == e {
+			index = i
+			break
+		}
+	}
+	copy(windows[index:], windows[index+1:])
+	windows = windows[:len(windows)-1]
+
+	if e.output != nil {
+		index = -1
+		for i, w := range windows {
+			if w == e.output {
+				index = i
+				break
+			}
+		}
+		copy(windows[index:], windows[index+1:])
+		windows = windows[:len(windows)-1]
+	}
+
+	//if len(windows) > 0 {
+	if sess.numberOfEditors() > 0 {
+		// easier to just go to first window which has to be an editor (at least right now)
+		for _, w := range windows {
+			if ed, ok := w.(*Editor); ok { //need the type assertion
+				p = ed //p is the global current editor
+				break
+			}
+		}
+
+		//p = windows[0].(*Editor)
+		err = v.SetCurrentBuffer(p.vbuf)
+		if err != nil {
+			sess.showOrgMessage("Error setting current buffer: %v", err)
+		}
+		sess.positionWindows()
+		sess.eraseRightScreen()
+		sess.drawRightScreen()
+
+	} else { // we've quit the last remaining editor(s)
+		// unless commented out earlier sess.p.quit <- causes panic
+		//sess.p = nil
+		sess.editorMode = false
+		sess.eraseRightScreen()
+
+		if sess.divider < 10 {
+			sess.cfg.ed_pct = 80
+			moveDivider(80)
+		}
+
+		org.drawPreview()
+		sess.returnCursor() //because main while loop if started in editor_mode -- need this 09302020
+	}
+
+}
+
+func (e *Editor) writeAll() {
+	e.writeNote()
+
+	// currently pointless because only current buffer can be in modified state
+	for _, w := range windows {
+		if ed, ok := w.(*Editor); ok {
+			if ed != e {
+				err := v.SetCurrentBuffer(ed.vbuf)
+				if err != nil {
+					sess.showEdMessage("Problem setting current buffer: %d", ed.vbuf)
+					return
+				}
+				ed.writeNote()
+			}
+		}
+	}
+	err := v.SetCurrentBuffer(e.vbuf)
+	if err != nil {
+		sess.showEdMessage("Problem setting current buffer")
+		return
+	}
+	e.command_line = ""
+	e.mode = NORMAL
 }

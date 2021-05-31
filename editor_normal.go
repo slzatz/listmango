@@ -20,7 +20,7 @@ var e_lookup2 = map[string]interface{}{
 	"\x17=":              (*Editor).changeSplit,
 	"\x17_":              (*Editor).changeSplit,
 	"\x06":               (*Editor).findMatchForBrace,
-	leader + "+":         showVimMessage,
+	leader + "l":         showVimMessageLog,
 	leader + "m":         (*Editor).showMarkdown,
 	leader + "s":         (*Editor).nextStyle,
 }
@@ -274,10 +274,12 @@ func (e *Editor) decorateWord(c int) {
 	v.SetWindowCursor(w, [2]int{e.fr + 1, e.fc})                       //set screen cx and cy from pos
 }
 
-func showVimMessage() {
+func showLastVimMessage() {
 	_ = v.SetCurrentBuffer(messageBuf)
-	_ = v.SetBufferLines(messageBuf, 0, -1, true, [][]byte{})
-	_ = v.FeedKeys("\x1b\"apqaq", "t", false)
+
+	// don't have to erase message buffer before adding to it
+	//_ = v.SetBufferLines(messageBuf, 0, -1, true, [][]byte{})
+	_ = v.FeedKeys("\x1bG$\"apqaq", "t", false) //qaq ->record macro to register 'a'  followed by q (stop recording) clears register
 	bb, _ := v.BufferLines(messageBuf, 0, -1, true)
 	var message string
 	var i int
@@ -290,10 +292,33 @@ func showVimMessage() {
 	v.SetCurrentBuffer(p.vbuf)
 	currentBuf, _ := v.CurrentBuffer()
 	if message != "" {
-		sess.showEdMessage("len bb: %v; i: %v; message: %v", len(bb), i, message)
+		sess.showEdMessage("message: %v", message)
 	} else {
 		sess.showEdMessage("No message: len bb %v; Current Buf %v", len(bb), currentBuf)
 	}
+}
+
+// for testing - displays vimMessageLog in preview windows
+func showVimMessageLog() {
+
+	// below don't want to erase log of messages
+	//_ = v.SetBufferLines(messageBuf, 0, -1, true, [][]byte{})
+	_ = v.SetCurrentBuffer(messageBuf)
+
+	// \"ap pastes register a into messageBuf buffer
+	// qaq is wierd way to erase a register (record macro to register then immediatly stop recording)
+	_ = v.FeedKeys("\x1bG$\"apqaq", "t", false)
+	v.SetCurrentBuffer(p.vbuf)
+
+	// z needs some dimenstions like screenCols - takes from current editor
+	z := *p
+	z.vbuf = messageBuf
+	z.bb, _ = v.BufferLines(messageBuf, 0, -1, true)
+
+	p.renderedNote = z.generateWWStringFromBuffer2()
+	p.mode = PREVIEW_MARKDOWN
+	p.previewLineOffset = 0
+	p.drawPreview()
 }
 
 func (e *Editor) showMarkdown() {

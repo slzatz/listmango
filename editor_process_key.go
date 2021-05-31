@@ -126,7 +126,7 @@ func editorProcessKey(c int) bool { //bool returned is whether to redraw
 				if err != nil {
 					sess.showEdMessage("%v", err)
 				}
-				if p.command == " m" {
+				if p.command == " m" || p.command == " l" {
 					p.command = ""
 					return false
 				}
@@ -153,123 +153,6 @@ func editorProcessKey(c int) bool { //bool returned is whether to redraw
 			} else {
 				pos = 0
 				cmd = p.command_line
-			}
-
-			if cmd == "wa" {
-				p.writeNote()
-				// pointless because only current buffer can be in modified state
-				for _, w := range windows {
-					if e, ok := w.(*Editor); ok {
-						if e != p {
-							err := v.SetCurrentBuffer(e.vbuf)
-							if err != nil {
-								sess.showEdMessage("Problem setting current buffer: %d", e.vbuf)
-								return false
-							}
-							e.writeNote()
-						}
-					}
-				}
-				err := v.SetCurrentBuffer(p.vbuf)
-				if err != nil {
-					sess.showEdMessage("Problem setting current buffer")
-					return false
-				}
-				p.command_line = ""
-				p.mode = NORMAL
-				return false
-			}
-			// note that right now we are not calling editor commands like E_write_close_C
-			// and E_quit_C and E_quit0_C
-			//sess.showOrgMessage("You hit return and command is %v", cmd) //debugging
-			if _, found := quit_cmds[cmd]; found {
-				if cmd == "x" {
-					updateNote(p)
-
-				} else if cmd == "q!" || cmd == "quit!" {
-					// do nothing = allow editor to be closed
-
-				} else if p.isModified() {
-					p.mode = NORMAL
-					p.command = ""
-					p.command_line = ""
-					sess.showEdMessage("No write since last change")
-					return false
-				}
-				deleteBufferOpts := map[string]bool{
-					"force":  true,
-					"unload": false,
-				}
-				//err = v.DeleteBuffer(0, map[string]bool{})
-				err := v.DeleteBuffer(p.vbuf, deleteBufferOpts)
-				if err != nil {
-					sess.showOrgMessage("DeleteBuffer error %v", err)
-				} else {
-					sess.showOrgMessage("DeleteBuffer successful")
-				}
-
-				index := -1
-				for i, w := range windows {
-					if e, ok := w.(*Editor); ok {
-						if e == p {
-							index = i
-							break
-						}
-					}
-				}
-				if p.output != nil {
-					copy(windows[index:], windows[index+2:])
-					windows = windows[:len(windows)-2]
-				} else {
-					copy(windows[index:], windows[index+1:])
-					windows = windows[:len(windows)-1]
-				}
-
-				if len(windows) > 0 {
-
-					// easier to just go to first window which has to be an editor (at least right now)
-					p = windows[0].(*Editor)
-					err = v.SetCurrentBuffer(p.vbuf)
-					if err != nil {
-						sess.showOrgMessage("Error setting current buffer: %v", err)
-					}
-					sess.positionWindows()
-					sess.eraseRightScreen()
-					sess.drawRightScreen()
-
-				} else { // we've quit the last remaining editor(s)
-					// unless commented out earlier sess.p.quit <- causes panic
-					//sess.p = nil
-					sess.editorMode = false
-					sess.eraseRightScreen()
-
-					if sess.divider < 10 {
-						sess.cfg.ed_pct = 80
-						moveDivider(80)
-					}
-
-					//org.drawPreviewWindow()
-					org.drawPreview()
-					sess.returnCursor() //because main while loop if started in editor_mode -- need this 09302020
-				}
-
-				return false
-			} //end quit_cmds
-
-			// for testing looking at message buffer
-			if cmd == "s" { //switch buffer
-				bufs, _ := v.Buffers()
-				if int(p.vbuf) == 2 {
-					_ = v.SetCurrentBuffer(bufs[len(bufs)-1])
-					p.vbuf = bufs[len(bufs)-1]
-				} else {
-					_ = v.SetCurrentBuffer(bufs[1])
-					p.vbuf = bufs[1]
-				}
-				p.command_line = ""
-				p.mode = NORMAL
-				p.drawText()
-				return true
 			}
 
 			if cmd0, found := e_lookup_C[cmd]; found {
@@ -373,8 +256,8 @@ func editorProcessKey(c int) bool { //bool returned is whether to redraw
 	p.fr = pos[0] - 1
 	p.fc = pos[1]
 
-	if c == 'u' && p.mode == NORMAL {
-		showVimMessage()
+	if (c == 'u' || c == '\x12') && p.mode == NORMAL {
+		showLastVimMessage()
 	}
 
 	if p.mode == PENDING { // -> operator pending (eg. typed 'd')
