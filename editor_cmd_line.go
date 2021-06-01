@@ -15,6 +15,7 @@ var e_lookup_C = map[string]func(*Editor){
 	"write":    (*Editor).writeNote,
 	"w":        (*Editor).writeNote,
 	"wa":       (*Editor).writeAll,
+	"qa":       (*Editor).quitAll,
 	"read":     (*Editor).readFile,
 	"readfile": (*Editor).readFile,
 	"resize":   (*Editor).resize,
@@ -403,4 +404,78 @@ func (e *Editor) writeAll() {
 	}
 	e.command_line = ""
 	e.mode = NORMAL
+}
+
+func (e *Editor) quitAll() {
+
+	deleteBufferOpts := map[string]bool{
+		"force":  true,
+		"unload": false,
+	}
+
+	for _, w := range windows {
+		if ed, ok := w.(*Editor); ok {
+			if ed.isModified() {
+				continue
+			} else {
+				err := v.DeleteBuffer(ed.vbuf, deleteBufferOpts)
+				if err != nil {
+					sess.showOrgMessage("DeleteBuffer error %v", err)
+				} else {
+					sess.showOrgMessage("DeleteBuffer successful")
+				}
+				index := -1
+				for i, w := range windows {
+					if w == ed {
+						index = i
+						break
+					}
+				}
+				copy(windows[index:], windows[index+1:])
+				windows = windows[:len(windows)-1]
+
+				if ed.output != nil {
+					index = -1
+					for i, w := range windows {
+						if w == ed.output {
+							index = i
+							break
+						}
+					}
+					copy(windows[index:], windows[index+1:])
+					windows = windows[:len(windows)-1]
+				}
+			}
+		}
+	}
+
+	if sess.numberOfEditors() > 0 { // we could not quit some editors because they were in modified state
+		for _, w := range windows {
+			if ed, ok := w.(*Editor); ok { //need this type assertion to have statement below
+				p = ed //p is the global representing the current editor
+				break
+			}
+		}
+
+		err := v.SetCurrentBuffer(p.vbuf)
+		if err != nil {
+			sess.showOrgMessage("Error setting current buffer: %v", err)
+		}
+		sess.positionWindows()
+		sess.eraseRightScreen()
+		sess.drawRightScreen()
+		sess.showEdMessage("Some editors had no write since the last change")
+
+	} else { // we've been able to quit all editors because none were in modified state
+		sess.editorMode = false
+		sess.eraseRightScreen()
+
+		if sess.divider < 10 {
+			sess.cfg.ed_pct = 80
+			moveDivider(80)
+		}
+
+		org.drawPreview()
+		sess.returnCursor() //because main while loop if started in editor_mode -- need this 09302020
+	}
 }
