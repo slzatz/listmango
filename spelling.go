@@ -80,3 +80,61 @@ func highlightMispelledWords(rows []string) []string {
 	stdin.Close()
 	return highlighted_rows
 }
+
+// just operates on one row
+func highlightMispelledWords2(row string) string {
+
+	cmd := exec.Command("nuspell", "-d", "en_US")
+
+	stdout, err := cmd.StdoutPipe()
+	if err != nil {
+		sess.showEdMessage("Problem in highlightMispelled stdout: %v", err)
+		return row
+	}
+
+	stdin, err := cmd.StdinPipe()
+	if err != nil {
+		sess.showEdMessage("Problem in highlightMispelled stdin: %v", err)
+		return row
+	}
+	err = cmd.Start()
+	if err != nil {
+		sess.showEdMessage("Problem in highlightMispelled stdin: %v", err)
+		return row
+	}
+	buf_out := bufio.NewReader(stdout)
+
+	io.WriteString(stdin, row+"\n")
+	var np_rows []string
+	for {
+		//bytes, _, err := buf_out.ReadLine()
+		bytes, _, _ := buf_out.ReadLine()
+
+		if len(bytes) == 0 {
+			break
+		}
+
+		np_rows = append(np_rows, string(bytes))
+	}
+
+	var positions [][2]int
+	for _, np_row := range np_rows {
+		if np_row == "*" {
+		} else if np_row == "" {
+		} else {
+			z := strings.SplitN(np_row, ":", 2)
+			data := strings.Split(z[0], " ")
+			pos, _ := strconv.Atoi(data[3])
+			length := len(data[1])
+			//suggestions := strings.Split(strings.ReplaceAll(z[1], " ", ""), ",")
+			positions = append(positions, [2]int{pos, length})
+		}
+	}
+	for j := len(positions) - 1; j >= 0; j-- {
+		pos := positions[j][0]
+		length := positions[j][1]
+		row = row[:pos] + "\x1b[48;5;31m" + row[pos:pos+length] + "\x1b[0m" + row[pos+length:]
+	}
+	stdin.Close()
+	return row
+}

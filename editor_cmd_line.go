@@ -26,7 +26,8 @@ var e_lookup_C = map[string]func(*Editor){
 	"save":     (*Editor).saveNoteToFile,
 	"savefile": (*Editor).saveNoteToFile,
 	"render":   (*Editor).showMarkdown, //leader+m does this in normal mode; may remove this
-	"syntax":   (*Editor).toggleSyntaxHighlighting,
+	"syntax":   (*Editor).syntax,
+	"spell":    (*Editor).spell,
 	"ha":       (*Editor).printNote,
 	"modified": (*Editor).modified,
 	"quit":     (*Editor).quitActions,
@@ -34,7 +35,6 @@ var e_lookup_C = map[string]func(*Editor){
 	"quit!":    (*Editor).quitActions,
 	"q!":       (*Editor).quitActions,
 	"x":        (*Editor).quitActions,
-	"spell":    (*Editor).spellCheck,
 }
 
 /* EDITOR cpp COMMAND_LINE mode lookup
@@ -274,7 +274,7 @@ func (e *Editor) sync() {
 	synchronize(reportOnly)
 }
 
-func (e *Editor) toggleSyntaxHighlighting() {
+func (e *Editor) syntax() {
 	e.highlightSyntax = !e.highlightSyntax
 	if e.highlightSyntax {
 		e.left_margin_offset = LEFT_MARGIN_OFFSET
@@ -481,7 +481,7 @@ func (e *Editor) quitAll() {
 	}
 }
 
-func (e *Editor) spellCheck() {
+func (e *Editor) spell() {
 	e.checkSpelling = !e.checkSpelling
 	sess.showEdMessage("Spelling is %t", e.checkSpelling)
 }

@@ -409,6 +409,7 @@ func (e *Editor) drawText() {
 	//if tid == 18 || tid == 14 || e.highlightSyntax { //&& !e.is_subeditor {
 	if e.checkSpelling {
 		e.drawSpellcheckRows(&ab)
+		fmt.Print(ab.String())
 	} else if e.highlightSyntax {
 		e.drawCodeRows(&ab)
 		fmt.Print(ab.String())
@@ -478,7 +479,7 @@ func (e *Editor) drawVisual(pab *strings.Builder) {
 			}
 			row := e.bb[startRow+n]
 
-			if len(row) == 0 { //|| row_len < left {
+			if len(row) == 0 {
 				continue
 			}
 			if numrows == 1 {
@@ -710,26 +711,24 @@ func (e *Editor) drawCodeRows(pab *strings.Builder) {
 
 func (e *Editor) drawSpellcheckRows(pab *strings.Builder) {
 	//sess.showOrgMessage("Got here")
-	note := e.generateWWStringFromBuffer()
+	note := e.generateWWStringFromBuffer2()
 	nnote := strings.Split(note, "\n")
 	lf_ret := fmt.Sprintf("\r\n\x1b[%dC", e.left_margin)
 	fmt.Fprintf(pab, "\x1b[?25l\x1b[%d;%dH", e.top_margin, e.left_margin+1)
 
-	nnote = highlightMispelledWords(nnote)
+	// for speed only looking at current row
+	nnote[e.fr] = highlightMispelledWords2(nnote[e.fr])
 
 	for n := e.first_visible_row; n < len(nnote); n++ {
-		row := nnote[n]
-		line := strings.Split(row, "\t")
-		for i := 0; i < len(line); i++ {
-			fmt.Fprintf(pab, "\x1b[%dC%s%s", e.left_margin_offset, line[i], lf_ret)
-		}
+		fmt.Fprintf(pab, "\x1b[%dC%s%s", e.left_margin_offset, nnote[n], lf_ret)
 	}
-	e.drawVisual(pab)
+	//fmt.Print(pab.String())
+	e.drawVisual(pab) // need to check - messes things up
 }
 
 /*
 * simplified version of generateWWStringFromBuffer
-* used by editor.showMarkdown in editor_normal
+* used by editor.showMarkdown and editor.spellCheck in editor_normal
 * we know we want the whole buffer not just what is visible
 * unlike the situation with syntax highlighting for code
 * we don't have to handle word-wrapped lines
