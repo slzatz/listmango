@@ -21,6 +21,7 @@ type Editor struct {
 	last_visible_row   int
 	spellcheck         bool
 	highlightSyntax    bool
+	numberLines        bool
 	redraw             bool
 	//pos_mispelled_words [][2]int
 	//search_string       string //word under cursor works with *, n, N etc.

@@ -714,16 +714,50 @@ func (e *Editor) drawSpellcheckRows(pab *strings.Builder) {
 	note := e.generateWWStringFromBuffer2()
 	nnote := strings.Split(note, "\n")
 	lf_ret := fmt.Sprintf("\r\n\x1b[%dC", e.left_margin)
-	fmt.Fprintf(pab, "\x1b[?25l\x1b[%d;%dH", e.top_margin, e.left_margin+1)
+	fmt.Fprintf(pab, "\x1b[?25l\x1b[%d;%dH", e.top_margin, e.left_margin+1) //+1
 
 	// for speed only looking at current row
 	nnote[e.fr] = highlightMispelledWords2(nnote[e.fr])
 
+	var indent string
+	if e.numberLines {
+		indent = fmt.Sprintf("\x1b[%dC", e.left_margin_offset)
+	} else {
+		indent = ""
+	}
+
 	for n := e.first_visible_row; n < len(nnote); n++ {
-		fmt.Fprintf(pab, "\x1b[%dC%s%s", e.left_margin_offset, nnote[n], lf_ret)
+		//fmt.Fprintf(pab, "\x1b[%dC%s%s", e.left_margin_offset, nnote[n], lf_ret)
+		fmt.Fprintf(pab, "%s%s%s", indent, nnote[n], lf_ret)
+	}
+	if e.numberLines {
+		go e.drawLineNumbers()
 	}
 	//fmt.Print(pab.String())
 	e.drawVisual(pab) // need to check - messes things up
+}
+
+func (e *Editor) drawLineNumbers() {
+	var numCols strings.Builder
+	lf_ret := fmt.Sprintf("\r\n\x1b[%dC", e.left_margin)
+	fmt.Fprintf(&numCols, "\x1b[?25l\x1b[%d;%dH", e.top_margin, e.left_margin+1)
+
+	// below draws the line number 'rectangle'
+	// this only matters for the word-wrapped lines
+	// because of how chroma codes comment colors
+	// for a sequence like this - you need to create
+	// the number columns separately (numCols)
+	fmt.Fprintf(&numCols, "\x1b[2*x\x1b[%d;%d;%d;%d;48;5;235$r\x1b[*x",
+		e.top_margin,
+		e.left_margin,
+		e.top_margin+e.screenlines,
+		e.left_margin+e.left_margin_offset)
+
+	fmt.Fprintf(&numCols, "\x1b[?25l\x1b[%d;%dH", e.top_margin, e.left_margin+1)
+	for n := e.first_visible_row; n < e.screenlines-2; n++ {
+		fmt.Fprintf(&numCols, "\x1b[48;5;235m\x1b[38;5;245m%3d \x1b[49m%s", n+1, lf_ret)
+	}
+	fmt.Print(numCols.String())
 }
 
 /*

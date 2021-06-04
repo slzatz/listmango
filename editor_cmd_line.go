@@ -28,6 +28,7 @@ var e_lookup_C = map[string]func(*Editor){
 	"render":   (*Editor).showMarkdown, //leader+m does this in normal mode; may remove this
 	"syntax":   (*Editor).syntax,
 	"spell":    (*Editor).spell,
+	"number":   (*Editor).number,
 	"ha":       (*Editor).printNote,
 	"modified": (*Editor).modified,
 	"quit":     (*Editor).quitActions,
@@ -484,4 +485,14 @@ func (e *Editor) quitAll() {
 func (e *Editor) spell() {
 	e.checkSpelling = !e.checkSpelling
 	sess.showEdMessage("Spelling is %t", e.checkSpelling)
+}
+
+func (e *Editor) number() {
+	e.numberLines = !e.numberLines
+	if e.numberLines {
+		e.left_margin_offset = LEFT_MARGIN_OFFSET
+	} else {
+		e.left_margin_offset = 0
+	}
+	sess.showEdMessage("Line numbering is %t", e.numberLines)
 }
