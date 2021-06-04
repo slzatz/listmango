@@ -59,7 +59,7 @@ func editorProcessKey(c int) bool { //bool returned is whether to redraw
 		p.command = ""
 		p.command_line = ""
 
-		if p.mode == PREVIEW_MARKDOWN {
+		if p.mode == PREVIEW {
 			// don't need to check WindowCursor - no change in pos
 			fmt.Print("\x1b_Ga=d\x1b\\") //delete any images
 			sess.showEdMessage("")
@@ -87,7 +87,7 @@ func editorProcessKey(c int) bool { //bool returned is whether to redraw
 		Also note that the if below falls through if p.command is "" and the character isn't
 		one of the one that starts a command
 	*/
-	if p.mode == PREVIEW_MARKDOWN {
+	if p.mode == PREVIEW {
 		switch c {
 		case PAGE_DOWN, ARROW_DOWN, 'j':
 			p.previewLineOffset++
@@ -126,7 +126,7 @@ func editorProcessKey(c int) bool { //bool returned is whether to redraw
 				if err != nil {
 					sess.showEdMessage("%v", err)
 				}
-				if p.command == " m" || p.command == " l" {
+				if p.command == " m" || p.command == " l" || p.command == " c" {
 					p.command = ""
 					return false
 				}

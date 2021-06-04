@@ -3,26 +3,26 @@ package main
 import "github.com/neovim/go-client/nvim"
 
 type Editor struct {
-	cx, cy              int //screen cursor x and y position
-	fc, fr              int // file cursor x and y position
-	lineOffset          int //first row based on user scroll
-	screenlines         int //number of lines for this Editor
-	screencols          int //number of columns for this Editor
-	left_margin         int //can vary (so could TOP_MARGIN - will do that later
-	left_margin_offset  int // 0 if no line numbers
-	top_margin          int
-	code                string //used by lsp thread and intended to avoid unnecessary calls to editorRowsToString
-	vb_highlight        [2][4]int
-	mode                Mode
-	command_line        string //for commands on the command line; string doesn't include ':'
-	command             string // right now includes normal mode commands and command line commands
-	last_command        string
-	first_visible_row   int
-	last_visible_row    int
-	spellcheck          bool
-	highlightSyntax     bool
-	redraw              bool
-	pos_mispelled_words [][2]int
+	cx, cy             int //screen cursor x and y position
+	fc, fr             int // file cursor x and y position
+	lineOffset         int //first row based on user scroll
+	screenlines        int //number of lines for this Editor
+	screencols         int //number of columns for this Editor
+	left_margin        int //can vary (so could TOP_MARGIN - will do that later
+	left_margin_offset int // 0 if no line numbers
+	top_margin         int
+	code               string //used by lsp thread and intended to avoid unnecessary calls to editorRowsToString
+	vb_highlight       [2][4]int
+	mode               Mode
+	command_line       string //for commands on the command line; string doesn't include ':'
+	command            string // right now includes normal mode commands and command line commands
+	last_command       string
+	first_visible_row  int
+	last_visible_row   int
+	spellcheck         bool
+	highlightSyntax    bool
+	redraw             bool
+	//pos_mispelled_words [][2]int
 	//search_string       string //word under cursor works with *, n, N etc.
 	id int //db id of entry
 	//linked_editor       *Editor
@@ -30,6 +30,7 @@ type Editor struct {
 	//is_subeditor bool
 	//is_below     bool
 	//nuspell::Dictionary dict;
+	checkSpelling     bool
 	vbuf              nvim.Buffer
 	bb                [][]byte
 	searchPrefix      string

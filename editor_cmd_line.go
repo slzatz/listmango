@@ -34,6 +34,7 @@ var e_lookup_C = map[string]func(*Editor){
 	"quit!":    (*Editor).quitActions,
 	"q!":       (*Editor).quitActions,
 	"x":        (*Editor).quitActions,
+	"spell":    (*Editor).spellCheck,
 }
 
 /* EDITOR cpp COMMAND_LINE mode lookup
@@ -478,4 +479,9 @@ func (e *Editor) quitAll() {
 		org.drawPreview()
 		sess.returnCursor() //because main while loop if started in editor_mode -- need this 09302020
 	}
+}
+
+func (e *Editor) spellCheck() {
+	e.checkSpelling = !e.checkSpelling
+	sess.showEdMessage("Spelling is %t", e.checkSpelling)
 }

@@ -407,7 +407,9 @@ func (e *Editor) drawText() {
 	}
 	//tid := getFolderTid(e.id)
 	//if tid == 18 || tid == 14 || e.highlightSyntax { //&& !e.is_subeditor {
-	if e.highlightSyntax {
+	if e.checkSpelling {
+		e.drawSpellcheckRows(&ab)
+	} else if e.highlightSyntax {
 		e.drawCodeRows(&ab)
 		fmt.Print(ab.String())
 		//go e.drawHighlightedBraces() // this will produce data race
@@ -703,6 +705,25 @@ func (e *Editor) drawCodeRows(pab *strings.Builder) {
 
 	}
 	pab.WriteString(numCols.String())
+	e.drawVisual(pab)
+}
+
+func (e *Editor) drawSpellcheckRows(pab *strings.Builder) {
+	//sess.showOrgMessage("Got here")
+	note := e.generateWWStringFromBuffer()
+	nnote := strings.Split(note, "\n")
+	lf_ret := fmt.Sprintf("\r\n\x1b[%dC", e.left_margin)
+	fmt.Fprintf(pab, "\x1b[?25l\x1b[%d;%dH", e.top_margin, e.left_margin+1)
+
+	nnote = highlightMispelledWords(nnote)
+
+	for n := e.first_visible_row; n < len(nnote); n++ {
+		row := nnote[n]
+		line := strings.Split(row, "\t")
+		for i := 0; i < len(line); i++ {
+			fmt.Fprintf(pab, "\x1b[%dC%s%s", e.left_margin_offset, line[i], lf_ret)
+		}
+	}
 	e.drawVisual(pab)
 }
 

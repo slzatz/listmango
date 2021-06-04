@@ -263,7 +263,7 @@ func (s *Session) returnCursor() {
 	var ab strings.Builder
 	if s.editorMode {
 		switch p.mode {
-		case PREVIEW_MARKDOWN:
+		case PREVIEW:
 			// we don't need to position cursor and don't want cursor visible
 			fmt.Print(ab.String())
 			return

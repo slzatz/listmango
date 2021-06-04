@@ -24,6 +24,7 @@ var e_lookup2 = map[string]interface{}{
 	leader + "m":         (*Editor).showMarkdown,
 	leader + "s":         (*Editor).nextStyle,
 	leader + "w":         showWindows,
+	leader + "c":         (*Editor).showSpelling,
 }
 
 // needs rewriting
@@ -317,7 +318,7 @@ func showVimMessageLog() {
 	z.bb, _ = v.BufferLines(messageBuf, 0, -1, true)
 
 	p.renderedNote = z.generateWWStringFromBuffer2()
-	p.mode = PREVIEW_MARKDOWN
+	p.mode = PREVIEW
 	p.previewLineOffset = 0
 	p.drawPreview()
 }
@@ -348,7 +349,22 @@ func (e *Editor) showMarkdown() {
 	ix := strings.Index(note, "\n") //works for ix = -1
 	e.renderedNote = note[ix+1:]
 
-	e.mode = PREVIEW_MARKDOWN
+	e.mode = PREVIEW
+	e.previewLineOffset = 0
+	e.drawPreview()
+
+}
+
+func (e *Editor) showSpelling() {
+	if len(e.bb) == 0 {
+		return
+	}
+
+	note := e.generateWWStringFromBuffer2()
+
+	e.renderedNote = strings.Join(highlightMispelledWords(strings.Split(note, "\n")), "\n")
+
+	e.mode = PREVIEW
 	e.previewLineOffset = 0
 	e.drawPreview()
 
