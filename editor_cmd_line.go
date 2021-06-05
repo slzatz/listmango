@@ -19,18 +19,20 @@ var e_lookup_C = map[string]func(*Editor){
 	"read":     (*Editor).readFile,
 	"readfile": (*Editor).readFile,
 	"resize":   (*Editor).resize,
+	"compile":  (*Editor).compile,
 	"c":        (*Editor).compile,
-	"r":        (*Editor).runLocal,
+	"run":      (*Editor).run,
+	"r":        (*Editor).run,
 	"test":     (*Editor).sync,
 	"sync":     (*Editor).sync,
 	"save":     (*Editor).saveNoteToFile,
 	"savefile": (*Editor).saveNoteToFile,
-	"render":   (*Editor).showMarkdown, //leader+m does this in normal mode; may remove this
 	"syntax":   (*Editor).syntax,
 	"spell":    (*Editor).spell,
 	"number":   (*Editor).number,
+	"num":      (*Editor).number,
 	"ha":       (*Editor).printNote,
-	"modified": (*Editor).modified,
+	"modified": (*Editor).modified, // debugging
 	"quit":     (*Editor).quitActions,
 	"q":        (*Editor).quitActions,
 	"quit!":    (*Editor).quitActions,
@@ -195,7 +197,7 @@ func (e *Editor) compile() {
 	// no need to call drawFrame or drawStatusBar
 }
 
-func (e *Editor) runLocal() {
+func (e *Editor) run() {
 
 	var args string
 	pos := strings.Index(e.command_line, " ")
@@ -218,19 +220,19 @@ func (e *Editor) runLocal() {
 
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
-		sess.showEdMessage("Error in runLocal creating stdout pipe: %v", err)
+		sess.showEdMessage("Error in run creating stdout pipe: %v", err)
 		return
 	}
 
 	stderr, err := cmd.StderrPipe()
 	if err != nil {
-		sess.showEdMessage("Error in runLocal creating stderr pipe: %v", err)
+		sess.showEdMessage("Error in run creating stderr pipe: %v", err)
 		return
 	}
 
 	err = cmd.Start()
 	if err != nil {
-		sess.showEdMessage("Error in runLocal starting command: %v", err)
+		sess.showEdMessage("Error in run starting command: %v", err)
 		return
 	}
 
@@ -279,8 +281,7 @@ func (e *Editor) syntax() {
 	e.highlightSyntax = !e.highlightSyntax
 	if e.highlightSyntax {
 		e.left_margin_offset = LEFT_MARGIN_OFFSET
-	} else {
-		e.left_margin_offset = 0
+		e.checkSpelling = false // can't syntax highlight(including markdown) and check spelling
 	}
 	e.drawText()
 	// no need to call drawFrame or drawStatusBar
@@ -294,6 +295,7 @@ func (e *Editor) printNote() {
 	}
 }
 
+// was for debugging
 func (e *Editor) modified() {
 	var result bool
 	err := v.BufferOption(0, "modified", &result) //or e.vbuf
@@ -484,6 +486,9 @@ func (e *Editor) quitAll() {
 
 func (e *Editor) spell() {
 	e.checkSpelling = !e.checkSpelling
+	if e.checkSpelling {
+		e.highlightSyntax = false // when you check spelling syntax highlighting off
+	}
 	e.drawText()
 	sess.showEdMessage("Spelling is %t", e.checkSpelling)
 }

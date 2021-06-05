@@ -46,8 +46,6 @@ func (e *Editor) changeSplit(flag int) {
 	op.screenlines = outputHeight
 	op.top_margin = sess.textLines - outputHeight + 2
 
-	//op.drawText()
-	//e.drawText()
 	sess.eraseRightScreen()
 	sess.drawRightScreen()
 }

@@ -2,6 +2,8 @@ package main
 
 import "github.com/neovim/go-client/nvim"
 
+// note that there isn't a columnOffset because currently only word wrap supported
+
 type Editor struct {
 	cx, cy             int //screen cursor x and y position
 	fc, fr             int // file cursor x and y position
@@ -22,16 +24,12 @@ type Editor struct {
 	spellcheck         bool
 	highlightSyntax    bool
 	numberLines        bool
+	checkSpelling      bool
 	redraw             bool
 	//pos_mispelled_words [][2]int
 	//search_string       string //word under cursor works with *, n, N etc.
-	id int //db id of entry
-	//linked_editor       *Editor
-	output *Output
-	//is_subeditor bool
-	//is_below     bool
-	//nuspell::Dictionary dict;
-	checkSpelling     bool
+	id                int //db id of entry
+	output            *Output
 	vbuf              nvim.Buffer
 	bb                [][]byte
 	searchPrefix      string
@@ -42,31 +40,22 @@ type Editor struct {
 
 func NewEditor() *Editor {
 	return &Editor{
-		cx:                0, //actual cursor x position (takes into account any scroll/offset)
-		cy:                0, //actual cursor y position ""
-		fc:                0, //'file' x position as defined by reading sqlite text into rows vector
-		fr:                0, //'file' y position ""
-		lineOffset:        0, //the number of lines of text at the top scrolled off the screen
-		mode:              NORMAL,
-		command:           "",
-		command_line:      "",
-		first_visible_row: 0,
-		spellcheck:        false,
-		highlightSyntax:   true, // can shut off syntax highlighting; default is ot assume markdown
-		redraw:            false,
-		//linked_editor:     nil,
-		output: nil,
-		//is_subeditor:       false,
-		//is_below:           false,
+		cx:                 0, //actual cursor x position (takes into account any scroll/offset)
+		cy:                 0, //actual cursor y position ""
+		fc:                 0, //'file' x position as defined by reading sqlite text into rows vector
+		fr:                 0, //'file' y position ""
+		lineOffset:         0, //the number of lines of text at the top scrolled off the screen
+		mode:               NORMAL,
+		command:            "",
+		command_line:       "",
+		first_visible_row:  0,
+		spellcheck:         false,
+		highlightSyntax:    true, // applies to golang, c++ etc. and markdown
+		numberLines:        true,
+		checkSpelling:      false,
+		redraw:             false,
+		output:             nil,
 		left_margin_offset: LEFT_MARGIN_OFFSET, // 0 if not syntax highlighting b/o synt high =>line numbers
-		//E.coloff: 0,  //always zero because currently only word wrap supported
 
-		/*
-		   auto dict_list: std::vector<std::pair<std::string, std::string>>{},
-		   nuspell::search_default_dirs_for_dicts(dict_list),
-		   auto dict_name_and_path: nuspell::find_dictionary(dict_list, "en_US"),
-		   auto & dict_path: dict_name_and_path->second,
-		   dict: nuspell::Dictionary::load_from_path(dict_path),
-		*/
 	}
 }

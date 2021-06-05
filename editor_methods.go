@@ -405,18 +405,14 @@ func (e *Editor) drawText() {
 		ab.WriteString(erase_chars)
 		ab.WriteString(lf_ret)
 	}
-	//tid := getFolderTid(e.id)
-	//if tid == 18 || tid == 14 || e.highlightSyntax { //&& !e.is_subeditor {
-	if e.checkSpelling {
-		e.drawSpellcheckRows2(&ab)
-		fmt.Print(ab.String())
-	} else if e.highlightSyntax {
+	if e.highlightSyntax {
 		e.drawCodeRows2(&ab)
 		fmt.Print(ab.String())
 		//go e.drawHighlightedBraces() // this will produce data race
 		e.drawHighlightedBraces() //has to come after drawing rows
 	} else {
-		e.drawBuffer(&ab)
+		//e.drawBuffer(&ab)
+		e.drawSpellcheckRows2(&ab)
 		fmt.Print(ab.String())
 	}
 	//e.drawStatusBar()
@@ -745,13 +741,15 @@ func (e *Editor) drawSpellcheckRows2(pab *strings.Builder) {
 	fmt.Fprintf(pab, "\x1b[?25l\x1b[%d;%dH", e.top_margin, e.left_margin+1) //+1
 
 	// for speed only looking at current row
-	nnote[e.fr] = highlightMispelledWords2(nnote[e.fr])
+	if e.checkSpelling {
+		nnote[e.fr] = highlightMispelledWords2(nnote[e.fr])
+	}
 
 	var s string
 	if e.numberLines {
 		var numCols strings.Builder
 		// below draws the line number 'rectangle'
-		// cam be drawm to pab or &numCols
+		// can be drawm to pab or &numCols
 		fmt.Fprintf(&numCols, "\x1b[2*x\x1b[%d;%d;%d;%d;48;5;235$r\x1b[*x",
 			e.top_margin,
 			e.left_margin,
