@@ -484,6 +484,7 @@ func (e *Editor) quitAll() {
 
 func (e *Editor) spell() {
 	e.checkSpelling = !e.checkSpelling
+	e.drawText()
 	sess.showEdMessage("Spelling is %t", e.checkSpelling)
 }
 
@@ -494,5 +495,6 @@ func (e *Editor) number() {
 	} else {
 		e.left_margin_offset = 0
 	}
+	e.drawText()
 	sess.showEdMessage("Line numbering is %t", e.numberLines)
 }

@@ -124,7 +124,9 @@ func highlightMispelledWords2(row string) string {
 		} else {
 			z := strings.SplitN(np_row, ":", 2)
 			data := strings.Split(z[0], " ")
-			pos, _ := strconv.Atoi(data[3])
+			//data[0] = "&" -> data len 4; data[0] = "#" (no sugg) data len 3
+			//pos, _ := strconv.Atoi(data[3])
+			pos, _ := strconv.Atoi(data[len(data)-1])
 			length := len(data[1])
 			//suggestions := strings.Split(strings.ReplaceAll(z[1], " ", ""), ",")
 			positions = append(positions, [2]int{pos, length})

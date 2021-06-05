@@ -1323,8 +1323,6 @@ func generateWWString(text string, width int) string {
 }
 
 func updateCodeFile(e *Editor) {
-	sess.showOrgMessage("got here")
-
 	var filePath string
 	if tid := getFolderTid(e.id); tid == 18 {
 		filePath = "/home/slzatz/clangd_examples/test.cpp"

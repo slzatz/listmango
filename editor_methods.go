@@ -408,10 +408,10 @@ func (e *Editor) drawText() {
 	//tid := getFolderTid(e.id)
 	//if tid == 18 || tid == 14 || e.highlightSyntax { //&& !e.is_subeditor {
 	if e.checkSpelling {
-		e.drawSpellcheckRows(&ab)
+		e.drawSpellcheckRows2(&ab)
 		fmt.Print(ab.String())
 	} else if e.highlightSyntax {
-		e.drawCodeRows(&ab)
+		e.drawCodeRows2(&ab)
 		fmt.Print(ab.String())
 		//go e.drawHighlightedBraces() // this will produce data race
 		e.drawHighlightedBraces() //has to come after drawing rows
@@ -737,6 +737,107 @@ func (e *Editor) drawSpellcheckRows(pab *strings.Builder) {
 	e.drawVisual(pab) // need to check - messes things up
 }
 
+func (e *Editor) drawSpellcheckRows2(pab *strings.Builder) {
+	//sess.showOrgMessage("Got here")
+	note := e.generateWWStringFromBuffer()
+	nnote := strings.Split(note, "\n")
+	lf_ret := fmt.Sprintf("\r\n\x1b[%dC", e.left_margin)
+	fmt.Fprintf(pab, "\x1b[?25l\x1b[%d;%dH", e.top_margin, e.left_margin+1) //+1
+
+	// for speed only looking at current row
+	nnote[e.fr] = highlightMispelledWords2(nnote[e.fr])
+
+	var s string
+	if e.numberLines {
+		var numCols strings.Builder
+		// below draws the line number 'rectangle'
+		// cam be drawm to pab or &numCols
+		fmt.Fprintf(&numCols, "\x1b[2*x\x1b[%d;%d;%d;%d;48;5;235$r\x1b[*x",
+			e.top_margin,
+			e.left_margin,
+			e.top_margin+e.screenlines,
+			e.left_margin+e.left_margin_offset)
+		fmt.Fprintf(&numCols, "\x1b[?25l\x1b[%d;%dH", e.top_margin, e.left_margin+1)
+
+		s = fmt.Sprintf("\x1b[%dC", e.left_margin_offset) + "%s" + lf_ret
+		for n := e.first_visible_row; n < len(nnote); n++ {
+			row := nnote[n]
+			fmt.Fprintf(&numCols, "\x1b[48;5;235m\x1b[38;5;245m%3d \x1b[49m", n+1)
+			line := strings.Split(row, "\t")
+			for i := 0; i < len(line); i++ {
+				fmt.Fprintf(pab, s, line[i])
+				numCols.WriteString(lf_ret)
+			}
+		}
+		pab.WriteString(numCols.String())
+	} else {
+		s = "%s" + lf_ret
+		for n := e.first_visible_row; n < len(nnote); n++ {
+			row := nnote[n]
+			line := strings.Split(row, "\t")
+			for i := 0; i < len(line); i++ {
+				fmt.Fprintf(pab, s, line[i])
+			}
+		}
+	}
+	e.drawVisual(pab) // need to check - messes things up
+}
+
+func (e *Editor) drawCodeRows2(pab *strings.Builder) {
+	tid := getFolderTid(e.id)
+	note := e.generateWWStringFromBuffer()
+	var lang string
+	var buf bytes.Buffer
+	switch tid {
+	case 18:
+		lang = "cpp"
+	case 14:
+		lang = "go"
+	default:
+		lang = "markdown"
+	}
+	_ = Highlight(&buf, note, lang, "terminal16m", sess.style[sess.styleIndex])
+	note = buf.String()
+	nnote := strings.Split(note, "\n")
+	lf_ret := fmt.Sprintf("\r\n\x1b[%dC", e.left_margin)
+	fmt.Fprintf(pab, "\x1b[?25l\x1b[%d;%dH", e.top_margin, e.left_margin+1)
+
+	if e.numberLines {
+		var numCols strings.Builder
+		// below draws the line number 'rectangle'
+		// cam be drawm to pab or &numCols
+		fmt.Fprintf(&numCols, "\x1b[2*x\x1b[%d;%d;%d;%d;48;5;235$r\x1b[*x",
+			e.top_margin,
+			e.left_margin,
+			e.top_margin+e.screenlines,
+			e.left_margin+e.left_margin_offset)
+		fmt.Fprintf(&numCols, "\x1b[?25l\x1b[%d;%dH", e.top_margin, e.left_margin+1)
+
+		s := fmt.Sprintf("\x1b[%dC", e.left_margin_offset) + "%s" + lf_ret
+		for n := e.first_visible_row; n < len(nnote); n++ {
+			row := nnote[n]
+			fmt.Fprintf(&numCols, "\x1b[48;5;235m\x1b[38;5;245m%3d \x1b[49m", n+1)
+			line := strings.Split(row, "\t")
+			for i := 0; i < len(line); i++ {
+				fmt.Fprintf(pab, s, line[i])
+				numCols.WriteString(lf_ret)
+			}
+		}
+		pab.WriteString(numCols.String())
+	} else {
+		s := "%s" + lf_ret
+		for n := e.first_visible_row; n < len(nnote); n++ {
+			row := nnote[n]
+			line := strings.Split(row, "\t")
+			for i := 0; i < len(line); i++ {
+				fmt.Fprintf(pab, s, line[i])
+			}
+		}
+	}
+	e.drawVisual(pab)
+}
+
+// not in use because you have the word wrapped lines issue
 func (e *Editor) drawLineNumbers() {
 	var numCols strings.Builder
 	lf_ret := fmt.Sprintf("\r\n\x1b[%dC", e.left_margin)
