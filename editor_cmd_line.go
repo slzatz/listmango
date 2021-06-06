@@ -488,6 +488,15 @@ func (e *Editor) spell() {
 	e.checkSpelling = !e.checkSpelling
 	if e.checkSpelling {
 		e.highlightSyntax = false // when you check spelling syntax highlighting off
+		err := v.Command("set spell")
+		if err != nil {
+			sess.showEdMessage("Error in setting spelling %v", err)
+		}
+	} else {
+		err := v.Command("set nospell")
+		if err != nil {
+			sess.showEdMessage("Error in setting no spelling %v", err)
+		}
 	}
 	e.drawText()
 	sess.showEdMessage("Spelling is %t", e.checkSpelling)

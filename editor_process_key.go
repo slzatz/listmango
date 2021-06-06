@@ -100,9 +100,43 @@ func editorProcessKey(c int) bool { //bool returned is whether to redraw
 		return false
 	}
 
+	if p.mode == SPELLING {
+		switch c {
+		case PAGE_DOWN, ARROW_DOWN, 'j':
+			p.previewLineOffset++
+			p.drawPreview()
+			return false
+		case PAGE_UP, ARROW_UP, 'k':
+			if p.previewLineOffset > 0 {
+				p.previewLineOffset--
+				p.drawPreview()
+				return false
+			}
+		}
+		if c == '\r' {
+			v.Input("z=" + p.command_line + "\r") //don't need a check nvim is handling
+			//
+			p.bb, _ = v.BufferLines(p.vbuf, 0, -1, true) //reading updated buffer
+			pos, _ := v.WindowCursor(w)                  //screen cx and cy set from pos
+			p.fr = pos[0] - 1
+			p.fc = pos[1]
+			//
+			p.mode = NORMAL
+			sess.showOrgMessage(p.command_line)
+			return true
+		}
+		if c == DEL_KEY || c == BACKSPACE {
+			if len(p.command_line) > 0 {
+				p.command_line = p.command_line[:len(p.command_line)-1]
+			}
+		} else {
+			p.command_line += string(c)
+		}
+		return false
+	}
 	if p.mode == NORMAL {
 		if len(p.command) == 0 {
-			if strings.IndexAny(string(c), "\x17\x08\x0c\x02\x05\x09\x06\x0a\x0b ") != -1 {
+			if strings.IndexAny(string(c), "\x17\x08\x0c\x02\x05\x09\x06\x0a\x0b z") != -1 {
 				p.command = string(c)
 			}
 		} else {
@@ -122,14 +156,17 @@ func editorProcessKey(c int) bool { //bool returned is whether to redraw
 					cmd(p)
 				}
 				// seems to be necessary at least for certain commands
+				//if p.command != "z=" {
 				_, err := v.Input("\x1b")
 				if err != nil {
 					sess.showEdMessage("%v", err)
 				}
-				if p.command == " m" || p.command == " l" || p.command == " c" {
+				//}
+				if p.command == " m" || p.command == " l" || p.command == " c" || p.command == "z=" {
 					p.command = ""
 					return false
 				}
+
 				p.command = ""
 				p.bb, _ = v.BufferLines(p.vbuf, 0, -1, true) //reading updated buffer
 				pos, _ := v.WindowCursor(w)                  //screen cx and cy set from pos

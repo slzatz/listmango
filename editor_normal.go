@@ -20,11 +20,12 @@ var e_lookup2 = map[string]interface{}{
 	"\x17=":              (*Editor).changeSplit,
 	"\x17_":              (*Editor).changeSplit,
 	"\x06":               (*Editor).findMatchForBrace,
+	"z=":                 (*Editor).suggest,
 	leader + "l":         showVimMessageLog,
-	leader + "m":         (*Editor).showMarkdown,
+	leader + "m":         (*Editor).showMarkdownPreview,
 	leader + "s":         (*Editor).nextStyle,
 	leader + "w":         showWindows,
-	leader + "c":         (*Editor).showSpelling,
+	leader + "c":         (*Editor).showSpellingPreview,
 }
 
 // needs rewriting
@@ -321,6 +322,24 @@ func showVimMessageLog() {
 	p.drawPreview()
 }
 
+func showSpellingSuggestions() {
+
+	_ = v.SetCurrentBuffer(messageBuf)
+
+	_ = v.FeedKeys("\x1bgg\"apqaq", "t", false)
+	v.SetCurrentBuffer(p.vbuf)
+
+	// z needs some dimensions like screenCols - takes from current editor
+	z := *p // this makes z a copy of the editor p points to
+	z.vbuf = messageBuf
+	z.bb, _ = v.BufferLines(messageBuf, 0, -1, true)
+
+	p.renderedNote = z.generateWWStringFromBuffer2()
+	p.mode = SPELLING
+	p.previewLineOffset = 0
+	p.drawPreview()
+}
+
 // appears to be no way to actually create new standard windows
 // can create floating windows but not sure we want them
 func showWindows() {
@@ -328,7 +347,7 @@ func showWindows() {
 	sess.showEdMessage("windows: %v", w)
 }
 
-func (e *Editor) showMarkdown() {
+func (e *Editor) showMarkdownPreview() {
 	if len(e.bb) == 0 {
 		return
 	}
@@ -353,7 +372,7 @@ func (e *Editor) showMarkdown() {
 
 }
 
-func (e *Editor) showSpelling() {
+func (e *Editor) showSpellingPreview() { //preview
 	if len(e.bb) == 0 {
 		return
 	}
@@ -366,6 +385,8 @@ func (e *Editor) showSpelling() {
 	e.previewLineOffset = 0
 	e.drawPreview()
 
+	//sd = spellingData(strings.Split(note, "\n"))
+
 }
 
 func (e *Editor) nextStyle() {
@@ -374,4 +395,14 @@ func (e *Editor) nextStyle() {
 		sess.styleIndex = 0
 	}
 	sess.showEdMessage("New style is %q", sess.style[sess.styleIndex])
+}
+
+func (e *Editor) suggest() {
+	_ = v.SetBufferLines(messageBuf, 0, -1, true, [][]byte{})
+	_, err := v.Input("z=\r") // need to remove \r when ready
+	if err != nil {
+		sess.showEdMessage("z= err: %v", err)
+	}
+	showSpellingSuggestions()
+	//e.drawText()
 }

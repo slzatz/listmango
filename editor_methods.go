@@ -412,7 +412,7 @@ func (e *Editor) drawText() {
 		e.drawHighlightedBraces() //has to come after drawing rows
 	} else {
 		//e.drawBuffer(&ab)
-		e.drawSpellcheckRows2(&ab)
+		e.drawPlainRows(&ab)
 		fmt.Print(ab.String())
 	}
 	//e.drawStatusBar()
@@ -733,7 +733,7 @@ func (e *Editor) drawSpellcheckRows(pab *strings.Builder) {
 	e.drawVisual(pab) // need to check - messes things up
 }
 
-func (e *Editor) drawSpellcheckRows2(pab *strings.Builder) {
+func (e *Editor) drawPlainRows(pab *strings.Builder) {
 	//sess.showOrgMessage("Got here")
 	note := e.generateWWStringFromBuffer()
 	nnote := strings.Split(note, "\n")
@@ -778,7 +778,43 @@ func (e *Editor) drawSpellcheckRows2(pab *strings.Builder) {
 			}
 		}
 	}
-	e.drawVisual(pab) // need to check - messes things up
+	//if e.checkSpelling {
+	//	go e.drawSpellcheckRows2(nnote)
+	//}
+	e.drawVisual(pab)
+}
+
+func (e *Editor) drawSpellcheckRows2(nnote []string) {
+	//sess.showOrgMessage("Got here")
+	lf_ret := fmt.Sprintf("\r\n\x1b[%dC", e.left_margin)
+	fmt.Printf("\x1b[?25l\x1b[%d;%dH", e.top_margin, e.left_margin+1) //+1
+
+	// for speed only looking at current row
+	nnote = highlightMispelledWords(nnote)
+
+	var s string
+	if e.numberLines {
+		//fmt.Printf("\x1b[?25l\x1b[%d;%dH", e.top_margin, e.left_margin+1)
+
+		s = fmt.Sprintf("\x1b[%dC", e.left_margin_offset) + "%s" + lf_ret
+		for n := e.first_visible_row; n < len(nnote); n++ {
+			row := nnote[n]
+			line := strings.Split(row, "\t")
+			for i := 0; i < len(line); i++ {
+				fmt.Printf(s, line[i])
+				fmt.Print(lf_ret)
+			}
+		}
+	} else {
+		s = "%s" + lf_ret
+		for n := e.first_visible_row; n < len(nnote); n++ {
+			row := nnote[n]
+			line := strings.Split(row, "\t")
+			for i := 0; i < len(line); i++ {
+				fmt.Printf(s, line[i])
+			}
+		}
+	}
 }
 
 func (e *Editor) drawCodeRows2(pab *strings.Builder) {
@@ -1202,14 +1238,14 @@ func (e *Editor) drawPreview() {
 	fmt.Print("\x1b_Ga=d\x1b\\") //delete any images
 
 	rows := strings.Split(e.renderedNote, "\n")
-	fmt.Fprintf(os.Stdout, "\x1b[?25l\x1b[%d;%dH", e.top_margin, e.left_margin+1)
+	fmt.Printf("\x1b[?25l\x1b[%d;%dH", e.top_margin, e.left_margin+1)
 	lf_ret := fmt.Sprintf("\r\n\x1b[%dC", e.left_margin)
 	erase_chars := fmt.Sprintf("\x1b[%dX", e.screencols)
 	for i := 0; i < e.screenlines; i++ {
-		fmt.Fprintf(os.Stdout, "%s%s", erase_chars, lf_ret)
+		fmt.Printf("%s%s", erase_chars, lf_ret)
 	}
 
-	fmt.Fprintf(os.Stdout, "\x1b[%d;%dH", e.top_margin, e.left_margin+1)
+	fmt.Printf("\x1b[%d;%dH", e.top_margin, e.left_margin+1)
 
 	fr := e.previewLineOffset - 1
 	y := 0
@@ -1219,7 +1255,7 @@ func (e *Editor) drawPreview() {
 			break
 		}
 		if strings.Contains(rows[fr], "Image") {
-			fmt.Fprintf(os.Stdout, "Loading Image ... \x1b[%dG", e.left_margin+1)
+			fmt.Printf("Loading Image ... \x1b[%dG", e.left_margin+1)
 			prevY := y
 			path := getStringInBetween(rows[fr], "|", "|")
 			var img image.Image
@@ -1239,7 +1275,7 @@ func (e *Editor) drawPreview() {
 				img, _, err = loadImage(path, maxWidth-5, maxHeight-150)
 				if err != nil {
 					// you might want to also print the error to the screen
-					fmt.Fprintf(os.Stdout, "%sError:%s %s%s", BOLD, RESET, rows[fr], lf_ret)
+					fmt.Printf("%sError:%s %s%s", BOLD, RESET, rows[fr], lf_ret)
 					//sess.showOrgMessage("Error loading file image with path %q: %v", path, err)
 					y++
 					// only needed if you move cursor with sess.showOrgMessage(...)
@@ -1250,17 +1286,17 @@ func (e *Editor) drawPreview() {
 			height := img.Bounds().Max.Y / (int(sess.ws.Ypixel) / sess.screenLines)
 			y += height
 			if y > e.screenlines-1 {
-				fmt.Fprintf(os.Stdout, "\x1b[3m\x1b[4mImage %s doesn't fit!\x1b[0m \x1b[%dG", path, e.left_margin+1)
+				fmt.Printf("\x1b[3m\x1b[4mImage %s doesn't fit!\x1b[0m \x1b[%dG", path, e.left_margin+1)
 				y = y - height + 1
-				fmt.Fprintf(os.Stdout, "\x1b[%d;%dH", TOP_MARGIN+1+y, e.left_margin+1)
+				fmt.Printf("\x1b[%d;%dH", TOP_MARGIN+1+y, e.left_margin+1)
 				continue
 			}
 			displayImage(img)
 			// erases "Loading image ..."
-			fmt.Fprintf(os.Stdout, "\x1b[%d;%dH\x1b[0K", e.top_margin+prevY, e.left_margin+1)
-			fmt.Fprintf(os.Stdout, "\x1b[%d;%dH", e.top_margin+y, e.left_margin+1)
+			fmt.Printf("\x1b[%d;%dH\x1b[0K", e.top_margin+prevY, e.left_margin+1)
+			fmt.Printf("\x1b[%d;%dH", e.top_margin+y, e.left_margin+1)
 		} else {
-			fmt.Fprintf(os.Stdout, "%s%s", rows[fr], lf_ret)
+			fmt.Printf("%s%s", rows[fr], lf_ret)
 			y++
 		}
 	}

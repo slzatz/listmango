@@ -177,7 +177,8 @@ const (
 	ADD_CHANGE_FILTER // only organizer mode
 	SYNC_LOG          // only organizer mode
 	PREVIEW           // only editor mode - for previewing markdown and spelling
-	PREVIEW_SYNC_LOG  // only in organizer mode
+	SPELLING
+	PREVIEW_SYNC_LOG // only in organizer mode
 )
 
 func (m Mode) String() string {
@@ -198,6 +199,7 @@ func (m Mode) String() string {
 		"ADD/CHANGE FILTER",
 		"SYNC LOG",
 		"PREVIEW",
+		"SPELLING",
 		"PREVIEW_SYNC_LOG",
 	}[m]
 }
