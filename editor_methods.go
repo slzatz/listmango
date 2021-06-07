@@ -406,7 +406,7 @@ func (e *Editor) drawText() {
 		ab.WriteString(lf_ret)
 	}
 	if e.highlightSyntax {
-		e.drawCodeRows2(&ab)
+		e.drawCodeRows(&ab)
 		fmt.Print(ab.String())
 		//go e.drawHighlightedBraces() // this will produce data race
 		e.drawHighlightedBraces() //has to come after drawing rows
@@ -574,176 +574,17 @@ func (e *Editor) getLineCharCountWW(r, line int) int {
 	return pos - prev_pos
 }
 
-// draws editor non-code plain or markdown text using nvim buffer directly
-func (e *Editor) drawBuffer(pab *strings.Builder) {
-
-	numLines := len(e.bb)
-	if numLines == 0 {
-		return
-	}
-
-	lf_ret := fmt.Sprintf("\r\n\x1b[%dC", e.left_margin)
-	// hides the cursor
-	pab.WriteString("\x1b[?25l") //hides the cursor
-
-	// position the cursor
-	fmt.Fprintf(pab, "\x1b[%d;%dH", e.top_margin, e.left_margin+1)
-
-	y := 0
-	filerow := e.first_visible_row
-	flag := false
-
-	for {
-
-		if flag {
-			break
-		}
-
-		if filerow == numLines {
-			e.last_visible_row = filerow - 1
-			break
-		}
-
-		row := e.bb[filerow]
-
-		if len(row) == 0 {
-			if y == e.screenlines-1 {
-				break
-			}
-			pab.WriteString(lf_ret)
-			filerow++
-			y++
-			continue
-		}
-
-		pos := 0
-		prev_pos := 0 //except for start -> pos + 1
-		for {
-			/* this is needed because it deals where the end of the line doesn't have a space*/
-			if prev_pos+e.screencols-e.left_margin_offset > len(row)-1 { //? if need -1;cpp
-				pab.Write(row[prev_pos:])
-				if y == e.screenlines-1 {
-					flag = true
-					break
-				}
-				pab.WriteString(lf_ret)
-				y++
-				filerow++
-				break
-			}
-
-			pos = bytes.LastIndex(row[:prev_pos+e.screencols-e.left_margin_offset], []byte(" "))
-
-			if pos == -1 || pos == prev_pos-1 {
-				pos = prev_pos + e.screencols - e.left_margin_offset - 1
-			}
-
-			pab.Write(row[prev_pos : pos+1]) //? pos+1
-			if y == e.screenlines-1 {
-				flag = true
-				break
-			}
-			pab.WriteString(lf_ret)
-			prev_pos = pos + 1
-			y++
-		}
-	}
-	// ? only used so spellcheck stops at end of visible note
-	e.last_visible_row = filerow - 1 // note that this is not exactly true - could be the whole last row is visible
-
-	e.drawVisual(pab)
-}
-
-func (e *Editor) drawCodeRows(pab *strings.Builder) {
-	tid := getFolderTid(e.id)
-	note := e.generateWWStringFromBuffer()
-	var lang string
-	var buf bytes.Buffer
-	switch tid {
-	case 18:
-		lang = "cpp"
-	case 14:
-		lang = "go"
-	default:
-		lang = "markdown"
-	}
-	_ = Highlight(&buf, note, lang, "terminal16m", sess.style[sess.styleIndex])
-	note = buf.String()
-	nnote := strings.Split(note, "\n")
-	lf_ret := fmt.Sprintf("\r\n\x1b[%dC", e.left_margin)
-	fmt.Fprintf(pab, "\x1b[?25l\x1b[%d;%dH", e.top_margin, e.left_margin+1)
-
-	// below draws the line number 'rectangle'
-	// this only matters for the word-wrapped lines
-	// because of how chroma codes comment colors
-	// for a sequence like this - you need to create
-	// the number columns separately (numCols)
-	fmt.Fprintf(pab, "\x1b[2*x\x1b[%d;%d;%d;%d;48;5;235$r\x1b[*x",
-		e.top_margin,
-		e.left_margin,
-		e.top_margin+e.screenlines,
-		e.left_margin+e.left_margin_offset)
-
-	var numCols strings.Builder
-	fmt.Fprintf(&numCols, "\x1b[?25l\x1b[%d;%dH", e.top_margin, e.left_margin+1)
-	for n := e.first_visible_row; n < len(nnote); n++ {
-		row := nnote[n]
-
-		// note this is printing to numCols
-		fmt.Fprintf(&numCols, "\x1b[48;5;235m\x1b[38;5;245m%3d \x1b[49m", n+1)
-
-		line := strings.Split(row, "\t")
-		for i := 0; i < len(line); i++ {
-			fmt.Fprintf(pab, "\x1b[%dC%s%s", e.left_margin_offset, line[i], lf_ret)
-			numCols.WriteString(lf_ret)
-		}
-
-		//fmt.Fprintf(pab, "%s%s", line, lf_ret) // works if ignoring multi-line comments
-
-	}
-	pab.WriteString(numCols.String())
-	e.drawVisual(pab)
-}
-
-func (e *Editor) drawSpellcheckRows(pab *strings.Builder) {
-	//sess.showOrgMessage("Got here")
-	note := e.generateWWStringFromBuffer2()
-	nnote := strings.Split(note, "\n")
-	lf_ret := fmt.Sprintf("\r\n\x1b[%dC", e.left_margin)
-	fmt.Fprintf(pab, "\x1b[?25l\x1b[%d;%dH", e.top_margin, e.left_margin+1) //+1
-
-	// for speed only looking at current row
-	nnote[e.fr] = highlightMispelledWords2(nnote[e.fr])
-
-	var indent string
-	if e.numberLines {
-		indent = fmt.Sprintf("\x1b[%dC", e.left_margin_offset)
-	} else {
-		indent = ""
-	}
-
-	for n := e.first_visible_row; n < len(nnote); n++ {
-		//fmt.Fprintf(pab, "\x1b[%dC%s%s", e.left_margin_offset, nnote[n], lf_ret)
-		fmt.Fprintf(pab, "%s%s%s", indent, nnote[n], lf_ret)
-	}
-	if e.numberLines {
-		go e.drawLineNumbers()
-	}
-	//fmt.Print(pab.String())
-	e.drawVisual(pab) // need to check - messes things up
-}
-
 func (e *Editor) drawPlainRows(pab *strings.Builder) {
-	//sess.showOrgMessage("Got here")
-	note := e.generateWWStringFromBuffer()
+	note := e.generateWWStringFromBuffer() // need the \t for line num to be correct
 	nnote := strings.Split(note, "\n")
-	lf_ret := fmt.Sprintf("\r\n\x1b[%dC", e.left_margin)
-	fmt.Fprintf(pab, "\x1b[?25l\x1b[%d;%dH", e.top_margin, e.left_margin+1) //+1
 
 	// for speed only looking at current row
+	result := make(chan string)
 	if e.checkSpelling {
-		nnote[e.fr] = highlightMispelledWords2(nnote[e.fr])
+		go highlightMispelledWords3(nnote[e.fr], result)
 	}
+	lf_ret := fmt.Sprintf("\r\n\x1b[%dC", e.left_margin)
+	fmt.Fprintf(pab, "\x1b[?25l\x1b[%d;%dH", e.top_margin, e.left_margin+1) //+1
 
 	var s string
 	if e.numberLines {
@@ -778,46 +619,19 @@ func (e *Editor) drawPlainRows(pab *strings.Builder) {
 			}
 		}
 	}
-	//if e.checkSpelling {
-	//	go e.drawSpellcheckRows2(nnote)
-	//}
+	if e.checkSpelling {
+		y := e.getScreenYFromRowColWW(e.fr, 0) + e.top_margin - e.lineOffset // - 1
+		fmt.Fprintf(pab, "\x1b[%d;%dH\x1b[0m", y, e.left_margin+1)           //+1
+		row := <-result
+		line := strings.Split(row, "\t")
+		for i := 0; i < len(line); i++ {
+			fmt.Fprintf(pab, s, line[i])
+		}
+	}
 	e.drawVisual(pab)
 }
 
-func (e *Editor) drawSpellcheckRows2(nnote []string) {
-	//sess.showOrgMessage("Got here")
-	lf_ret := fmt.Sprintf("\r\n\x1b[%dC", e.left_margin)
-	fmt.Printf("\x1b[?25l\x1b[%d;%dH", e.top_margin, e.left_margin+1) //+1
-
-	// for speed only looking at current row
-	nnote = highlightMispelledWords(nnote)
-
-	var s string
-	if e.numberLines {
-		//fmt.Printf("\x1b[?25l\x1b[%d;%dH", e.top_margin, e.left_margin+1)
-
-		s = fmt.Sprintf("\x1b[%dC", e.left_margin_offset) + "%s" + lf_ret
-		for n := e.first_visible_row; n < len(nnote); n++ {
-			row := nnote[n]
-			line := strings.Split(row, "\t")
-			for i := 0; i < len(line); i++ {
-				fmt.Printf(s, line[i])
-				fmt.Print(lf_ret)
-			}
-		}
-	} else {
-		s = "%s" + lf_ret
-		for n := e.first_visible_row; n < len(nnote); n++ {
-			row := nnote[n]
-			line := strings.Split(row, "\t")
-			for i := 0; i < len(line); i++ {
-				fmt.Printf(s, line[i])
-			}
-		}
-	}
-}
-
-func (e *Editor) drawCodeRows2(pab *strings.Builder) {
+func (e *Editor) drawCodeRows(pab *strings.Builder) {
 	tid := getFolderTid(e.id)
 	note := e.generateWWStringFromBuffer()
 	var lang string
@@ -871,37 +685,12 @@ func (e *Editor) drawCodeRows2(pab *strings.Builder) {
 	e.drawVisual(pab)
 }
 
-// not in use because you have the word wrapped lines issue
-func (e *Editor) drawLineNumbers() {
-	var numCols strings.Builder
-	lf_ret := fmt.Sprintf("\r\n\x1b[%dC", e.left_margin)
-	fmt.Fprintf(&numCols, "\x1b[?25l\x1b[%d;%dH", e.top_margin, e.left_margin+1)
-
-	// below draws the line number 'rectangle'
-	// this only matters for the word-wrapped lines
-	// because of how chroma codes comment colors
-	// for a sequence like this - you need to create
-	// the number columns separately (numCols)
-	fmt.Fprintf(&numCols, "\x1b[2*x\x1b[%d;%d;%d;%d;48;5;235$r\x1b[*x",
-		e.top_margin,
-		e.left_margin,
-		e.top_margin+e.screenlines,
-		e.left_margin+e.left_margin_offset)
-
-	fmt.Fprintf(&numCols, "\x1b[?25l\x1b[%d;%dH", e.top_margin, e.left_margin+1)
-	for n := e.first_visible_row; n < e.screenlines-2; n++ {
-		fmt.Fprintf(&numCols, "\x1b[48;5;235m\x1b[38;5;245m%3d \x1b[49m%s", n+1, lf_ret)
-	}
-	fmt.Print(numCols.String())
-}
-
 /*
 * simplified version of generateWWStringFromBuffer
 * used by editor.showMarkdown and editor.spellCheck in editor_normal
 * we know we want the whole buffer not just what is visible
 * unlike the situation with syntax highlighting for code
-* we don't have to handle word-wrapped lines
-* in a special way
+* we don't have to handle word-wrapped lines in a special way
  */
 func (e *Editor) generateWWStringFromBuffer2() string {
 	numRows := len(e.bb)
@@ -1020,68 +809,6 @@ func (e *Editor) generateWWStringFromBuffer() string {
 	}
 }
 
-//  old version - delete if no issues
-func (e *Editor) generateWWStringFromBuffer__() string {
-	numRows := len(e.bb)
-	if numRows == 0 {
-		return ""
-	}
-
-	var ab strings.Builder
-	y := 0
-	filerow := 0
-	width := e.screencols - e.left_margin_offset
-
-	for {
-		if filerow == numRows {
-			e.last_visible_row = filerow - 1
-			return ab.String()
-		}
-
-		row := e.bb[filerow]
-
-		if len(row) == 0 {
-			if y == e.screenlines+e.lineOffset-1 {
-				return ab.String()
-			}
-			ab.Write([]byte("\n"))
-			filerow++
-			y++
-			continue
-		}
-
-		pos := 0
-		prev_pos := 0 //except for start -> pos + 1
-		for {
-			// if remainder of line is less than screen width
-			if prev_pos+width > len(row)-1 {
-				ab.Write(row[prev_pos:])
-				if y == e.screenlines+e.lineOffset-1 {
-					e.last_visible_row = filerow - 1
-					return ab.String()
-				}
-				ab.Write([]byte("\n"))
-				y++
-				filerow++
-				break
-			}
-
-			pos = bytes.LastIndex(row[:prev_pos+width], []byte(" "))
-			if pos == -1 || pos == prev_pos-1 {
-				pos = prev_pos + width - 1
-			}
-
-			ab.Write(row[prev_pos : pos+1]) //? pos+1
-			if y == e.screenlines+e.lineOffset-1 {
-				e.last_visible_row = filerow - 1
-				return ab.String()
-			}
-			ab.Write([]byte("\t"))
-			y++
-			prev_pos = pos + 1
-		}
-	}
-}
 func (e *Editor) drawStatusBar() {
 	var ab strings.Builder
 	fmt.Fprintf(&ab, "\x1b[%d;%dH", e.screenlines+e.top_margin, e.left_margin+1)
@@ -1240,6 +967,8 @@ func (e *Editor) drawPreview() {
 	rows := strings.Split(e.renderedNote, "\n")
 	fmt.Printf("\x1b[?25l\x1b[%d;%dH", e.top_margin, e.left_margin+1)
 	lf_ret := fmt.Sprintf("\r\n\x1b[%dC", e.left_margin)
+
+	// erase specific editors 'window'
 	erase_chars := fmt.Sprintf("\x1b[%dX", e.screencols)
 	for i := 0; i < e.screenlines; i++ {
 		fmt.Printf("%s%s", erase_chars, lf_ret)
@@ -1263,23 +992,17 @@ func (e *Editor) drawPreview() {
 			if strings.Contains(path, "http") {
 				img, _, err = loadWebImage(path)
 				if err != nil {
-					// you might want to also print the error to the screen
-					fmt.Fprintf(os.Stdout, "%sError:%s %s%s", BOLD, RESET, rows[fr], lf_ret)
+					fmt.Printf("%sError:%s %s%s", BOLD, RESET, rows[fr], lf_ret)
 					y++
 					continue
 				}
 			} else {
-				//img, _, err = loadImage(path, e.screencols-5)
 				maxWidth := e.screencols * int(sess.ws.Xpixel) / sess.screenCols
 				maxHeight := e.screenlines * int(sess.ws.Ypixel) / sess.screenLines
 				img, _, err = loadImage(path, maxWidth-5, maxHeight-150)
 				if err != nil {
-					// you might want to also print the error to the screen
 					fmt.Printf("%sError:%s %s%s", BOLD, RESET, rows[fr], lf_ret)
-					//sess.showOrgMessage("Error loading file image with path %q: %v", path, err)
 					y++
-					// only needed if you move cursor with sess.showOrgMessage(...)
-					//fmt.Fprintf(os.Stdout, "\x1b[%d;%dH", TOP_MARGIN+1+y, o.divider+1)
 					continue
 				}
 			}
