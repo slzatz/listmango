@@ -114,7 +114,7 @@ func editorProcessKey(c int) bool { //bool returned is whether to redraw
 			}
 		}
 		// enter a number and that's the selected replacement for a mispelling
-		if c == '\r' || p.mode == SPELLING {
+		if c == '\r' && p.mode == SPELLING {
 			v.Input("z=" + p.command_line + "\r") //don't need a check nvim is handling
 			//
 			p.bb, _ = v.BufferLines(p.vbuf, 0, -1, true) //reading updated buffer
