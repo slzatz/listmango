@@ -176,9 +176,10 @@ const (
 	FIND              // only organizer mode
 	ADD_CHANGE_FILTER // only organizer mode
 	SYNC_LOG          // only organizer mode
-	PREVIEW           // only editor mode - for previewing markdown and spelling
-	SPELLING
-	PREVIEW_SYNC_LOG // only in organizer mode
+	PREVIEW           // only editor mode - for previewing markdown
+	VIEW_LOG          // only in editor mode - for debug viewing of vim message hx
+	SPELLING          // this mode recognizes 'z='
+	PREVIEW_SYNC_LOG  // only in organizer mode
 )
 
 func (m Mode) String() string {
@@ -199,6 +200,7 @@ func (m Mode) String() string {
 		"ADD/CHANGE FILTER",
 		"SYNC LOG",
 		"PREVIEW",
+		"VIEW LOG",
 		"SPELLING",
 		"PREVIEW_SYNC_LOG",
 	}[m]

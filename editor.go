@@ -35,6 +35,7 @@ type Editor struct {
 	searchPrefix      string
 	renderedNote      string
 	previewLineOffset int
+	overlay           []string // for suggest, showVimMessageLog
 	//coloff              int //first column based on user scroll (word wrap)
 }
 

@@ -100,20 +100,21 @@ func editorProcessKey(c int) bool { //bool returned is whether to redraw
 		return false
 	}
 
-	if p.mode == SPELLING {
+	if p.mode == SPELLING || p.mode == VIEW_LOG {
 		switch c {
 		case PAGE_DOWN, ARROW_DOWN, 'j':
 			p.previewLineOffset++
-			p.drawPreview()
+			p.drawOverlay()
 			return false
 		case PAGE_UP, ARROW_UP, 'k':
 			if p.previewLineOffset > 0 {
 				p.previewLineOffset--
-				p.drawPreview()
+				p.drawOverlay()
 				return false
 			}
 		}
-		if c == '\r' {
+		// enter a number and that's the selected replacement for a mispelling
+		if c == '\r' || p.mode == SPELLING {
 			v.Input("z=" + p.command_line + "\r") //don't need a check nvim is handling
 			//
 			p.bb, _ = v.BufferLines(p.vbuf, 0, -1, true) //reading updated buffer
@@ -134,6 +135,7 @@ func editorProcessKey(c int) bool { //bool returned is whether to redraw
 		}
 		return false
 	}
+
 	if p.mode == NORMAL {
 		if len(p.command) == 0 {
 			if strings.IndexAny(string(c), "\x17\x08\x0c\x02\x05\x09\x06\x0a\x0b z") != -1 {
