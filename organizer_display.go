@@ -309,8 +309,10 @@ func (o *Organizer) drawStatusBar() {
 			str = "Folders"
 		case KEYWORD:
 			str = "Keywords"
-		case SYNC_LOG_VIEW:
-			str = "Sync Log"
+		//case SYNC_LOG_VIEW:
+		//	str = "Sync Log"
+		default:
+			str = "Other"
 		}
 
 		/*

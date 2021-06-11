@@ -83,37 +83,10 @@ func generateFolderMap() {
 }
 
 func toggleStar() {
-	//orow& row = org.rows.at(org.fr);
 	id := getId()
 
-	var table string
-
-	switch org.view {
-
-	case TASK:
-		table = "task"
-
-	case CONTEXT:
-		table = "context"
-
-	case FOLDER:
-		table = "folder"
-
-	case KEYWORD:
-		table = "keyword"
-
-	default:
-		sess.showOrgMessage("Not sure what you're trying to toggle")
-		return
-	}
-
-	/*
-		stmt, err := db.Prepare(fmt.Sprintf("UPDATE %s SET %s=?, modified=datetime('now') WHERE id=?;",
-			table, column))
-	*/
-
 	s := fmt.Sprintf("UPDATE %s SET star=?, modified=datetime('now') WHERE id=?;",
-		table)
+		org.view) //table
 	_, err := db.Exec(s, !org.rows[org.fr].star, id)
 
 	if err != nil {
@@ -126,31 +99,16 @@ func toggleStar() {
 
 func toggleDeleted() {
 	id := getId()
-	var table string
 
-	switch org.view {
-	case TASK:
-		table = "task"
-	case CONTEXT:
-		table = "context"
-	case FOLDER:
-		table = "folder"
-	case KEYWORD:
-		table = "keyword"
-	default:
-		sess.showOrgMessage("Somehow you are in a view I can't handle")
-		return
-	}
-
-	s := fmt.Sprintf("UPDATE %s SET deleted=?, modified=datetime('now') WHERE id=?;", table)
+	s := fmt.Sprintf("UPDATE %s SET deleted=?, modified=datetime('now') WHERE id=?;", org.view)
 	_, err := db.Exec(s, !org.rows[org.fr].deleted, id)
 	if err != nil {
-		sess.showOrgMessage("Error toggling %s id %d to deleted: %v", table, id, err)
+		sess.showOrgMessage("Error toggling %s id %d to deleted: %v", org.view, id, err)
 		return
 	}
 
 	org.rows[org.fr].deleted = !org.rows[org.fr].deleted
-	sess.showOrgMessage("Toggle deleted for %s id %d succeeded", table, id)
+	sess.showOrgMessage("Toggle deleted for %s id %d succeeded", org.view, id)
 }
 
 func toggleCompleted() {

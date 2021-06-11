@@ -244,14 +244,24 @@ func (m Mode) String() string {
 	}[m]
 }
 
-//type View int
+type View int
+
 const (
 	TASK = iota
 	CONTEXT
 	FOLDER
 	KEYWORD
-	SYNC_LOG_VIEW
+	//SYNC_LOG_VIEW
 )
+
+func (v View) String() string {
+	return [...]string{
+		"task",
+		"context",
+		"folder",
+		"keyword",
+	}[v]
+}
 
 //type TaskView int
 const (
