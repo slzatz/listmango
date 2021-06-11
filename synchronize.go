@@ -4,49 +4,14 @@ package main
 
 import (
 	"database/sql"
-	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"strings"
 	"time"
 
 	_ "github.com/lib/pq"
 	_ "github.com/mattn/go-sqlite3"
 )
-
-type dbConfig struct {
-	Server struct {
-		Host string `json:"host"`
-		Port string `json:"port"`
-	} `json:"server"`
-	Postgres struct {
-		Host     string `json:"host"`
-		Port     string `json:"port"`
-		User     string `json:"user"`
-		Password string `json:"password"`
-		DB       string `json:"db"`
-		Test     string `json:"test"`
-	} `json:"postgres"`
-
-	Options struct {
-		Prefix string `json:"prefix"`
-	} `json:"options"`
-}
-
-// FromFile returns a dbConfig struct parsed from a file.
-func FromFile(path string) (*dbConfig, error) {
-	b, err := ioutil.ReadFile(path)
-	if err != nil {
-		return nil, err
-	}
-
-	var cfg dbConfig
-	if err := json.Unmarshal(b, &cfg); err != nil {
-		return nil, err
-	}
-	return &cfg, nil
-}
 
 func keywordExistsS(dbase *sql.DB, plg io.Writer, name string) int {
 	row := dbase.QueryRow("SELECT keyword.id FROM keyword WHERE keyword.name=$1;", name)
@@ -90,11 +55,13 @@ func getTaskKeywordsS(dbase *sql.DB, plg io.Writer, id int) []string {
 }
 
 func synchronize(reportOnly bool) (log string) {
-	config, err := FromFile("/home/slzatz/listmango/config.json")
-	if err != nil {
-		sess.showOrgMessage("Error reading postgres config file: %v", err)
-		return
-	}
+	/*
+		config, err := FromFile("/home/slzatz/listmango/config.json")
+		if err != nil {
+			sess.showOrgMessage("Error reading postgres config file: %v", err)
+			return
+		}
+	*/
 
 	connect := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
 		config.Postgres.Host,
@@ -150,7 +117,8 @@ func synchronize(reportOnly bool) (log string) {
 	fmt.Fprintf(&lg, "Client last sync: %v\n", client_t)
 
 	//server updated contexts
-	rows, err := pdb.Query("SELECT id, title, \"default\", created, modified FROM context WHERE context.modified > $1 AND context.deleted = $2;", server_t, false)
+	//rows, err := pdb.Query("SELECT id, title, \"default\", created, modified FROM context WHERE context.modified > $1 AND context.deleted = $2;", server_t, false)
+	rows, err := pdb.Query("SELECT id, title, star, created, modified FROM context WHERE context.modified > $1 AND context.deleted = $2;", server_t, false)
 	if err != nil {
 		fmt.Fprintf(&lg, "Error in SELECT for server_updated_contexts: %v", err)
 		return
@@ -206,7 +174,8 @@ func synchronize(reportOnly bool) (log string) {
 	}
 
 	//server updated folders
-	rows, err = pdb.Query("SELECT id, title, private, created, modified FROM folder WHERE folder.modified > $1 AND folder.deleted = $2;", server_t, false)
+	//rows, err = pdb.Query("SELECT id, title, private, created, modified FROM folder WHERE folder.modified > $1 AND folder.deleted = $2;", server_t, false)
+	rows, err = pdb.Query("SELECT id, title, star, created, modified FROM folder WHERE folder.modified > $1 AND folder.deleted = $2;", server_t, false)
 	if err != nil {
 		fmt.Fprintf(&lg, "Error in SELECT for server_updated_folders: %v", err)
 		return
@@ -371,7 +340,8 @@ func synchronize(reportOnly bool) (log string) {
 	//Client changes
 
 	//client updated contexts
-	rows, err = db.Query("SELECT id, tid, title, \"default\", created, modified FROM context WHERE substr(context.modified, 1, 19) > $1 AND context.deleted = $2;", client_t, false)
+	//rows, err = db.Query("SELECT id, tid, title, \"default\", created, modified FROM context WHERE substr(context.modified, 1, 19) > $1 AND context.deleted = $2;", client_t, false)
+	rows, err = db.Query("SELECT id, tid, title, star, created, modified FROM context WHERE substr(context.modified, 1, 19) > $1 AND context.deleted = $2;", client_t, false)
 	if err != nil {
 		fmt.Fprintf(&lg, "Error in SELECT for client_updated_contexts: %v", err)
 		return
@@ -425,7 +395,8 @@ func synchronize(reportOnly bool) (log string) {
 	}
 
 	//client updated folders
-	rows, err = db.Query("SELECT id, tid, title, private, created, modified FROM folder WHERE substr(folder.modified, 1, 19) > $1 AND folder.deleted = $2;", client_t, false)
+	//rows, err = db.Query("SELECT id, tid, title, private, created, modified FROM folder WHERE substr(folder.modified, 1, 19) > $1 AND folder.deleted = $2;", client_t, false)
+	rows, err = db.Query("SELECT id, tid, title, star, created, modified FROM folder WHERE substr(folder.modified, 1, 19) > $1 AND folder.deleted = $2;", client_t, false)
 	if err != nil {
 		fmt.Fprintf(&lg, "Error in SELECT for client_updated_folders: %v", err)
 		return
@@ -617,7 +588,8 @@ func synchronize(reportOnly bool) (log string) {
 		err = row.Scan(&id)
 		switch {
 		case err == sql.ErrNoRows:
-			res, err1 := db.Exec("INSERT INTO context (tid, title, \"default\", created, modified, deleted) VALUES (?,?,?,?, datetime('now'), false);",
+			//res, err1 := db.Exec("INSERT INTO context (tid, title, \"default\", created, modified, deleted) VALUES (?,?,?,?, datetime('now'), false);",
+			res, err1 := db.Exec("INSERT INTO context (tid, title, star, created, modified, deleted) VALUES (?,?,?,?, datetime('now'), false);",
 				c.id, c.title, c.star, c.created)
 			if err1 != nil {
 				fmt.Fprintf(&lg, "Problem inserting new context into sqlite: %w", err1)
@@ -628,7 +600,8 @@ func synchronize(reportOnly bool) (log string) {
 		case err != nil:
 			fmt.Fprintf(&lg, "Problem querying sqlite for a context with tid: %v: %w\n", c.id, err)
 		default:
-			_, err2 := db.Exec("UPDATE context SET title=?, \"default\"=?, modified=datetime('now') WHERE tid=?;", c.title, c.star, c.id)
+			//_, err2 := db.Exec("UPDATE context SET title=?, \"default\"=?, modified=datetime('now') WHERE tid=?;", c.title, c.star, c.id)
+			_, err2 := db.Exec("UPDATE context SET title=?, star=?, modified=datetime('now') WHERE tid=?;", c.title, c.star, c.id)
 			if err2 != nil {
 				fmt.Fprintf(&lg, "Problem updating sqlite for a context with tid: %v: %w\n", c.id, err2)
 			} else {
@@ -652,7 +625,8 @@ func synchronize(reportOnly bool) (log string) {
 		switch {
 		// server context doesn't exist
 		case err == sql.ErrNoRows:
-			err1 := pdb.QueryRow("INSERT INTO context (title, \"default\", created, modified, deleted) VALUES ($1, $2, $3, now(), false) RETURNING id;",
+			//err1 := pdb.QueryRow("INSERT INTO context (title, \"default\", created, modified, deleted) VALUES ($1, $2, $3, now(), false) RETURNING id;",
+			err1 := pdb.QueryRow("INSERT INTO context (title, star, created, modified, deleted) VALUES ($1, $2, $3, now(), false) RETURNING id;",
 				c.title, c.star, c.created).Scan(&tid)
 			if err1 != nil {
 				fmt.Fprintf(&lg, "Error inserting new context %q with id %d into postgres: %v", truncate(c.title, 15), c.id, err1)
@@ -667,7 +641,8 @@ func synchronize(reportOnly bool) (log string) {
 		case err != nil:
 			fmt.Fprintf(&lg, "Error querying postgres for a context with id: %v: %v\n", c.tid, err)
 		default:
-			_, err3 := pdb.Exec("UPDATE context SET title=$1, \"default\"=$2, modified=now() WHERE id=$3;", c.title, c.star, c.tid)
+			//_, err3 := pdb.Exec("UPDATE context SET title=$1, \"default\"=$2, modified=now() WHERE id=$3;", c.title, c.star, c.tid)
+			_, err3 := pdb.Exec("UPDATE context SET title=$1, star=$2, modified=now() WHERE id=$3;", c.title, c.star, c.tid)
 			if err3 != nil {
 				fmt.Fprintf(&lg, "Error updating postgres for context %q with id %d: %v\n", truncate(c.title, 15), c.tid, err3)
 			} else {
@@ -682,7 +657,8 @@ func synchronize(reportOnly bool) (log string) {
 		err = row.Scan(&id)
 		switch {
 		case err == sql.ErrNoRows:
-			res, err1 := db.Exec("INSERT INTO folder (tid, title, private, created, modified, deleted) VALUES (?,?,?,?, datetime('now'), false);",
+			//res, err1 := db.Exec("INSERT INTO folder (tid, title, private, created, modified, deleted) VALUES (?,?,?,?, datetime('now'), false);",
+			res, err1 := db.Exec("INSERT INTO folder (tid, title, star, created, modified, deleted) VALUES (?,?,?,?, datetime('now'), false);",
 				c.id, c.title, c.star, c.created)
 			if err1 != nil {
 				fmt.Fprintf(&lg, "Problem inserting new folder into sqlite: %w", err1)
@@ -693,7 +669,8 @@ func synchronize(reportOnly bool) (log string) {
 		case err != nil:
 			fmt.Fprintf(&lg, "Problem querying sqlite for a folder with tid: %v: %w\n", c.id, err)
 		default:
-			_, err2 := db.Exec("UPDATE folder SET title=?, private=?, modified=datetime('now') WHERE tid=?;", c.title, c.star, c.id)
+			//_, err2 := db.Exec("UPDATE folder SET title=?, private=?, modified=datetime('now') WHERE tid=?;", c.title, c.star, c.id)
+			_, err2 := db.Exec("UPDATE folder SET title=?, star=?, modified=datetime('now') WHERE tid=?;", c.title, c.star, c.id)
 			if err2 != nil {
 				fmt.Fprintf(&lg, "Problem updating sqlite for a folder with tid: %v: %w\n", c.id, err2)
 			} else {
@@ -717,7 +694,8 @@ func synchronize(reportOnly bool) (log string) {
 		switch {
 		// server folder doesn't exist
 		case err == sql.ErrNoRows:
-			err1 := pdb.QueryRow("INSERT INTO folder (title, private, created, modified, deleted) VALUES ($1, $2, $3, now(), false) RETURNING id;",
+			//err1 := pdb.QueryRow("INSERT INTO folder (title, private, created, modified, deleted) VALUES ($1, $2, $3, now(), false) RETURNING id;",
+			err1 := pdb.QueryRow("INSERT INTO folder (title, star, created, modified, deleted) VALUES ($1, $2, $3, now(), false) RETURNING id;",
 				c.title, c.star, c.created).Scan(&tid)
 			if err1 != nil {
 				fmt.Fprintf(&lg, "Problem inserting new folder %d: %s into postgres: %v", c.id, c.title, err1)
@@ -732,7 +710,8 @@ func synchronize(reportOnly bool) (log string) {
 		case err != nil:
 			fmt.Fprintf(&lg, "Error querying postgres for a folder with id: %v: %v\n", c.tid, err)
 		default:
-			_, err3 := pdb.Exec("UPDATE folder SET title=$1, private=$2, modified=now() WHERE id=$3;", c.title, c.star, c.tid)
+			//_, err3 := pdb.Exec("UPDATE folder SET title=$1, private=$2, modified=now() WHERE id=$3;", c.title, c.star, c.tid)
+			_, err3 := pdb.Exec("UPDATE folder SET title=$1, star=$2, modified=now() WHERE id=$3;", c.title, c.star, c.tid)
 			if err3 != nil {
 				fmt.Fprintf(&lg, "Error updating postgres for folder %q with id %d: %v\n", truncate(c.title, 15), c.tid, err3)
 			} else {

@@ -7,6 +7,30 @@ import (
 	"github.com/neovim/go-client/nvim"
 )
 
+type dbConfig struct {
+	Server struct {
+		Host string `json:"host"`
+		Port string `json:"port"`
+	} `json:"server"`
+	Postgres struct {
+		Host     string `json:"host"`
+		Port     string `json:"port"`
+		User     string `json:"user"`
+		Password string `json:"password"`
+		DB       string `json:"db"`
+		Test     string `json:"test"`
+	} `json:"postgres"`
+
+	Sqlite3 struct {
+		DB     string `json:"db"`
+		FTS_DB string `json:"fts_db"`
+	} `json:"sqlite3"`
+
+	Options struct {
+		Prefix string `json:"prefix"`
+	} `json:"options"`
+}
+
 var z0 = struct{}{}
 
 // these are p.nvimModes some of which overlap

@@ -2,8 +2,11 @@ package main
 
 import (
 	"context"
+	"database/sql"
+	"encoding/json"
 	"flag"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"os"
 	"os/signal"
@@ -32,6 +35,10 @@ var v *nvim.Nvim
 var w nvim.Window
 var messageBuf nvim.Buffer
 
+var config *dbConfig
+var db *sql.DB
+var fts_db *sql.DB
+
 func redirectMessages(v *nvim.Nvim) {
 	err := v.FeedKeys("\x1b:redir @a\r", "t", false)
 	if err != nil {
@@ -39,7 +46,29 @@ func redirectMessages(v *nvim.Nvim) {
 	}
 }
 
+// FromFile returns a dbConfig struct parsed from a file.
+func FromFile(path string) (*dbConfig, error) {
+	b, err := ioutil.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+
+	var cfg dbConfig
+	if err := json.Unmarshal(b, &cfg); err != nil {
+		return nil, err
+	}
+	return &cfg, nil
+}
+
 func main() {
+	var err error
+	config, err = FromFile("/home/slzatz/listmango/config.json")
+	if err != nil {
+		log.Fatal(err)
+		return
+	}
+	db, _ = sql.Open("sqlite3", config.Sqlite3.DB)
+	fts_db, _ = sql.Open("sqlite3", config.Sqlite3.FTS_DB)
 
 	sess.style = [7]string{"dracula", "fruity", "monokai", "native", "paraiso-dark", "rrt", "solarized-dark256"} //vim is dark but unusable
 	sess.styleIndex = 2
@@ -75,7 +104,7 @@ func main() {
 	os.Setenv("VIMRUNTIME", "/home/slzatz/neovim/runtime")
 	opts = append(opts, nvim.ChildProcessCommand("/home/slzatz/neovim/build/bin/nvim"))
 
-	var err error
+	//var err error
 	v, err = nvim.NewChildProcess(opts...)
 	if err != nil {
 		log.Fatal(err)

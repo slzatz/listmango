@@ -13,9 +13,6 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
-var db, _ = sql.Open("sqlite3", "/home/slzatz/listmango/mylistmanager_s.db")
-var fts_db, _ = sql.Open("sqlite3", "/home/slzatz/listmango/fts5.db")
-
 func getId() int {
 	return org.rows[org.fr].id
 }
@@ -100,11 +97,13 @@ func toggleStar() {
 
 	case CONTEXT:
 		table = "context"
-		column = "\"default\""
+		//column = "\"default\""
+		column = "star"
 
 	case FOLDER:
 		table = "folder"
-		column = "private"
+		//column = "private"
+		column = "star"
 
 	case KEYWORD:
 		table = "keyword"
@@ -759,11 +758,13 @@ func getContainers() {
 	switch org.view {
 	case CONTEXT:
 		table = "context"
-		columns = "id, title, \"default\", deleted, modified"
+		//columns = "id, title, \"default\", deleted, modified"
+		columns = "id, title, star, deleted, modified"
 		orderBy = "title"
 	case FOLDER:
 		table = "folder"
-		columns = "id, title, private, deleted, modified"
+		//columns = "id, title, private, deleted, modified"
+		columns = "id, title, star, deleted, modified"
 		orderBy = "title"
 	case KEYWORD:
 		table = "keyword"
@@ -816,11 +817,13 @@ func getAltContainers() {
 	switch org.altView {
 	case CONTEXT:
 		table = "context"
-		columns = "id, title, \"default\""
+		//columns = "id, title, \"default\""
+		columns = "id, title, star"
 		orderBy = "title"
 	case FOLDER:
 		table = "folder"
-		columns = "id, title, private"
+		//columns = "id, title, private"
+		columns = "id, title, star"
 		orderBy = "title"
 	case KEYWORD:
 		table = "keyword"
@@ -885,11 +888,13 @@ func getContainerInfo(id int) Container {
 	case CONTEXT:
 		table = "context"
 		countQuery = "SELECT COUNT(*) FROM task JOIN context ON context.tid = task.context_tid WHERE context.id=?;"
-		columns = "id, tid, title, \"default\", created, deleted, modified"
+		//columns = "id, tid, title, \"default\", created, deleted, modified"
+		columns = "id, tid, title, star, created, deleted, modified"
 	case FOLDER:
 		table = "folder"
 		countQuery = "SELECT COUNT(*) FROM task JOIN folder ON folder.tid = task.folder_tid WHERE folder.id=?;"
-		columns = "id, tid, title, private, created, deleted, modified"
+		//columns = "id, tid, title, private, created, deleted, modified"
+		columns = "id, tid, title, star, created, deleted, modified"
 	case KEYWORD:
 		table = "keyword"
 		countQuery = "SELECT COUNT(*) FROM task_keyword WHERE keyword_id=?;"
@@ -1051,19 +1056,20 @@ func insertContainer(row *Row) int {
 		switch org.view {
 		case CONTEXT:
 			table = "context"
-			star = "\"default\""
+			//star = "\"default\""
+			star = "star"
 		case FOLDER:
 			table = "folder"
-			star = "private"
+			star = "star"
 		default:
 			sess.showOrgMessage("Somehow that's a container I don't recognize")
 			return -1
 		}
 
-		stmt = fmt.Sprintf("INSERT INTO %s (title, %s, deleted, created, modified, tid, textcolor) ",
+		stmt = fmt.Sprintf("INSERT INTO %s (title, %s, deleted, created, modified, tid) ",
 			table, star)
 
-		stmt += "VALUES (?, ?, False, datetime('now'), datetime('now'), 0, 10);"
+		stmt += "VALUES (?, ?, False, datetime('now'), datetime('now'), 0);"
 	} else {
 
 		stmt = "INSERT INTO keyword (name, star, deleted, modified, tid) " +
