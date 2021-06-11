@@ -887,6 +887,7 @@ func getContainerInfo(id int) Container {
 	switch org.view {
 	case CONTEXT:
 		table = "context"
+		// Note: the join for context and folder is on the context/folder *tid*
 		countQuery = "SELECT COUNT(*) FROM task JOIN context ON context.tid = task.context_tid WHERE context.id=?;"
 		//columns = "id, tid, title, \"default\", created, deleted, modified"
 		columns = "id, tid, title, star, created, deleted, modified"

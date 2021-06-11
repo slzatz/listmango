@@ -155,6 +155,20 @@ type Entry struct {
 	modified    string
 }
 
+type serverEntry struct {
+	id         int
+	title      string
+	created    string
+	folder_id  int
+	context_id int
+	star       bool
+	note       string
+	added      string
+	completed  sql.NullTime
+	deleted    bool
+	modified   string
+}
+
 type Container struct {
 	id       int
 	tid      int
