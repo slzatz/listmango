@@ -87,27 +87,20 @@ func toggleStar() {
 	id := getId()
 
 	var table string
-	var column string
 
 	switch org.view {
 
 	case TASK:
 		table = "task"
-		column = "star"
 
 	case CONTEXT:
 		table = "context"
-		//column = "\"default\""
-		column = "star"
 
 	case FOLDER:
 		table = "folder"
-		//column = "private"
-		column = "star"
 
 	case KEYWORD:
 		table = "keyword"
-		column = "star"
 
 	default:
 		sess.showOrgMessage("Not sure what you're trying to toggle")
@@ -119,8 +112,8 @@ func toggleStar() {
 			table, column))
 	*/
 
-	s := fmt.Sprintf("UPDATE %s SET %s=?, modified=datetime('now') WHERE id=?;",
-		table, column)
+	s := fmt.Sprintf("UPDATE %s SET star=?, modified=datetime('now') WHERE id=?;",
+		table)
 	_, err := db.Exec(s, !org.rows[org.fr].star, id)
 
 	if err != nil {

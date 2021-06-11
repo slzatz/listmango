@@ -55,13 +55,6 @@ func getTaskKeywordsS(dbase *sql.DB, plg io.Writer, id int) []string {
 }
 
 func synchronize(reportOnly bool) (log string) {
-	/*
-		config, err := FromFile("/home/slzatz/listmango/config.json")
-		if err != nil {
-			sess.showOrgMessage("Error reading postgres config file: %v", err)
-			return
-		}
-	*/
 
 	connect := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
 		config.Postgres.Host,
@@ -117,7 +110,6 @@ func synchronize(reportOnly bool) (log string) {
 	fmt.Fprintf(&lg, "Client last sync: %v\n", client_t)
 
 	//server updated contexts
-	//rows, err := pdb.Query("SELECT id, title, \"default\", created, modified FROM context WHERE context.modified > $1 AND context.deleted = $2;", server_t, false)
 	rows, err := pdb.Query("SELECT id, title, star, created, modified FROM context WHERE context.modified > $1 AND context.deleted = $2;", server_t, false)
 	if err != nil {
 		fmt.Fprintf(&lg, "Error in SELECT for server_updated_contexts: %v", err)
@@ -174,7 +166,6 @@ func synchronize(reportOnly bool) (log string) {
 	}
 
 	//server updated folders
-	//rows, err = pdb.Query("SELECT id, title, private, created, modified FROM folder WHERE folder.modified > $1 AND folder.deleted = $2;", server_t, false)
 	rows, err = pdb.Query("SELECT id, title, star, created, modified FROM folder WHERE folder.modified > $1 AND folder.deleted = $2;", server_t, false)
 	if err != nil {
 		fmt.Fprintf(&lg, "Error in SELECT for server_updated_folders: %v", err)
@@ -281,15 +272,15 @@ func synchronize(reportOnly bool) (log string) {
 	}
 
 	//server updated entries
-	rows, err = pdb.Query("SELECT id, title, star, note, created, modified, added, completed, context_tid, folder_tid FROM task WHERE modified > $1 AND deleted = $2;", server_t, false)
+	rows, err = pdb.Query("SELECT id, title, star, note, created, modified, added, completed, context_id, folder_id FROM task WHERE modified > $1 AND deleted = $2;", server_t, false)
 	if err != nil {
 		fmt.Fprintf(&lg, "Error in SELECT for server_updated_entries: %v", err)
 		return
 	}
 
-	var server_updated_entries []Entry
+	var server_updated_entries []serverEntry
 	for rows.Next() {
-		var e Entry
+		var e serverEntry
 		rows.Scan(
 			&e.id,
 			&e.title,
@@ -299,8 +290,8 @@ func synchronize(reportOnly bool) (log string) {
 			&e.modified,
 			&e.added,
 			&e.completed,
-			&e.context_tid,
-			&e.folder_tid,
+			&e.context_id,
+			&e.folder_id,
 		)
 		server_updated_entries = append(server_updated_entries, e)
 	}
@@ -340,7 +331,6 @@ func synchronize(reportOnly bool) (log string) {
 	//Client changes
 
 	//client updated contexts
-	//rows, err = db.Query("SELECT id, tid, title, \"default\", created, modified FROM context WHERE substr(context.modified, 1, 19) > $1 AND context.deleted = $2;", client_t, false)
 	rows, err = db.Query("SELECT id, tid, title, star, created, modified FROM context WHERE substr(context.modified, 1, 19) > $1 AND context.deleted = $2;", client_t, false)
 	if err != nil {
 		fmt.Fprintf(&lg, "Error in SELECT for client_updated_contexts: %v", err)
@@ -395,7 +385,6 @@ func synchronize(reportOnly bool) (log string) {
 	}
 
 	//client updated folders
-	//rows, err = db.Query("SELECT id, tid, title, private, created, modified FROM folder WHERE substr(folder.modified, 1, 19) > $1 AND folder.deleted = $2;", client_t, false)
 	rows, err = db.Query("SELECT id, tid, title, star, created, modified FROM folder WHERE substr(folder.modified, 1, 19) > $1 AND folder.deleted = $2;", client_t, false)
 	if err != nil {
 		fmt.Fprintf(&lg, "Error in SELECT for client_updated_folders: %v", err)
@@ -588,7 +577,6 @@ func synchronize(reportOnly bool) (log string) {
 		err = row.Scan(&id)
 		switch {
 		case err == sql.ErrNoRows:
-			//res, err1 := db.Exec("INSERT INTO context (tid, title, \"default\", created, modified, deleted) VALUES (?,?,?,?, datetime('now'), false);",
 			res, err1 := db.Exec("INSERT INTO context (tid, title, star, created, modified, deleted) VALUES (?,?,?,?, datetime('now'), false);",
 				c.id, c.title, c.star, c.created)
 			if err1 != nil {
@@ -600,7 +588,6 @@ func synchronize(reportOnly bool) (log string) {
 		case err != nil:
 			fmt.Fprintf(&lg, "Problem querying sqlite for a context with tid: %v: %w\n", c.id, err)
 		default:
-			//_, err2 := db.Exec("UPDATE context SET title=?, \"default\"=?, modified=datetime('now') WHERE tid=?;", c.title, c.star, c.id)
 			_, err2 := db.Exec("UPDATE context SET title=?, star=?, modified=datetime('now') WHERE tid=?;", c.title, c.star, c.id)
 			if err2 != nil {
 				fmt.Fprintf(&lg, "Problem updating sqlite for a context with tid: %v: %w\n", c.id, err2)
@@ -625,7 +612,6 @@ func synchronize(reportOnly bool) (log string) {
 		switch {
 		// server context doesn't exist
 		case err == sql.ErrNoRows:
-			//err1 := pdb.QueryRow("INSERT INTO context (title, \"default\", created, modified, deleted) VALUES ($1, $2, $3, now(), false) RETURNING id;",
 			err1 := pdb.QueryRow("INSERT INTO context (title, star, created, modified, deleted) VALUES ($1, $2, $3, now(), false) RETURNING id;",
 				c.title, c.star, c.created).Scan(&tid)
 			if err1 != nil {
@@ -641,7 +627,6 @@ func synchronize(reportOnly bool) (log string) {
 		case err != nil:
 			fmt.Fprintf(&lg, "Error querying postgres for a context with id: %v: %v\n", c.tid, err)
 		default:
-			//_, err3 := pdb.Exec("UPDATE context SET title=$1, \"default\"=$2, modified=now() WHERE id=$3;", c.title, c.star, c.tid)
 			_, err3 := pdb.Exec("UPDATE context SET title=$1, star=$2, modified=now() WHERE id=$3;", c.title, c.star, c.tid)
 			if err3 != nil {
 				fmt.Fprintf(&lg, "Error updating postgres for context %q with id %d: %v\n", truncate(c.title, 15), c.tid, err3)
@@ -657,7 +642,6 @@ func synchronize(reportOnly bool) (log string) {
 		err = row.Scan(&id)
 		switch {
 		case err == sql.ErrNoRows:
-			//res, err1 := db.Exec("INSERT INTO folder (tid, title, private, created, modified, deleted) VALUES (?,?,?,?, datetime('now'), false);",
 			res, err1 := db.Exec("INSERT INTO folder (tid, title, star, created, modified, deleted) VALUES (?,?,?,?, datetime('now'), false);",
 				c.id, c.title, c.star, c.created)
 			if err1 != nil {
@@ -669,7 +653,6 @@ func synchronize(reportOnly bool) (log string) {
 		case err != nil:
 			fmt.Fprintf(&lg, "Problem querying sqlite for a folder with tid: %v: %w\n", c.id, err)
 		default:
-			//_, err2 := db.Exec("UPDATE folder SET title=?, private=?, modified=datetime('now') WHERE tid=?;", c.title, c.star, c.id)
 			_, err2 := db.Exec("UPDATE folder SET title=?, star=?, modified=datetime('now') WHERE tid=?;", c.title, c.star, c.id)
 			if err2 != nil {
 				fmt.Fprintf(&lg, "Problem updating sqlite for a folder with tid: %v: %w\n", c.id, err2)
@@ -694,7 +677,6 @@ func synchronize(reportOnly bool) (log string) {
 		switch {
 		// server folder doesn't exist
 		case err == sql.ErrNoRows:
-			//err1 := pdb.QueryRow("INSERT INTO folder (title, private, created, modified, deleted) VALUES ($1, $2, $3, now(), false) RETURNING id;",
 			err1 := pdb.QueryRow("INSERT INTO folder (title, star, created, modified, deleted) VALUES ($1, $2, $3, now(), false) RETURNING id;",
 				c.title, c.star, c.created).Scan(&tid)
 			if err1 != nil {
@@ -710,7 +692,6 @@ func synchronize(reportOnly bool) (log string) {
 		case err != nil:
 			fmt.Fprintf(&lg, "Error querying postgres for a folder with id: %v: %v\n", c.tid, err)
 		default:
-			//_, err3 := pdb.Exec("UPDATE folder SET title=$1, private=$2, modified=now() WHERE id=$3;", c.title, c.star, c.tid)
 			_, err3 := pdb.Exec("UPDATE folder SET title=$1, star=$2, modified=now() WHERE id=$3;", c.title, c.star, c.tid)
 			if err3 != nil {
 				fmt.Fprintf(&lg, "Error updating postgres for folder %q with id %d: %v\n", truncate(c.title, 15), c.tid, err3)
@@ -797,7 +778,7 @@ func synchronize(reportOnly bool) (log string) {
 		case err == sql.ErrNoRows:
 			res, err1 := db.Exec("INSERT INTO task (tid, title, star, created, added, completed, context_tid, folder_tid, note, modified, deleted) "+
 				"VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), false);",
-				e.id, e.title, e.star, e.created, e.added, e.completed, e.context_tid, e.folder_tid, e.note)
+				e.id, e.title, e.star, e.created, e.added, e.completed, e.context_id, e.folder_id, e.note)
 			if err1 != nil {
 				fmt.Fprintf(&lg, "Error inserting new entry for %q into sqlite: %v\n", truncate(e.title, 15), err1)
 				break
@@ -815,7 +796,7 @@ func synchronize(reportOnly bool) (log string) {
 			continue
 		default:
 			_, err3 := db.Exec("UPDATE task SET title=?, star=?, context_tid=?, folder_tid=?, note=?, completed=?,  modified=datetime('now') WHERE tid=?;",
-				e.title, e.star, e.context_tid, e.folder_tid, e.note, e.completed, e.id)
+				e.title, e.star, e.context_id, e.folder_id, e.note, e.completed, e.id)
 			if err3 != nil {
 				fmt.Fprintf(&lg, "Error updating sqlite for an entry with tid: %d: %v\n", e.id, err3)
 				continue
@@ -867,7 +848,7 @@ func synchronize(reportOnly bool) (log string) {
 			fmt.Fprintf(&lg, "Problem checking if postgres has an entry for %q with client tid/pg id: %d: %v\n", truncate(e.title, 15), e.tid, err)
 
 		case exists:
-			_, err3 := pdb.Exec("UPDATE task SET title=$1, star=$2, context_tid=$3, folder_tid=$4, note=$5, completed=$6, modified=now() WHERE id=$7;",
+			_, err3 := pdb.Exec("UPDATE task SET title=$1, star=$2, context_id=$3, folder_id=$4, note=$5, completed=$6, modified=now() WHERE id=$7;",
 				e.title, e.star, e.context_tid, e.folder_tid, e.note, e.completed, e.tid)
 			if err3 != nil {
 				fmt.Fprintf(&lg, "Error updating server entry %q with id %d: %v", truncate(e.title, 15), e.tid, err3)
@@ -876,7 +857,7 @@ func synchronize(reportOnly bool) (log string) {
 			}
 			server_id = e.tid // needed below for keywords
 		case !exists:
-			err1 := pdb.QueryRow("INSERT INTO task (title, star, created, added, completed, context_tid, folder_tid, note, modified, deleted) "+
+			err1 := pdb.QueryRow("INSERT INTO task (title, star, created, added, completed, context_id, folder_id, note, modified, deleted) "+
 				"VALUES ($1, $2, $3, $4, $5, $6, $7, $8, now(), false) RETURNING id;",
 				e.title, e.star, e.created, e.added, e.completed, e.context_tid, e.folder_tid, e.note).Scan(&server_id)
 			if err1 != nil {
@@ -984,7 +965,7 @@ func synchronize(reportOnly bool) (log string) {
 	//server_deleted_contexts
 	for _, c := range server_deleted_contexts {
 		// I think the task changes may not be necessary because only a previous client sync can delete server context
-		res, err := pdb.Exec("Update task SET context_tid=1, modified=now() WHERE context_tid=$1;", c.id)
+		res, err := pdb.Exec("Update task SET context_id=1, modified=now() WHERE context_id=$1;", c.id)
 		if err != nil {
 			fmt.Fprintf(&lg, "Error trying to change server/postgres entry context to 'No Context' for a deleted context: %v\n", err)
 		} else {
@@ -1009,7 +990,7 @@ func synchronize(reportOnly bool) (log string) {
 
 	// client deleted contexts
 	for _, c := range client_deleted_contexts {
-		res, err := pdb.Exec("Update task SET context_tid=1, modified=now() WHERE context_tid=$1;", c.tid) //?modified=now()
+		res, err := pdb.Exec("Update task SET context_id=1, modified=now() WHERE context_id=$1;", c.tid) //?modified=now()
 		if err != nil {
 			fmt.Fprintf(&lg, "Error trying to change server/postgres entry contexts for a deleted context: %v\n", err)
 		} else {
@@ -1042,7 +1023,7 @@ func synchronize(reportOnly bool) (log string) {
 	for _, c := range server_deleted_folders {
 		// I think the task changes may not be necessary because only a previous client sync can delete server context
 		// and that previous client sync should have changed the relevant tasks to 'No Folder'
-		res, err := pdb.Exec("Update task SET folder_tid=1, modified=now() WHERE folder_tid=$1;", c.id)
+		res, err := pdb.Exec("Update task SET folder_id=1, modified=now() WHERE folder_id=$1;", c.id)
 		if err != nil {
 			fmt.Fprintf(&lg, "Error trying to change server/postgres entry folder to 'No Folder' for a deleted folder: %v\n", err)
 		} else {
@@ -1067,7 +1048,7 @@ func synchronize(reportOnly bool) (log string) {
 
 	// client deleted folders
 	for _, c := range client_deleted_folders {
-		res, err := pdb.Exec("Update task SET folder_tid=1, modified=now() WHERE folder_tid=$1;", c.tid) //?modified=now()
+		res, err := pdb.Exec("Update task SET folder_id=1, modified=now() WHERE folder_id=$1;", c.tid) //?modified=now()
 		if err != nil {
 			fmt.Fprintf(&lg, "Error trying to change server/postgres entry folders for a deleted folder: %v\n", err)
 			continue
