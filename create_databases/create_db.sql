@@ -84,4 +84,3 @@ note TEXT,
 PRIMARY KEY (id)
 );
 
-CREATE VIRTUAL TABLE fts USING fts5 (title, note, tag, lm_id UNINDEXED)
