@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"database/sql"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 	"strconv"
@@ -37,94 +36,6 @@ func timeDelta(t string) string {
 	} else {
 		return fmt.Sprintf("%d years ago", diff/3600/24/30/12)
 	}
-}
-
-func createSqliteDB() {
-	path := "create_databases/create_db.sql"
-	b, err := ioutil.ReadFile(path)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	_, err = db.Exec(string(b))
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	stmt := "INSERT INTO context (title, star, deleted, created, modified, tid) "
-	stmt += "VALUES (?, True, False, datetime('now'), datetime('now'), 1);"
-	_, err = db.Exec(stmt, "No Context")
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	stmt = "INSERT INTO folder (title, star, deleted, created, modified, tid) "
-	stmt += "VALUES (?, True, False, datetime('now'), datetime('now'), 1);"
-	_, err = db.Exec(stmt, "No Folder")
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	_, err = fts_db.Exec("CREATE VIRTUAL TABLE fts USING fts5 (title, note, tag, lm_id UNINDEXED);")
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	/*
-		var server_ts string
-		row = pdb.QueryRow("SELECT now();")
-		err = row.Scan(&server_ts)
-		if err != nil {
-		  sess.showOrgMessage("Error with getting current time from server: %w", err)
-			return
-		}
-	*/
-	_, err = db.Exec("UPDATE sync SET timestamp=datetime('now') WHERE machine='server';")
-	if err != nil {
-		log.Fatal(err)
-	}
-	_, err = db.Exec("UPDATE sync SET timestamp=datetime('now') WHERE machine='client';")
-	if err != nil {
-		log.Fatal(err)
-	}
-
-}
-func createPostgresDB() {
-	connect := fmt.Sprintf("host=%s port=%s user=%s password=%s sslmode=disable",
-		"127.0.0.1",
-		"5432",
-		"slzatz",
-		"*******",
-	)
-
-	pdb, err := sql.Open("postgres", connect)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	dbName := "test"
-	_, err = pdb.Exec("CREATE DATABASE " + dbName)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	path := "create_databases/create_postgres_db.sql"
-	b, err := ioutil.ReadFile(path)
-	if err != nil {
-		log.Fatal(err)
-	}
-	_, err = db.Exec(string(b))
-	if err != nil {
-		log.Fatal(err)
-	}
-	// Ping to connection
-	/*
-		err = pdb.Ping()
-		if err != nil {
-			fmt.Fprintf(&lg, "postgres ping failure!: %v", err)
-			return
-		}
-	*/
 }
 
 func keywordExists(name string) int {

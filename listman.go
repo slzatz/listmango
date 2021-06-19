@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bufio"
 	"context"
 	"database/sql"
 	"encoding/json"
@@ -11,7 +10,6 @@ import (
 	"log"
 	"os"
 	"os/signal"
-	"strings"
 	"syscall"
 
 	"github.com/neovim/go-client/nvim"
@@ -64,54 +62,9 @@ func FromFile(path string) (*dbConfig, error) {
 
 func main() {
 	var err error
-	config, err = FromFile("/home/slzatz/listmango/config.json")
+	config, err = FromFile("config.json")
 	if err != nil {
-		filename := "config.json.test"
-		reader := bufio.NewReader(os.Stdin)
-		fmt.Println("There is no config file - do you want to create a new local (sqlite) database? (y or N):")
-		res, _ := reader.ReadString('\n')
-		if strings.ToLower(res)[:1] == "y" {
-			fmt.Println("We're going to create a new local database")
-			/*************************/
-			reader := bufio.NewReader(os.Stdin)
-			fmt.Print("What do you want to name the database? ")
-			res, _ := reader.ReadString('\n')
-			res = strings.TrimSpace(res) + ".db"
-			config = &dbConfig{}
-			config.Sqlite3.DB = res
-			config.Sqlite3.FTS_DB = "fts5_" + res
-			z, _ := json.Marshal(config)
-			f, err := os.Create(filename)
-			if err != nil {
-				log.Fatal(err)
-				return
-			}
-			defer f.Close()
-
-			_, err = f.Write(z)
-			if err != nil {
-				log.Fatal(err)
-				return
-			}
-			//sess.showEdMessage("Wrote configuration file %s", filename)
-			// write this to config file
-
-			db, _ = sql.Open("sqlite3", config.Sqlite3.DB)
-			fts_db, _ = sql.Open("sqlite3", config.Sqlite3.FTS_DB)
-			createSqliteDB()
-			fmt.Println("Do you want to create a new remote (postgres) database? (y or N):")
-			res, _ = reader.ReadString('\n')
-			if strings.ToLower(res)[:1] == "y" {
-				fmt.Println("We're going to create a new remote database")
-				/*************************/
-				fmt.Print("What do you want to name the database? ")
-				res, _ := reader.ReadString('\n')
-				fmt.Printf("postgresdb name is %s", res)
-				createPostgresDB() // need password
-			}
-		} else {
-			fmt.Println("goodbye")
-		}
+		log.Fatal(err)
 	}
 	db, _ = sql.Open("sqlite3", config.Sqlite3.DB)
 	fts_db, _ = sql.Open("sqlite3", config.Sqlite3.FTS_DB)
