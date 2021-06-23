@@ -63,6 +63,7 @@
   },
   "link": {
     "color": "30",
+    "bold": true,
     "underline": true
   },
   "link_text": {
