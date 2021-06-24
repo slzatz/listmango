@@ -1,5 +1,11 @@
 package main
 
+import (
+	"strings"
+
+	"github.com/charmbracelet/glamour"
+)
+
 var n_lookup = map[string]func(){
 	"i":   _i,
 	"s":   _s,
@@ -275,6 +281,24 @@ func controlK() {
 }
 
 func controlZ() {
+	id := org.rows[org.fr].id
+	note := readNoteIntoString(id)
+	note = generateWWString(note, org.totaleditorcols)
+	r, _ := glamour.NewTermRenderer(
+		glamour.WithStylePath("/home/slzatz/listmango/darkslz.json"),
+		glamour.WithWordWrap(0),
+		glamour.WithLinkNumbers(true),
+	)
+	note, _ = r.Render(note)
+	// glamour seems to add a '\n' at the start
+	note = strings.TrimSpace(note)
+	org.note = strings.Split(note, "\n")
+	sess.eraseRightScreen()
+	if !sess.imagePreview {
+		org.drawPreviewWithoutImages()
+	} else {
+		org.drawPreviewWithImages()
+	}
 	org.mode = LINKS
 	sess.showOrgMessage("\x1b[1mType a number to choose a link\x1b[0m")
 }
