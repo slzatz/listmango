@@ -1,6 +1,8 @@
 package main
 
 import (
+	"fmt"
+	"os/exec"
 	"strings"
 )
 
@@ -347,5 +349,47 @@ func organizerProcessKey(c int) {
 			sess.eraseRightScreen()
 			org.drawPreviewWithoutImages()
 		}
+	case LINKS:
+		if c == '\x1b' {
+			org.command = ""
+			org.mode = NORMAL
+			return
+		}
+
+		if c < 49 || c > 57 {
+			sess.showOrgMessage("That's not a number between 1 and 9")
+			org.mode = NORMAL
+			return
+		}
+		//if c > 48 && c < 58 {
+		linkNum := c - 48
+		var found string
+		pre := fmt.Sprintf("[%d]", linkNum)
+		for _, line := range org.note {
+
+			//if strings.HasPrefix(line, pre) { //not at beginning of line
+			idx := strings.Index(line, pre)
+			if idx != -1 {
+				found = line
+				break
+			}
+		}
+		if found == "" {
+			sess.showOrgMessage("There is no [%d]", linkNum)
+			org.mode = NORMAL
+			return
+		}
+		//sess.showOrgMessage("length = %d, string = %s", len(found), strings.TrimSpace(found[80:140]))
+		beg := strings.Index(found, "http")
+		end := strings.Index(found, "\x1b\\")
+		url := found[beg:end]
+		sess.showOrgMessage("Opening %q", url)
+		cmd := exec.Command("qutebrowser", url)
+		err := cmd.Start()
+		if err != nil {
+			sess.showOrgMessage("Problem opening url: %v", err)
+		}
+		org.mode = NORMAL
+
 	} // end switch o.mode
 } // end func organizerProcessKey(c int)

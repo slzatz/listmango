@@ -38,6 +38,7 @@ var n_lookup = map[string]func(){
 	string(ctrlKey('i')):       entryInfo,     //{{0x9}}
 	string(ctrlKey('j')):       controlJ,
 	string(ctrlKey('k')):       controlK,
+	string(ctrlKey('z')):       controlZ,
 }
 
 func _i() {
@@ -271,4 +272,9 @@ func controlK() {
 	}
 	sess.eraseRightScreen()
 	org.drawPreview()
+}
+
+func controlZ() {
+	org.mode = LINKS
+	sess.showOrgMessage("\x1b[1mType a number to choose a link\x1b[0m")
 }

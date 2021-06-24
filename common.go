@@ -218,6 +218,7 @@ const (
 	VIEW_LOG          // only in editor mode - for debug viewing of vim message hx
 	SPELLING          // this mode recognizes 'z='
 	PREVIEW_SYNC_LOG  // only in organizer mode
+	LINKS             // only in organizer mode
 )
 
 func (m Mode) String() string {
@@ -241,6 +242,7 @@ func (m Mode) String() string {
 		"VIEW LOG",
 		"SPELLING",
 		"PREVIEW_SYNC_LOG",
+		"LINKS",
 	}[m]
 }
 

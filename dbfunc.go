@@ -1166,7 +1166,7 @@ func highlightTerms2(id int) string {
 	return note
 }
 
-// not currently in use but more general than generateWWString2
+// not currently in use but more general than generateWWString
 // has a length parameter and takes a ret param
 func generateWWString_(text string, width int, length int, ret string) string {
 
@@ -1246,6 +1246,14 @@ func generateWWString(text string, width int) string {
 		}
 
 		if s == "" {
+			ab.WriteString("\n")
+			filerow++
+			y++
+			continue
+		}
+
+		if strings.Index(s, "\x1b]8;;http") != -1 {
+			ab.WriteString(s)
 			ab.WriteString("\n")
 			filerow++
 			y++
