@@ -1252,7 +1252,8 @@ func generateWWString(text string, width int) string {
 			continue
 		}
 
-		if strings.Index(s, "\x1b]8;;http") != -1 {
+		//if strings.Index(s, "\x1b]8;;http") != -1 {
+		if strings.Index(s, "](http") != -1 {
 			ab.WriteString(s)
 			ab.WriteString("\n")
 			filerow++
