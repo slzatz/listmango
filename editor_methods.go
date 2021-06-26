@@ -730,9 +730,14 @@ func (e *Editor) generateWWStringFromBuffer2() string {
 				break
 			}
 
-			pos = bytes.LastIndex(row[:prev_pos+width], []byte(" "))
-			if pos == -1 || pos == prev_pos-1 {
+			//pos = bytes.LastIndex(row[:prev_pos+width], []byte(" "))
+			pos = bytes.LastIndex(row[prev_pos:prev_pos+width], []byte(" "))
+			//if pos == -1 || pos == prev_pos-1 {
+			if pos == -1 {
 				pos = prev_pos + width - 1
+				/// else added 06/25/2021
+			} else {
+				pos = pos + prev_pos
 			}
 
 			ab.Write(row[prev_pos : pos+1]) //? pos+1
@@ -795,7 +800,8 @@ func (e *Editor) generateWWStringFromBuffer() string {
 			//pos = bytes.LastIndex(row[:prev_pos+width], []byte(" "))
 			// changed 06/25/2021
 			pos = bytes.LastIndex(row[prev_pos:prev_pos+width], []byte(" "))
-			if pos == -1 || pos == prev_pos-1 {
+			//if pos == -1 || pos == prev_pos-1 {
+			if pos == -1 {
 				pos = prev_pos + width - 1
 				/// else added 06/25/2021
 			} else {
