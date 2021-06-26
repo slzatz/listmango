@@ -253,7 +253,8 @@ func (e *Editor) bufferToString() string {
 	return sb.String()
 }
 
-func (e *Editor) getScreenXFromRowColWW(r, c int) int {
+// works
+func (e *Editor) getScreenXFromRowColWW_old(r, c int) int {
 	row := e.bb[r]
 
 	/* pos is the position of the last char in the line
@@ -295,6 +296,40 @@ func (e *Editor) getScreenXFromRowColWW(r, c int) int {
 		}
 	}
 	return c - prev_pos - 1
+}
+
+// new one without bytes.Replace
+func (e *Editor) getScreenXFromRowColWW(r, c int) int {
+	row := e.bb[r]
+
+	width := e.screencols - e.left_margin_offset
+
+	if width >= len(row) {
+		return c
+	}
+
+	pos := 0
+	prev_pos := 0
+	for {
+
+		if width >= len(row[prev_pos:]) {
+			break
+		}
+
+		pos = bytes.LastIndex(row[prev_pos:pos+width], []byte(" "))
+
+		if pos == -1 {
+			pos = prev_pos + width - 1
+		} else {
+			pos = pos + prev_pos
+		}
+
+		if pos >= c {
+			break
+		}
+		prev_pos = pos + 1
+	}
+	return c - prev_pos
 }
 
 func (e *Editor) getScreenYFromRowColWW(r, c int) int {
@@ -345,7 +380,8 @@ func (e *Editor) getLinesInRowWW(r int) int {
 	return lines
 }
 
-func (e *Editor) getLineInRowWW(r, c int) int {
+// old works
+func (e *Editor) getLineInRowWW_old(r, c int) int {
 	// can't use reference to row because replacing blanks to handle corner case
 	row := e.bb[r]
 
@@ -390,6 +426,45 @@ func (e *Editor) getLineInRowWW(r, c int) int {
 		if pos >= c {
 			break
 		}
+	}
+	return lines
+}
+
+//new
+func (e *Editor) getLineInRowWW(r, c int) int {
+	// can't use reference to row because replacing blanks to handle corner case
+	row := e.bb[r]
+
+	width := e.screencols - e.left_margin_offset
+
+	if width >= len(row) {
+		return 1
+	}
+
+	lines := 0
+	pos := 0
+	prev_pos := 0
+	for {
+
+		if width >= len(row[prev_pos:]) {
+			lines++
+			break
+		}
+
+		pos = bytes.LastIndex(row[prev_pos:pos+width], []byte(" "))
+
+		if pos == -1 {
+			pos = prev_pos + width - 1
+		} else {
+			pos = pos + prev_pos
+		}
+
+		lines++
+
+		if pos >= c {
+			break
+		}
+		prev_pos = pos + 1
 	}
 	return lines
 }
