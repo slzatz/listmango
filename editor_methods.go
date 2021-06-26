@@ -281,8 +281,8 @@ func (e *Editor) getScreenXFromRowColWW(r, c int) int {
 		if pos == -1 {
 			pos = prev_pos + e.screencols - e.left_margin_offset
 		} else if pos == prev_pos {
-			row = bytes.Replace(row[:pos+1], []byte(" "), []byte("+"), -1) // + row[pos+1:]
-			row = append(row, row[pos+1:]...)                              // ? use copy
+			new_row := bytes.Replace(row[:pos+1], []byte(" "), []byte("+"), -1) // + row[pos+1:]
+			row = append(new_row, row[pos+1:]...)                               // ? use copy
 			pos = prev_pos + e.screencols - e.left_margin_offset
 		}
 		/*
@@ -381,8 +381,8 @@ func (e *Editor) getLineInRowWW(r, c int) int {
 			// need to start at the beginning each time you hit this
 			// unless you want to save the position which doesn't seem worth it
 		} else if pos == prev_pos {
-			row = bytes.Replace(row[:pos+1], []byte(" "), []byte("+"), -1) // + row[pos+1:]
-			row = append(row, row[pos+1:]...)
+			new_row := bytes.Replace(row[:pos+1], []byte(" "), []byte("+"), -1) // + row[pos+1:]
+			row = append(new_row, row[pos+1:]...)
 			pos = prev_pos + e.screencols - e.left_margin_offset
 		}
 
@@ -792,9 +792,14 @@ func (e *Editor) generateWWStringFromBuffer() string {
 				break
 			}
 
-			pos = bytes.LastIndex(row[:prev_pos+width], []byte(" "))
+			//pos = bytes.LastIndex(row[:prev_pos+width], []byte(" "))
+			// changed 06/25/2021
+			pos = bytes.LastIndex(row[prev_pos:prev_pos+width], []byte(" "))
 			if pos == -1 || pos == prev_pos-1 {
 				pos = prev_pos + width - 1
+				/// else added 06/25/2021
+			} else {
+				pos = pos + prev_pos
 			}
 
 			ab.Write(row[prev_pos : pos+1]) //? pos+1

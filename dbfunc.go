@@ -1272,9 +1272,12 @@ func generateWWString(text string, width int) string {
 				filerow++
 				break
 			}
-			pos = strings.LastIndex(s[:prev_pos+width], " ")
+			//pos = strings.LastIndex(s[:prev_pos+width], " ")
+			pos = strings.LastIndex(s[prev_pos:prev_pos+width], " ")
 			if pos == -1 || pos == prev_pos-1 {
 				pos = prev_pos + width - 1
+			} else {
+				pos = pos + prev_pos
 			}
 			ab.WriteString(s[prev_pos : pos+1])
 			ab.WriteString("\n")
