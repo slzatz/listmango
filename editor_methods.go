@@ -253,52 +253,6 @@ func (e *Editor) bufferToString() string {
 	return sb.String()
 }
 
-// works
-func (e *Editor) getScreenXFromRowColWW_old(r, c int) int {
-	row := e.bb[r]
-
-	/* pos is the position of the last char in the line
-	 * and pos+1 is the position of first character of the next row
-	 */
-
-	if len(row) <= e.screencols-e.left_margin_offset {
-		return c
-	}
-
-	pos := -1
-	prev_pos := 0
-	for {
-
-		if len(row[pos+1:]) <= e.screencols-e.left_margin_offset {
-			prev_pos = pos
-			break
-		}
-
-		prev_pos = pos
-		//cpp find_last_of -the parameter defines the position from beginning to look at (inclusive)
-		//need to add + 1 because slice :n includes chars up to the n - 1 char
-		pos = bytes.LastIndex(row[:pos+e.screencols-e.left_margin_offset+1], []byte(" "))
-
-		if pos == -1 {
-			pos = prev_pos + e.screencols - e.left_margin_offset
-		} else if pos == prev_pos {
-			new_row := bytes.Replace(row[:pos+1], []byte(" "), []byte("+"), -1) // + row[pos+1:]
-			row = append(new_row, row[pos+1:]...)                               // ? use copy
-			pos = prev_pos + e.screencols - e.left_margin_offset
-		}
-		/*
-		   else
-		     replace(row.begin()+prev_pos+1, row.begin()+pos+1, ' ', '+');
-		*/
-
-		if pos >= c {
-			break
-		}
-	}
-	return c - prev_pos - 1
-}
-
-// new one without bytes.Replace
 func (e *Editor) getScreenXFromRowColWW(r, c int) int {
 	row := e.bb[r]
 
@@ -343,7 +297,7 @@ func (e *Editor) getScreenYFromRowColWW(r, c int) int {
 	return screenLine
 }
 
-func (e *Editor) getLinesInRowWW(r int) int {
+func (e *Editor) getLinesInRowWW_old(r int) int {
 	//row := e.rows[r]
 	row := e.bb[r]
 
@@ -380,59 +334,7 @@ func (e *Editor) getLinesInRowWW(r int) int {
 	return lines
 }
 
-// old works
-func (e *Editor) getLineInRowWW_old(r, c int) int {
-	// can't use reference to row because replacing blanks to handle corner case
-	row := e.bb[r]
-
-	if len(row) <= e.screencols-e.left_margin_offset {
-		return 1
-	}
-
-	/* pos is the position of the last char in the line
-	 * and pos+1 is the position of first character of the next row
-	 */
-
-	lines := 0
-	pos := -1 //pos is the position of the last character in the line (zero-based)
-	prev_pos := 0
-	for {
-
-		// we know the first time around this can't be true
-		// could add if (line > 1 && row.substr(pos+1).size() ...);
-		if len(row[pos+1:]) <= e.screencols-e.left_margin_offset {
-			lines++
-			break
-		}
-
-		prev_pos = pos
-		//cpp find_last_of -the parameter defines the position from beginning to look at (inclusive)
-		//need to add + 1 because slice :n includes chars up to the n - 1 char
-		pos = bytes.LastIndex(row[:pos+e.screencols-e.left_margin_offset+1], []byte(" "))
-
-		if pos == -1 {
-			pos = prev_pos + e.screencols - e.left_margin_offset
-
-			// only replace if you have enough characters without a space to trigger this
-			// need to start at the beginning each time you hit this
-			// unless you want to save the position which doesn't seem worth it
-		} else if pos == prev_pos {
-			new_row := bytes.Replace(row[:pos+1], []byte(" "), []byte("+"), -1) // + row[pos+1:]
-			row = append(new_row, row[pos+1:]...)
-			pos = prev_pos + e.screencols - e.left_margin_offset
-		}
-
-		lines++
-		if pos >= c {
-			break
-		}
-	}
-	return lines
-}
-
-//new
-func (e *Editor) getLineInRowWW(r, c int) int {
-	// can't use reference to row because replacing blanks to handle corner case
+func (e *Editor) getLinesInRowWW(r int) int {
 	row := e.bb[r]
 
 	width := e.screencols - e.left_margin_offset
@@ -444,6 +346,42 @@ func (e *Editor) getLineInRowWW(r, c int) int {
 	lines := 0
 	pos := 0
 	prev_pos := 0
+
+	for {
+
+		if width >= len(row[prev_pos:]) {
+			lines++
+			break
+		}
+
+		pos = bytes.LastIndex(row[prev_pos:pos+width], []byte(" "))
+
+		if pos == -1 {
+			pos = prev_pos + width - 1
+		} else {
+			pos = pos + prev_pos
+		}
+
+		lines++
+
+		prev_pos = pos + 1
+	}
+	return lines
+}
+
+func (e *Editor) getLineInRowWW(r, c int) int {
+	row := e.bb[r]
+
+	width := e.screencols - e.left_margin_offset
+
+	if width >= len(row) {
+		return 1
+	}
+
+	lines := 0
+	pos := 0
+	prev_pos := 0
+
 	for {
 
 		if width >= len(row[prev_pos:]) {
@@ -607,6 +545,49 @@ func (e *Editor) drawVisual(pab *strings.Builder) {
 func (e *Editor) getLineCharCountWW(r, line int) int {
 	row := e.bb[r]
 
+	width := e.screencols - e.left_margin_offset
+
+	if width >= len(row) {
+		return len(row)
+	}
+
+	lines := 0
+	pos := 0
+	prev_pos := 0
+
+	for {
+
+		if width >= len(row[prev_pos:]) {
+			lines++
+			break
+		}
+
+		pos = bytes.LastIndex(row[prev_pos:pos+width], []byte(" "))
+
+		if pos == -1 {
+			pos = prev_pos + width - 1
+		} else {
+			pos = pos + prev_pos
+		}
+
+		lines++
+
+		if lines == line {
+			break
+		}
+		prev_pos = pos + 1
+	}
+	return lines
+	if len(row) == 0 {
+		return 0
+	}
+
+	return pos - prev_pos + 1
+}
+
+func (e *Editor) getLineCharCountWW_old(r, line int) int {
+	row := e.bb[r]
+
 	if len(row) == 0 {
 		return 0
 	}
@@ -648,7 +629,6 @@ func (e *Editor) getLineCharCountWW(r, line int) int {
 	}
 	return pos - prev_pos
 }
-
 func (e *Editor) drawPlainRows(pab *strings.Builder) {
 	note := e.generateWWStringFromBuffer() // need the \t for line num to be correct
 	nnote := strings.Split(note, "\n")
