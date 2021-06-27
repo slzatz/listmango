@@ -558,8 +558,7 @@ func (e *Editor) getLineCharCountWW(r, line int) int {
 	for {
 
 		if width >= len(row[prev_pos:]) {
-			lines++
-			break
+			return len(row[prev_pos:])
 		}
 
 		pos = bytes.LastIndex(row[prev_pos:pos+width], []byte(" "))
@@ -575,11 +574,8 @@ func (e *Editor) getLineCharCountWW(r, line int) int {
 		if lines == line {
 			break
 		}
+
 		prev_pos = pos + 1
-	}
-	return lines
-	if len(row) == 0 {
-		return 0
 	}
 
 	return pos - prev_pos + 1
@@ -841,7 +837,7 @@ func (e *Editor) generateWWStringFromBuffer() string {
 		}
 
 		pos := 0
-		prev_pos := 0 //except for start -> pos + 1
+		prev_pos := 0
 		for {
 			// if remainder of line is less than screen width
 			if prev_pos+width > len(row)-1 {
@@ -852,18 +848,14 @@ func (e *Editor) generateWWStringFromBuffer() string {
 				break
 			}
 
-			//pos = bytes.LastIndex(row[:prev_pos+width], []byte(" "))
-			// changed 06/25/2021
 			pos = bytes.LastIndex(row[prev_pos:prev_pos+width], []byte(" "))
-			//if pos == -1 || pos == prev_pos-1 {
 			if pos == -1 {
 				pos = prev_pos + width - 1
-				/// else added 06/25/2021
 			} else {
 				pos = pos + prev_pos
 			}
 
-			ab.Write(row[prev_pos : pos+1]) //? pos+1
+			ab.Write(row[prev_pos : pos+1])
 			if y == e.screenlines+e.lineOffset-1 {
 				e.last_visible_row = filerow - 1
 				return ab.String()
