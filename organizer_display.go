@@ -210,7 +210,7 @@ func (o *Organizer) drawPreviewWithImages() {
 			} else {
 				maxWidth := o.totaleditorcols * int(sess.ws.Xpixel) / sess.screenCols
 				maxHeight := int(sess.ws.Ypixel)
-				img, _, err = loadImage(path, maxWidth-5, maxHeight-300)
+				img, _, err = loadImage(path, maxWidth-5, maxHeight-150)
 				if err != nil {
 					// you might want to also print the error to the screen
 					fmt.Fprintf(os.Stdout, "%sError:%s %s%s", BOLD, RESET, o.note[fr], lf_ret)
