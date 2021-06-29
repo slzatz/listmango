@@ -11,8 +11,10 @@ import (
 )
 
 var cmd_lookup = map[string]func(*Organizer, int){
-	"open":           (*Organizer).openContext,
-	"o":              (*Organizer).openContext,
+	"open":           (*Organizer).open,
+	"o":              (*Organizer).open,
+	"opencontext":    (*Organizer).openContext,
+	"oc":             (*Organizer).openContext,
 	"openfolder":     (*Organizer).openFolder,
 	"of":             (*Organizer).openFolder,
 	"openkeyword":    (*Organizer).openKeyword,
@@ -108,6 +110,57 @@ func (o *Organizer) log(unused int) {
 	o.drawPreviewWithoutImages()
 	o.clearMarkedEntries()
 	o.showOrgMessage("")
+}
+
+func (o *Organizer) open(pos int) {
+	if pos == 0 {
+		sess.showOrgMessage("You did not provide a context or folder!")
+		o.mode = NORMAL
+		return
+	}
+
+	cl := &o.command_line
+	var success bool
+	success = false
+	for k, _ := range o.context_map {
+		if strings.HasPrefix(k, (*cl)[pos+1:]) {
+			o.filter = k
+			success = true
+			o.taskview = BY_CONTEXT
+			break
+		}
+	}
+
+	if !success {
+		for k, _ := range o.folder_map {
+			if strings.HasPrefix(k, (*cl)[pos+1:]) {
+				o.filter = k
+				success = true
+				o.taskview = BY_FOLDER
+				break
+			}
+		}
+	}
+
+	if !success {
+		sess.showOrgMessage("%s is not a valid context or folder!", (*cl)[:pos])
+		o.mode = NORMAL
+		return
+	}
+
+	sess.showOrgMessage("'%s' will be opened", o.filter)
+
+	o.clearMarkedEntries()
+	org.view = TASK
+	o.mode = NORMAL // can be changed to NO_ROWS below
+	o.fc, o.fr, o.rowoff = 0, 0, 0
+	o.rows = filterEntries(o.taskview, o.filter, o.show_deleted, o.sort, MAX)
+	if len(o.rows) == 0 {
+		sess.showOrgMessage("No results were returned")
+		o.mode = NO_ROWS
+	}
+	o.drawPreview()
+	return
 }
 
 func (o *Organizer) openContext(pos int) {
