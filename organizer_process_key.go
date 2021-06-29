@@ -356,8 +356,8 @@ func organizerProcessKey(c int) {
 	case PREVIEW_SYNC_LOG:
 		switch c {
 		case '\x1b':
+			org.mode = org.last_mode // pickup NO_ROWS
 			org.drawPreview()
-			org.mode = NORMAL
 		case ':':
 			sess.showOrgMessage(":")
 			org.command_line = ""

@@ -167,7 +167,6 @@ func _gg() {
 	org.rowoff = 0
 	org.fr = org.repeat - 1 //this needs to take into account O.rowoff
 	if org.view == TASK {
-		//org.drawPreviewWindow()
 		org.drawPreview()
 	} else {
 		c := getContainerInfo(org.rows[org.fr].id)
@@ -182,7 +181,6 @@ func _G() {
 	org.fc = 0
 	org.fr = len(org.rows) - 1
 	if org.view == TASK {
-		//org.drawPreviewWindow()
 		org.drawPreview()
 	} else {
 		c := getContainerInfo(org.rows[org.fr].id)
