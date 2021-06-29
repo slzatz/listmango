@@ -76,6 +76,8 @@ func organizerProcessKey(c int) {
 
 	case NORMAL:
 
+		// escape, return, ctrl-l [in one circumstance], PAGE_DOWN, PAGE_UP
+
 		if c == '\x1b' {
 			if org.view == TASK {
 				//org.drawPreviewWindow()
@@ -105,6 +107,8 @@ func organizerProcessKey(c int) {
 				org.taskview = BY_FOLDER
 			case KEYWORD:
 				org.taskview = BY_KEYWORD
+			default: //org.view == TASK
+				return
 			}
 
 			org.filter = row.title
@@ -122,6 +126,27 @@ func organizerProcessKey(c int) {
 			//org.drawPreviewWindow()
 			org.drawPreview()
 			return
+		}
+
+		// these navigate the preview in org.view == TASK
+		if c == PAGE_UP {
+			if org.altRowoff > org.textLines {
+				org.altRowoff -= org.textLines
+			} else {
+				org.altRowoff = 0
+			}
+			org.drawPreview()
+		}
+
+		if c == PAGE_DOWN {
+			if len(org.note) > org.altRowoff+org.textLines {
+				if len(org.note) < org.altRowoff+2*org.textLines {
+					org.altRowoff = org.altRowoff + len(org.note) - org.textLines
+				} else {
+					org.altRowoff += org.textLines
+				}
+			}
+			org.drawPreview()
 		}
 
 		/*leading digit is a multiplier*/
@@ -350,14 +375,18 @@ func organizerProcessKey(c int) {
 			sess.eraseRightScreen()
 			org.drawPreviewWithoutImages()
 		case PAGE_DOWN:
-			if len(org.note) > org.altRowoff+org.screenLines {
-				org.altRowoff += org.screenLines
+			if len(org.note) > org.altRowoff+org.textLines {
+				if len(org.note) < org.altRowoff+2*org.textLines {
+					org.altRowoff = org.altRowoff + len(org.note) - org.textLines
+				} else {
+					org.altRowoff += org.textLines
+				}
 			}
 			sess.eraseRightScreen()
 			org.drawPreviewWithoutImages()
 		case PAGE_UP:
-			if org.altRowoff > org.screenLines {
-				org.altRowoff -= org.screenLines
+			if org.altRowoff > org.textLines {
+				org.altRowoff -= org.textLines
 			} else {
 				org.altRowoff = 0
 			}

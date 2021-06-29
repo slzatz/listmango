@@ -13,8 +13,8 @@ import (
 
 type Session struct {
 	screenCols       int
-	screenLines      int
-	textLines        int
+	screenLines      int //total number of screen lines
+	textLines        int // considering margins, bottom messages
 	divider          int
 	totaleditorcols  int
 	initialFileRow   int

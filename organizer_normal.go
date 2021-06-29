@@ -267,17 +267,19 @@ func switchToEditorMode() {
 }
 
 func controlJ() {
-	org.altRowoff++
-	sess.eraseRightScreen()
-	org.drawPreview()
+	if len(org.note) > org.altRowoff+org.textLines {
+		org.altRowoff++
+		//sess.eraseRightScreen()
+		org.drawPreview()
+	}
 }
 
 func controlK() {
 	if org.altRowoff > 0 {
 		org.altRowoff--
+		//sess.eraseRightScreen()
+		org.drawPreview()
 	}
-	sess.eraseRightScreen()
-	org.drawPreview()
 }
 
 func controlZ() {
