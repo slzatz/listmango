@@ -327,9 +327,10 @@ func organizerProcessKey(c int) {
 		case 'm':
 			mark()
 		}
+	// The log that appears when you sync
 	case PREVIEW_SYNC_LOG:
 		switch c {
-		case '\x1b': //'m'
+		case '\x1b':
 			org.drawPreview()
 			org.mode = NORMAL
 		case ':':
@@ -338,13 +339,27 @@ func organizerProcessKey(c int) {
 			org.last_mode = org.mode
 			org.mode = COMMAND_LINE
 
-		case PAGE_DOWN, ARROW_DOWN, 'j':
+		case ARROW_DOWN, 'j':
 			org.altRowoff++
 			sess.eraseRightScreen()
 			org.drawPreviewWithoutImages()
-		case PAGE_UP, ARROW_UP, 'k':
+		case ARROW_UP, 'k':
 			if org.altRowoff > 0 {
 				org.altRowoff--
+			}
+			sess.eraseRightScreen()
+			org.drawPreviewWithoutImages()
+		case PAGE_DOWN:
+			if len(org.note) > org.altRowoff+org.screenLines {
+				org.altRowoff += org.screenLines
+			}
+			sess.eraseRightScreen()
+			org.drawPreviewWithoutImages()
+		case PAGE_UP:
+			if org.altRowoff > org.screenLines {
+				org.altRowoff -= org.screenLines
+			} else {
+				org.altRowoff = 0
 			}
 			sess.eraseRightScreen()
 			org.drawPreviewWithoutImages()
