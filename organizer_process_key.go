@@ -141,7 +141,7 @@ func organizerProcessKey(c int) {
 		if c == PAGE_DOWN {
 			if len(org.note) > org.altRowoff+org.textLines {
 				if len(org.note) < org.altRowoff+2*org.textLines {
-					org.altRowoff = org.altRowoff + len(org.note) - org.textLines
+					org.altRowoff = len(org.note) - org.textLines
 				} else {
 					org.altRowoff += org.textLines
 				}
@@ -377,7 +377,7 @@ func organizerProcessKey(c int) {
 		case PAGE_DOWN:
 			if len(org.note) > org.altRowoff+org.textLines {
 				if len(org.note) < org.altRowoff+2*org.textLines {
-					org.altRowoff = org.altRowoff + len(org.note) - org.textLines
+					org.altRowoff = len(org.note) - org.textLines
 				} else {
 					org.altRowoff += org.textLines
 				}
