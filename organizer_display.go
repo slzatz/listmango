@@ -174,83 +174,68 @@ func (o *Organizer) drawAltRows() {
 	fmt.Print(ab.String())
 }
 
-// for drawing preview and sync log (note)
 func (o *Organizer) drawPreviewWithImages() {
 
-	fmt.Print("\x1b_Ga=d\x1b\\") //delete any images
+	//delete any images
+	fmt.Print("\x1b_Ga=d\x1b\\")
+
 	if len(o.note) == 0 {
 		return
 	}
-	fmt.Fprintf(os.Stdout, "\x1b[%d;%dH", TOP_MARGIN+1, o.divider+1) // was +2
-	lf_ret := fmt.Sprintf("\r\n\x1b[%dC", o.divider+0)               // was + 1
+
+	fmt.Printf("\x1b[%d;%dH", TOP_MARGIN+1, o.divider+1)
+	lf_ret := fmt.Sprintf("\r\n\x1b[%dC", o.divider+0)
 
 	fr := o.altRowoff - 1
 	y := 0
+
 	for {
 		fr++
 		if fr > len(o.note)-1 || y > o.textLines-1 {
 			break
 		}
-		if strings.Contains(o.note[fr], "Image") {
-			fmt.Fprintf(os.Stdout, "Loading Image ... \x1b[%dG", o.divider+1)
-			prevY := y
-			path := getStringInBetween(o.note[fr], "|", "|")
-			var img image.Image
-			var err error
-			//var format string
-			if strings.Contains(path, "http") {
-				//img, format, err = loadWebImage(path)
-				img, _, err = loadWebImage(path)
-				if err != nil {
-					// you might want to also print the error to the screen
-					fmt.Fprintf(os.Stdout, "%sError:%s %s%s", BOLD, RESET, o.note[fr], lf_ret)
-					y++
-					continue
-				}
-			} else {
-				maxWidth := o.totaleditorcols * int(sess.ws.Xpixel) / sess.screenCols
-				maxHeight := int(sess.ws.Ypixel)
-				img, _, err = loadImage(path, maxWidth-5, maxHeight-150)
-				if err != nil {
-					// you might want to also print the error to the screen
-					fmt.Fprintf(os.Stdout, "%sError:%s %s%s", BOLD, RESET, o.note[fr], lf_ret)
-					y++
-					continue
-				}
-			}
-			height := img.Bounds().Max.Y / (int(sess.ws.Ypixel) / sess.screenLines)
-			y += height
-			if y > o.textLines-1 {
-				fmt.Fprintf(os.Stdout, "\x1b[3m\x1b[4mImage %s doesn't fit!\x1b[0m \x1b[%dG", path, o.divider+1)
-				y = y - height + 1
-				fmt.Fprintf(os.Stdout, "\x1b[%d;%dH", TOP_MARGIN+1+y, o.divider+1)
+		if !strings.Contains(o.note[fr], "Image") {
+			fmt.Printf("%s%s", o.note[fr], lf_ret)
+			y++
+			continue
+		}
+
+		fmt.Printf("Loading Image ... \x1b[%dG", o.divider+1)
+		prevY := y
+		path := getStringInBetween(o.note[fr], "|", "|")
+		var img image.Image
+		var err error
+		if strings.Contains(path, "http") {
+			img, _, err = loadWebImage(path)
+			if err != nil {
+				fmt.Printf("%sError:%s %s%s", BOLD, RESET, o.note[fr], lf_ret)
+				y++
 				continue
 			}
-			/*
-				ch := make(chan int)
-				go func() {
-					var s string
-					for i := 0; i < 4; i++ {
-						//for {
-						_, ok := <-ch
-						if !ok {
-							return
-						}
-						s += "..."
-						fmt.Fprintf(os.Stdout, "Loading %s\x1b[%dG", s, o.divider+1)
-						time.Sleep(100 * time.Millisecond)
-					}
-				}()
-			*/
-			displayImage(img)
-			// erases "Loading image ..."
-			fmt.Fprintf(os.Stdout, "\x1b[%d;%dH\x1b[0K", TOP_MARGIN+1+prevY, o.divider+1)
-			fmt.Fprintf(os.Stdout, "\x1b[%d;%dH", TOP_MARGIN+1+y, o.divider+1)
-			//fmt.Fprintf(os.Stdout, "The format is %s%s", format, lf_ret)
 		} else {
-			fmt.Fprintf(os.Stdout, "%s%s", o.note[fr], lf_ret)
-			y++
+			maxWidth := o.totaleditorcols * int(sess.ws.Xpixel) / sess.screenCols
+			maxHeight := int(sess.ws.Ypixel)
+			img, _, err = loadImage(path, maxWidth-5, maxHeight-150)
+			if err != nil {
+				fmt.Printf("%sError:%s %s%s", BOLD, RESET, o.note[fr], lf_ret)
+				y++
+				continue
+			}
 		}
+		height := img.Bounds().Max.Y / (int(sess.ws.Ypixel) / sess.screenLines)
+		y += height
+		if y > o.textLines-1 {
+			fmt.Printf("\x1b[3m\x1b[4mImage %s doesn't fit!\x1b[0m \x1b[%dG", path, o.divider+1)
+			y = y - height + 1
+			fmt.Printf("\x1b[%d;%dH", TOP_MARGIN+1+y, o.divider+1)
+			continue
+		}
+
+		displayImage(img)
+
+		// erase "Loading image ..."
+		fmt.Printf("\x1b[%d;%dH\x1b[0K", TOP_MARGIN+1+prevY, o.divider+1)
+		fmt.Printf("\x1b[%d;%dH", TOP_MARGIN+1+y, o.divider+1)
 	}
 }
 
