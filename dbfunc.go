@@ -82,6 +82,20 @@ func generateFolderMap() {
 	}
 }
 
+func generateKeywordMap() {
+	rows, err := db.Query("SELECT name FROM keyword;")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var name string
+
+		err = rows.Scan(&name)
+		org.keywordMap[name] = 0
+	}
+}
 func toggleStar() {
 	id := getId()
 
@@ -709,12 +723,10 @@ func getContainers() {
 	switch org.view {
 	case CONTEXT:
 		table = "context"
-		//columns = "id, title, \"default\", deleted, modified"
 		columns = "id, title, star, deleted, modified"
 		orderBy = "title"
 	case FOLDER:
 		table = "folder"
-		//columns = "id, title, private, deleted, modified"
 		columns = "id, title, star, deleted, modified"
 		orderBy = "title"
 	case KEYWORD:

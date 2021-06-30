@@ -36,6 +36,7 @@ type Organizer struct {
 	folder_map  map[string]int
 	idToFolder  map[int]string
 	sort_map    map[string]int
+	keywordMap  map[string]int
 
 	marked_entries map[int]struct{} // map instead of list makes toggling a row easier
 

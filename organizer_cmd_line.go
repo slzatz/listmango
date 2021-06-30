@@ -121,7 +121,6 @@ func (o *Organizer) open(pos int) {
 
 	cl := &o.command_line
 	var success bool
-	success = false
 	for k, _ := range o.context_map {
 		if strings.HasPrefix(k, (*cl)[pos+1:]) {
 			o.filter = k
@@ -172,7 +171,6 @@ func (o *Organizer) openContext(pos int) {
 
 	cl := o.command_line
 	var success bool
-	success = false
 	for k, _ := range o.context_map {
 		if strings.HasPrefix(k, cl[pos+1:]) {
 			//o.context = k
@@ -216,7 +214,6 @@ func (o *Organizer) openFolder(pos int) {
 
 	cl := &o.command_line
 	var success bool
-	success = false
 	for k, _ := range o.folder_map {
 		if strings.HasPrefix(k, (*cl)[pos+1:]) {
 			//o.folder = k

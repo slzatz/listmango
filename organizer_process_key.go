@@ -11,12 +11,17 @@ var navigation = map[int]struct{}{
 	ARROW_DOWN:  z0,
 	ARROW_LEFT:  z0,
 	ARROW_RIGHT: z0,
-	PAGE_UP:     z0,
-	PAGE_DOWN:   z0,
 	'h':         z0,
 	'j':         z0,
 	'k':         z0,
 	'l':         z0,
+	//PAGE_UP:     z0, // navigate right pane
+	//PAGE_DOWN:   z0, // navigate right pane
+}
+
+var tabCompletion struct {
+	idx  int
+	list []string
 }
 
 func organizerProcessKey(c int) {
@@ -167,6 +172,7 @@ func organizerProcessKey(c int) {
 			org.repeat = 1
 		}
 
+		/* ? needs to be before navigation  - if supporting commands line 'dh' */
 		org.command += string(c)
 
 		if cmd, found := n_lookup[org.command]; found {
@@ -176,11 +182,10 @@ func organizerProcessKey(c int) {
 			return
 		}
 
-		//also means that any key sequence ending in something
-		//that matches below will perform command
+		// any key sequence ending in a navigation key will
+		// be true if not caught by above
 
-		// needs to be here because needs to pick up repeat
-		//Arrows + h,j,k,l
+		//arrow keys + h,j,k,l
 		if _, found := navigation[c]; found {
 			for j := 0; j < org.repeat; j++ {
 				org.moveCursor(c)
@@ -190,7 +195,7 @@ func organizerProcessKey(c int) {
 			return
 		}
 
-	//return // end of case NORMAL
+		// end of case NORMAL
 
 	case REPLACE:
 		if org.repeat == 0 {
@@ -263,6 +268,8 @@ func organizerProcessKey(c int) {
 		if c == '\x1b' {
 			org.mode = NORMAL
 			sess.showOrgMessage("")
+			tabCompletion.idx = 0
+			tabCompletion.list = nil
 			return
 		}
 
@@ -277,12 +284,52 @@ func organizerProcessKey(c int) {
 			}
 			if cmd, found := cmd_lookup[s]; found {
 				cmd(&org, pos)
+				tabCompletion.idx = 0
+				tabCompletion.list = nil
 				return
 			}
 
 			sess.showOrgMessage("\x1b[41mNot a recognized command: %s\x1b[0m", s)
 			org.mode = org.last_mode
 			return
+		}
+
+		if c == '\t' {
+			pos := strings.Index(org.command_line, " ")
+			if tabCompletion.list == nil {
+				sess.showEdMessage("tab")
+				var s string
+				if pos != -1 {
+					s = org.command_line[:pos]
+					cl := org.command_line
+					var filterMap = make(map[string]int)
+					if s == "o" || s == "oc" || s == "c" {
+						filterMap = org.context_map
+					} else if s == "of" || s == "f" {
+						filterMap = org.folder_map
+					} else if s == "ok" || s == "k" {
+						filterMap = org.keywordMap
+					} else {
+						return
+					}
+					for k, _ := range filterMap {
+						if strings.HasPrefix(k, cl[pos+1:]) {
+							tabCompletion.list = append(tabCompletion.list, k)
+						}
+					}
+				}
+				if len(tabCompletion.list) == 0 {
+					return // don't want to hit if below
+				}
+			} else {
+				tabCompletion.idx++
+				if tabCompletion.idx > len(tabCompletion.list)-1 {
+					tabCompletion.idx = 0
+				}
+			}
+			org.command_line = org.command_line[:pos+1] + tabCompletion.list[tabCompletion.idx]
+			sess.showOrgMessage(":%s", org.command_line)
+			return // don't want to hit if below
 		}
 
 		if c == DEL_KEY || c == BACKSPACE {
@@ -293,9 +340,12 @@ func organizerProcessKey(c int) {
 		} else {
 			org.command_line += string(c)
 		}
+		tabCompletion.idx = 0
+		tabCompletion.list = nil
 
 		sess.showOrgMessage(":%s", org.command_line)
-		//return //end of case COMMAND_LINE
+
+		//end of case COMMAND_LINE
 
 		//probably should be a org.view not org.mode but
 		// for the moment this kluge works

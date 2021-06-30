@@ -164,6 +164,7 @@ func main() {
 	org.folder_map = make(map[string]int)
 	org.idToFolder = make(map[int]string)
 	org.marked_entries = make(map[int]struct{})
+	org.keywordMap = make(map[string]int)
 
 	// ? where this should be.  Also in signal.
 	sess.textLines = sess.screenLines - 2 - TOP_MARGIN // -2 for status bar and message bar
@@ -173,6 +174,7 @@ func main() {
 
 	generateContextMap()
 	generateFolderMap()
+	generateKeywordMap()
 	sess.eraseScreenRedrawLines()
 	org.rows = filterEntries(org.taskview, org.filter, org.show_deleted, org.sort, MAX)
 	if len(org.rows) == 0 {
