@@ -224,9 +224,9 @@ func editorProcessKey(c int) bool { //bool returned is whether to redraw
 	if z, found := termcodes[c]; found {
 		v.FeedKeys(z, "t", true)
 		// if c is a control character we don't want to send to nvim 07012021
-		// except we do want to send carriage return (13) and escape (27)
+		// except we do want to send carriage return (13), ctrl-v (22) and escape (27)
 		// escape is dealt with first thing
-	} else if c < 32 && c != 13 {
+	} else if c < 32 && !(c == 13 || c == 22) {
 		return false
 	} else {
 		_, err := v.Input(string(c))

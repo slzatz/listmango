@@ -405,7 +405,7 @@ func (e *Editor) nextStyle() {
 
 func (e *Editor) suggest() {
 	// clear messageBuf
-	_ = v.SetBufferLines(messageBuf, 0, -1, true, [][]byte{})
+	_ = v.SetBufferLines(messageBuf, 0, -1, true, [][]byte{}) // in test case bytes.Fields(nil)
 
 	_, err := v.Input("z=\r") // need to remove \r when ready
 	if err != nil {
