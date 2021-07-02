@@ -86,15 +86,26 @@ func main() {
 	// parse config flags & parameters
 	flag.Parse()
 
+	err = sess.GetWindowSize()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error getting window size: %v", err)
+		os.Exit(1)
+	}
+	// -2 for status bar and message bar
+	sess.textLines = sess.screenLines - 2 - TOP_MARGIN
+	//sess.divider = sess.screencols - sess.cfg.ed_pct * sess.screencols/100
+	sess.divider = sess.screenCols - (60 * sess.screenCols / 100)
+	sess.totaleditorcols = sess.screenCols - sess.divider - 1
+
 	// initialize neovim server
 	ctx := context.Background()
 	opts := []nvim.ChildProcessOption{
 
 		// -u NONE is no vimrc and -n is no swap file
-		nvim.ChildProcessArgs("-u", "NONE", "-n", "--embed", "--headless", "--noplugin"),
+		//nvim.ChildProcessArgs("-u", "NONE", "-n", "--embed", "--headless", "--noplugin"),
+		nvim.ChildProcessArgs("-u", "NONE", "-n", "--embed"),
 
 		//without headless nothing happens but should be OK once ui attached.
-		//nvim.ChildProcessArgs("-u", "NONE", "-n", "--embed", "--noplugin"),
 
 		nvim.ChildProcessContext(ctx),
 		nvim.ChildProcessLogf(log.Printf),
@@ -109,8 +120,42 @@ func main() {
 		log.Fatal(err)
 	}
 
-	// Cleanup on return.
 	defer v.Close()
+
+	v.RegisterHandler("Gui", func(updates ...interface{}) {
+		for _, update := range updates {
+			//          // handle update
+			sess.showOrgMessage("Gui: %v", update)
+		}
+	})
+
+	// probably map[string]interface{}
+	/*
+		[msg_showcmd [[]]]
+		[grid_line [1 54 108 [[1 64]]]]
+		grid_line [2 0 1 [[n 0] [o] [ ] [p] [e] [r] [a] [i] [n] [o] [ ]
+		                                [p] [e] [r] [a] [i] [n] [o] [  0 1]]]]
+		grid_scroll [2 1 54 0 126 1 0]]
+		[win_viewport [2 Window:1000 0 5 0 0]]
+		[grid_cursor_goto [2 0 0]]
+		[mode_change [normal 0]]
+		[flush []]
+	*/
+
+	v.RegisterHandler("redraw", func(updates ...[]interface{}) {
+		//s := ""
+		for _, update := range updates {
+			//s += fmt.Sprintf("%d: %v", i, update)
+			handleRedraw(update)
+		}
+		//sess.showOrgMessage("redraw: %v", s)
+	})
+
+	err = v.AttachUI(sess.totaleditorcols, sess.textLines, attachUIOption())
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error attaching UI: %v", err)
+		os.Exit(1)
+	}
 
 	wins, err := v.Windows()
 	if err != nil {
@@ -132,11 +177,13 @@ func main() {
 
 	sess.editorMode = false
 
-	err = sess.GetWindowSize()
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error getting window size: %v", err)
-		os.Exit(1)
-	}
+	/*
+		err = sess.GetWindowSize()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error getting window size: %v", err)
+			os.Exit(1)
+		}
+	*/
 
 	org.cx = 0               //cursor x position
 	org.cy = 0               //cursor y position
@@ -240,3 +287,294 @@ func main() {
 	}
 	sess.quitApp()
 }
+func attachUIOption() map[string]interface{} {
+	o := make(map[string]interface{})
+	o["rgb"] = true
+	// o["ext_multigrid"] = editor.config.Editor.ExtMultigrid
+	o["ext_multigrid"] = true
+	o["ext_hlstate"] = true
+
+	apiInfo, err := v.APIInfo()
+	if err == nil {
+		for _, item := range apiInfo {
+			i, ok := item.(map[string]interface{})
+			if !ok {
+				continue
+			}
+			// k => string v => interface
+			for k, v := range i {
+				if k != "ui_events" {
+					continue
+				}
+				events, ok := v.([]interface{})
+				if !ok {
+					continue
+				}
+				for _, event := range events {
+					function, ok := event.(map[string]interface{})
+					if !ok {
+						continue
+					}
+					name, ok := function["name"]
+					if !ok {
+						continue
+					}
+
+					switch name {
+					// case "wildmenu_show" :
+					// 	o["ext_wildmenu"] = editor.config.Editor.ExtCmdline
+					case "cmdline_show":
+						//o["ext_cmdline"] = editor.config.Editor.ExtCmdline
+						o["ext_cmdline"] = true
+					case "msg_show":
+						//o["ext_messages"] = editor.config.Editor.ExtMessages
+						o["ext_messages"] = true
+					case "popupmenu_show":
+						//o["ext_popupmenu"] = editor.config.Editor.ExtPopupmenu
+						o["ext_popupmenu"] = false
+					case "tabline_update":
+						//o["ext_tabline"] = editor.config.Editor.ExtTabline
+						o["ext_tabline"] = false
+					case "win_viewport":
+						//w.api5 = true
+					}
+				}
+			}
+		}
+	}
+
+	return o
+}
+
+//func handleRedraw(updates [][]interface{}) {
+func handleRedraw(update []interface{}) {
+	//s := w.screen
+	//for _, update := range updates {
+	event := update[0].(string)
+	args := update[1:]
+	//editor.putLog("start   ", event)
+	switch event {
+	case "win_viewport":
+		s, _ := args[0].([]interface{})
+		//s := args[0]
+		z := [4]int64{}
+		z[0] = s[2].(int64)
+		z[1] = s[3].(int64)
+		z[2] = s[4].(int64)
+		z[3] = s[5].(int64)
+		sess.showOrgMessage("%d %v %v %v %T", z, s[3], s[4], s[5], s[2])
+		sess.showOrgMessage("%v", z)
+	}
+	//}
+}
+
+/*
+func handleRedraw(updates [][]interface{}) {
+	//s := w.screen
+	for _, update := range updates {
+		event := update[0].(string)
+		args := update[1:]
+		//editor.putLog("start   ", event)
+		switch event {
+		// Global Events
+		case "set_title":
+			titleStr := (update[1].([]interface{}))[0].(string)
+			sess.showEdMessage(title)
+			//editor.window.SetupTitle(titleStr)
+			//if runtime.GOOS == "linux" {
+			//	editor.window.SetWindowTitle(titleStr)
+			//}
+
+		case "set_icon":
+		case "mode_info_set":
+			w.modeInfoSet(args)
+			w.cursor.modeIdx = 0
+		case "option_set":
+			w.setOption(update)
+		case "mode_change":
+			arg := update[len(update)-1].([]interface{})
+			w.mode = arg[0].(string)
+			w.modeIdx = util.ReflectToInt(arg[1])
+			if w.cursor.modeIdx != w.modeIdx {
+				w.cursor.modeIdx = w.modeIdx
+			}
+			w.disableImeInNormal()
+		case "mouse_on":
+		case "mouse_off":
+		case "busy_start":
+		case "busy_stop":
+		case "suspend":
+		case "update_menu":
+		case "bell":
+		case "visual_bell":
+		case "flush":
+			w.flush()
+
+		// Grid Events
+		case "grid_resize":
+			s.gridResize(args)
+		case "default_colors_set":
+			for _, u := range update[1:] {
+				w.setColorsSet(u.([]interface{}))
+			}
+			// Show a window when connecting to the remote nvim.
+			// The reason for handling the process here is that
+			// in some cases, VimEnter will not occur if an error occurs in the remote nvim.
+			if !editor.window.IsVisible() {
+				if editor.opts.Ssh != "" {
+					editor.window.Show()
+				}
+			}
+
+		case "hl_attr_define":
+			s.setHlAttrDef(args)
+			// if goneovim own statusline is visible
+			if w.drawStatusline {
+				w.statusline.getColor()
+			}
+		case "hl_group_set":
+			s.setHighlightGroup(args)
+		case "grid_line":
+			s.gridLine(args)
+		case "grid_clear":
+			s.gridClear(args)
+		case "grid_destroy":
+			s.gridDestroy(args)
+		case "grid_cursor_goto":
+			s.gridCursorGoto(args)
+		case "grid_scroll":
+			s.gridScroll(args)
+
+		// Multigrid Events
+		case "win_pos":
+			s.windowPosition(args)
+		case "win_float_pos":
+			s.windowFloatPosition(args)
+		case "win_external_pos":
+			s.windowExternalPosition(args)
+		case "win_hide":
+			s.windowHide(args)
+		case "win_scroll_over_start":
+			// old impl
+			// s.windowScrollOverStart()
+		case "win_scroll_over_reset":
+			// old impl
+			// s.windowScrollOverReset()
+		case "win_close":
+			s.windowClose()
+		case "msg_set_pos":
+			s.msgSetPos(args)
+		case "win_viewport":
+			w.windowViewport(args)
+
+		// Popupmenu Events
+		case "popupmenu_show":
+			if w.cmdline != nil {
+				if w.cmdline.shown {
+					w.cmdline.cmdWildmenuShow(args)
+				}
+			}
+			if w.popup != nil {
+				if w.cmdline != nil {
+					if !w.cmdline.shown {
+						w.popup.showItems(args)
+					}
+				} else {
+					w.popup.showItems(args)
+				}
+			}
+		case "popupmenu_select":
+			if w.cmdline != nil {
+				if w.cmdline.shown {
+					w.cmdline.cmdWildmenuSelect(args)
+				}
+			}
+			if w.popup != nil {
+				if w.cmdline != nil {
+					if !w.cmdline.shown {
+						w.popup.selectItem(args)
+					}
+				} else {
+					w.popup.selectItem(args)
+				}
+			}
+		case "popupmenu_hide":
+			if w.cmdline != nil {
+				if w.cmdline.shown {
+					w.cmdline.cmdWildmenuHide()
+				}
+			}
+			if w.popup != nil {
+				if w.cmdline != nil {
+					if !w.cmdline.shown {
+						w.popup.hide()
+					}
+				} else {
+					w.popup.hide()
+				}
+			}
+		// Tabline Events
+		case "tabline_update":
+			if w.tabline != nil {
+				w.tabline.handle(args)
+			}
+
+		// Cmdline Events
+		case "cmdline_show":
+			if w.cmdline != nil {
+				w.cmdline.show(args)
+			}
+
+		case "cmdline_pos":
+			if w.cmdline != nil {
+				w.cmdline.changePos(args)
+			}
+
+		case "cmdline_special_char":
+
+		case "cmdline_char":
+			if w.cmdline != nil {
+				w.cmdline.putChar(args)
+			}
+		case "cmdline_hide":
+			if w.cmdline != nil {
+				w.cmdline.hide()
+			}
+		case "cmdline_function_show":
+			if w.cmdline != nil {
+				w.cmdline.functionShow()
+			}
+		case "cmdline_function_hide":
+			if w.cmdline != nil {
+				w.cmdline.functionHide()
+			}
+		case "cmdline_block_show":
+		case "cmdline_block_append":
+		case "cmdline_block_hide":
+
+		// // -- deprecated events
+		// case "wildmenu_show":
+		// 	w.cmdline.wildmenuShow(args)
+		// case "wildmenu_select":
+		// 	w.cmdline.wildmenuSelect(args)
+		// case "wildmenu_hide":
+		// 	w.cmdline.wildmenuHide()
+
+		// Message/Dialog Events
+		case "msg_show":
+			w.message.msgShow(args)
+		case "msg_clear":
+			w.message.msgClear()
+		case "msg_showmode":
+		case "msg_showcmd":
+		case "msg_ruler":
+		case "msg_history_show":
+			w.message.msgHistoryShow(args)
+
+		default:
+
+		}
+		editor.putLog("finished", event)
+	}
+}
+*/
