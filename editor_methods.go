@@ -443,9 +443,9 @@ func (e *Editor) drawVisual(pab *strings.Builder) {
 		y := e.getScreenYFromRowColWW(startRow, 0) - e.lineOffset
 
 		if y >= 0 {
-			fmt.Fprintf(pab, "\x1b[%d;%dH\x1b[48;5;244m", y+e.top_margin, x)
+			fmt.Fprintf(pab, "\x1b[%d;%dH\x1b[48;5;237m", y+e.top_margin, x)
 		} else {
-			fmt.Fprintf(pab, "\x1b[%d;%dH\x1b[48;5;244m", e.top_margin, x)
+			fmt.Fprintf(pab, "\x1b[%d;%dH\x1b[48;5;237m", e.top_margin, x)
 		}
 
 		for n := 0; n < (endRow - startRow + 1); n++ { //++n
@@ -478,7 +478,7 @@ func (e *Editor) drawVisual(pab *strings.Builder) {
 		x := e.getScreenXFromRowColWW(startRow, startcol) + e.left_margin + e.left_margin_offset
 		y := e.getScreenYFromRowColWW(startRow, startcol) + e.top_margin - e.lineOffset // - 1
 
-		pab.WriteString("\x1b[48;5;244m")
+		pab.WriteString("\x1b[48;5;237m")
 		for n := 0; n < numrows; n++ {
 			// i think would check here to see if a row has multiple lines (ie wraps)
 			if n == 0 {
@@ -521,7 +521,7 @@ func (e *Editor) drawVisual(pab *strings.Builder) {
 		x := e.getScreenXFromRowColWW(e.vb_highlight[0][1], left) + e.left_margin + e.left_margin_offset
 		y := e.getScreenYFromRowColWW(e.vb_highlight[0][1], left) + e.top_margin - e.lineOffset - 1
 
-		pab.WriteString("\x1b[48;5;244m")
+		pab.WriteString("\x1b[48;5;237m")
 		for n := 0; n < (e.vb_highlight[1][1] - e.vb_highlight[0][1] + 1); n++ {
 			fmt.Fprintf(pab, "\x1b[%d;%dH", y+n, x)
 			row := e.bb[e.vb_highlight[0][1]+n-1]

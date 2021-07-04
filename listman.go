@@ -35,6 +35,8 @@ var v *nvim.Nvim
 var w nvim.Window
 var messageBuf nvim.Buffer
 
+//var redrawUpdates chan [][]interface{}
+
 var config *dbConfig
 var db *sql.DB
 var fts_db *sql.DB
@@ -61,6 +63,7 @@ func FromFile(path string) (*dbConfig, error) {
 }
 
 func main() {
+	//redrawUpdates := make(chan [][]interface{}, 1000)
 	var err error
 	config, err = FromFile("config.json")
 	if err != nil {
@@ -123,6 +126,7 @@ func main() {
 	defer v.Close()
 
 	v.RegisterHandler("Gui", func(updates ...interface{}) {
+		sess.showEdMessage("len(updates) = %d", len(updates))
 		for _, update := range updates {
 			//          // handle update
 			sess.showOrgMessage("Gui: %v", update)
@@ -144,10 +148,13 @@ func main() {
 
 	v.RegisterHandler("redraw", func(updates ...[]interface{}) {
 		//s := ""
+		sess.showEdMessage("len(updates) = %d", len(updates))
 		for _, update := range updates {
 			//s += fmt.Sprintf("%d: %v", i, update)
 			handleRedraw(update)
 		}
+
+		//redrawUpdates <- updates
 		//sess.showOrgMessage("redraw: %v", s)
 	})
 
@@ -287,6 +294,7 @@ func main() {
 	}
 	sess.quitApp()
 }
+
 func attachUIOption() map[string]interface{} {
 	o := make(map[string]interface{})
 	o["rgb"] = true
@@ -353,19 +361,184 @@ func handleRedraw(update []interface{}) {
 	event := update[0].(string)
 	args := update[1:]
 	//editor.putLog("start   ", event)
+	var s string
 	switch event {
-	case "win_viewport":
-		s, _ := args[0].([]interface{})
+	//["win_viewport", grid, win, topline, botline, curline, curcol]
+	case "win_viewportz":
+		a, _ := args[0].([]interface{})
 		//s := args[0]
-		z := [4]int64{}
-		z[0] = s[2].(int64)
-		z[1] = s[3].(int64)
-		z[2] = s[4].(int64)
-		z[3] = s[5].(int64)
-		sess.showOrgMessage("%d %v %v %v %T", z, s[3], s[4], s[5], s[2])
-		sess.showOrgMessage("%v", z)
+		z := [6]int64{}
+		z[0] = a[0].(int64)
+		//z[1] = a[1].(nvim.Window)
+		z[2] = a[2].(int64)
+		z[3] = a[3].(int64)
+		z[4] = a[4].(int64) //curline
+		z[5] = a[5].(int64) //curcol
+		//sess.showOrgMessage("%d %v %v %v %T", z, s[3], s[4], s[5], s[2])
+		//sess.showOrgMessage("win_viewport: %v", z)
+		s += fmt.Sprintf("win_viewport: %v", z)
+	//["grid_cursor_goto", grid, row, column]
+	case "grid_cursor_gotoz":
+		a, _ := args[0].([]interface{})
+		z := [3]int64{}
+		z[0] = a[0].(int64)
+		z[1] = a[1].(int64)
+		z[2] = a[2].(int64)
+		s += fmt.Sprintf("  grid_cursor_goto: %v", z)
+	case "mode_changez":
+		arg := update[len(update)-1].([]interface{})
+		mode := arg[0].(string)
+		modeIdx := arg[1].(int64)
+		//w.modeIdx = util.ReflectToInt(arg[1])
+		s += fmt.Sprintf("  mode_change: %s; modeIdx: %d", mode, modeIdx)
+	case "grid_line":
+		for _, arg := range args {
+			gridid := ReflectToInt(arg.([]interface{})[0])
+			row := ReflectToInt(arg.([]interface{})[1])
+			colStart := ReflectToInt(arg.([]interface{})[2])
+			cells := arg.([]interface{})[3].([]interface{})
+			if gridid == 2 {
+				l, h := updateLine(colStart, row, cells)
+				//updateGridContent(row, colStart, arg.([]interface{})[3].([]interface{}))
+				//s += fmt.Sprintf("gridid: %d; row: %d; col_start: %d; cells: %v", gridid, row, colStart, cells)
+				s += fmt.Sprintf("row: %d; col %d; line: %s; highlight: %v", row, colStart, l, h)
+			}
+		}
+	}
+	if s != "" {
+		sess.showOrgMessage(s)
 	}
 	//}
+}
+
+/*
+func (win *Window) updateGridContent(row, colStart int, cells []interface{}) {
+	if colStart < 0 {
+		return
+	}
+
+	//if row >= win.rows {
+	if row >= sess.textLines {
+		return
+	}
+
+	// Suppresses flickering during smooth scrolling
+	//if win.scrollPixels[1] != 0 {
+	//	win.scrollPixels[1] = 0
+//	}
+
+	// We should control to draw statusline, vsplitter
+	if editor.config.Editor.DrawWindowSeparator && win.grid == 1 {
+
+		isSkipDraw := true
+		if win.s.name != "minimap" {
+
+			// Draw  bottom statusline
+			if row == win.rows-2 {
+				isSkipDraw = false
+			}
+			// Draw tabline
+			if row == 0 {
+				isSkipDraw = false
+			}
+
+			// // Do not Draw statusline of splitted window
+			// win.s.windows.Range(func(_, winITF interface{}) bool {
+			// 	w := winITF.(*Window)
+			// 	if w == nil {
+			// 		return true
+			// 	}
+			// 	if !w.isShown() {
+			// 		return true
+			// 	}
+			// 	if row == w.pos[1]-1 {
+			// 		isDraw = true
+			// 		return false
+			// 	}
+			// 	return true
+			// })
+		} else {
+			isSkipDraw = false
+		}
+
+		if isSkipDraw {
+			return
+		}
+	}
+
+	win.updateLine(colStart, row, cells)
+	win.countContent(row)
+	win.makeUpdateMask(row)
+	if !win.isShown() {
+		win.show()
+	}
+
+	if win.isMsgGrid {
+		return
+	}
+	if win.grid == 1 {
+		return
+	}
+	if win.maxLenContent < win.lenContent[row] {
+		win.maxLenContent = win.lenContent[row]
+	}
+}
+*/
+
+func updateLine(col, row int, cells []interface{}) (line string, highlight []int) {
+	//line := ""
+	//highlight := []int64{}
+	//colStart := col
+	for _, arg := range cells {
+		cell := arg.([]interface{})
+
+		var hl, repeat int
+
+		hl = -1
+		text := cell[0]
+		if len(cell) >= 2 {
+			hl = ReflectToInt(cell[1])
+		}
+
+		if len(cell) == 3 {
+			repeat = ReflectToInt(cell[2])
+		}
+
+		// If `repeat` is present, the cell should be
+		// repeated `repeat` times (including the first time), otherwise just
+		// once.
+		r := 1
+		if repeat == 0 {
+			repeat = 1
+		}
+		for r <= repeat {
+
+			line += text.(string)
+
+			// If `hl_id` is not present the most recently seen `hl_id` in
+			//	the same call should be used (it is always sent for the first
+			//	cell in the event).
+			switch col {
+			case 0:
+				//line[col].highlight = w.s.hlAttrDef[hl]
+				highlight = append(highlight, hl)
+			default:
+				if hl == -1 {
+					//line[col].highlight = line[col-1].highlight
+					highlight = append(highlight, highlight[len(highlight)-1])
+				} else {
+					//line[col].highlight = w.s.hlAttrDef[hl]
+					highlight = append(highlight, hl)
+				}
+			}
+			col++
+			r++
+		}
+	}
+	//w.updateMutex.Unlock()
+
+	//w.queueRedraw(colStart, row, col-colStart+1, 1)
+	return
 }
 
 /*
@@ -578,3 +751,22 @@ func handleRedraw(updates [][]interface{}) {
 	}
 }
 */
+func ReflectToInt(iface interface{}) int {
+	i, ok := iface.(int64)
+	if ok {
+		return int(i)
+	}
+	j, ok := iface.(uint64)
+	if ok {
+		return int(j)
+	}
+	k, ok := iface.(int)
+	if ok {
+		return int(k)
+	}
+	l, ok := iface.(uint)
+	if ok {
+		return int(l)
+	}
+	return 0
+}
