@@ -91,8 +91,10 @@ func (o *Output) drawText() {
 
 			pos = strings.LastIndex(row[:prev_pos+o.screencols-o.left_margin_offset], " ")
 
-			if pos == -1 || pos == prev_pos-1 {
+			if pos == -1 {
 				pos = prev_pos + o.screencols - o.left_margin_offset - 1
+			} else {
+				pos = pos + prev_pos
 			}
 
 			ab.WriteString(row[prev_pos : pos+1]) //? pos+1

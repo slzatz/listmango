@@ -112,9 +112,6 @@ func editorProcessKey(c int) bool { //bool returned is whether to redraw
 				p.drawOverlay()
 				return false
 			}
-		case 'a':
-			p.mode = NORMAL
-			return false
 		}
 		// enter a number and that's the selected replacement for a mispelling
 		if c == '\r' && p.mode == SPELLING {
@@ -282,7 +279,8 @@ func editorProcessKey(c int) bool { //bool returned is whether to redraw
 	switch p.mode {
 	//case INSERT, REPLACE, NORMAL:
 	case VISUAL, VISUAL_LINE, VISUAL_BLOCK:
-		p.vb_highlight = highlightInfo(v)
+		//p.vb_highlight = highlightInfo(v)
+		p.vb_highlight = [2][4]int{{0, 0, 0, 0}, {0, 0, 0, 0}}
 	case SEARCH:
 		// return puts nvim into normal mode so don't need to catch return
 		if c == DEL_KEY || c == BACKSPACE {

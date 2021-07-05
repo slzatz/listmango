@@ -431,6 +431,19 @@ func (e *Editor) drawText() {
 	//e.drawStatusBar()
 }
 
+func (e *Editor) drawVisual2(pab *strings.Builder) {
+	if len(gls) == 0 || len(uls) == 0 {
+		return
+	}
+	gl := gls[len(gls)-1]
+	ul := uls[len(uls)-1]
+	x := e.getScreenXFromRowColWW(gl.row, gl.col_start) + e.left_margin + e.left_margin_offset + 1
+	y := e.getScreenYFromRowColWW(gl.row, gl.col_start) + e.top_margin - e.lineOffset - 2 // - 1
+	fmt.Fprintf(pab, "\x1b[%d;%dH\x1b[48;5;237m"+ul.line, y+e.top_margin, x)
+	gls = nil
+	uls = nil
+}
+
 func (e *Editor) drawVisual(pab *strings.Builder) {
 
 	lf_ret := fmt.Sprintf("\r\n\x1b[%dC", e.left_margin+e.left_margin_offset)
@@ -679,7 +692,10 @@ func (e *Editor) drawPlainRows(pab *strings.Builder) {
 			fmt.Fprintf(pab, s, line[i])
 		}
 	}
-	e.drawVisual(pab)
+
+	if e.mode == VISUAL {
+		e.drawVisual2(pab)
+	}
 }
 
 func (e *Editor) drawCodeRows(pab *strings.Builder) {
@@ -733,7 +749,9 @@ func (e *Editor) drawCodeRows(pab *strings.Builder) {
 			}
 		}
 	}
-	e.drawVisual(pab)
+	if e.mode == VISUAL {
+		e.drawVisual2(pab)
+	}
 }
 
 /*
