@@ -118,6 +118,14 @@ func main() {
 	}
 	w = wins[0]
 
+	// this allows you to change current buffer without saving
+	// isModified still works when hidden is true
+	err = v.SetOption("hidden", true)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error setting all buffers to hidden: %v", err)
+		os.Exit(1)
+	}
+
 	redirectMessages(v)
 	messageBuf, _ = v.CreateBuffer(true, true)
 

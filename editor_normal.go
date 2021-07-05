@@ -19,7 +19,7 @@ var e_lookup2 = map[string]interface{}{
 	string(ctrlKey('i')): (*Editor).decorateWord,
 	"\x17=":              (*Editor).changeSplit,
 	"\x17_":              (*Editor).changeSplit,
-	"\x06":               (*Editor).findMatchForBrace,
+	"\x06":               (*Editor).findMatchForBrace, // for testing
 	"z=":                 (*Editor).suggest,
 	leader + "l":         (*Editor).showVimMessageLog,
 	leader + "m":         (*Editor).showMarkdownPreview,

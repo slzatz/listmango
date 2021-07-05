@@ -79,8 +79,7 @@ func (e *Editor) findMatchForLeftBrace(leftBrace byte, back bool) bool {
 	return true
 }
 
-//leaving this for the time being as another way to highlight braces
-//would be tricky to do in INSERT mode since would have to leave
+//in use for testing as normal cmd - would be tricky to do in INSERT mode since would have to leave
 //INSERT to use % - but interesting
 func (e *Editor) findMatchForBrace() bool {
 
@@ -297,43 +296,6 @@ func (e *Editor) getScreenYFromRowColWW(r, c int) int {
 	return screenLine
 }
 
-func (e *Editor) getLinesInRowWW_old(r int) int {
-	//row := e.rows[r]
-	row := e.bb[r]
-
-	if len(row) <= e.screencols-e.left_margin_offset {
-		return 1
-	}
-
-	lines := 0
-	pos := -1 //pos is the position of the last character in the line (zero-based)
-	prev_pos := 0
-
-	for {
-
-		// we know the first time around this can't be true
-		// could add if (line > 1 && row.substr(pos+1).size() ...);
-		if len(row[pos+1:]) <= e.screencols-e.left_margin_offset {
-			lines++
-			break
-		}
-
-		prev_pos = pos
-		//cpp find_last_of -the parameter defines the position from beginning to look at (inclusive)
-		//need to add + 1 because slice :n includes chars up to the n - 1 char
-		pos = bytes.LastIndex(row[:pos+e.screencols-e.left_margin_offset+1], []byte(" "))
-
-		if pos == -1 {
-			pos = prev_pos + e.screencols - e.left_margin_offset
-		} else if pos == prev_pos {
-			row = row[pos+1:]
-			pos = e.screencols - e.left_margin_offset - 1
-		}
-		lines++
-	}
-	return lines
-}
-
 func (e *Editor) getLinesInRowWW(r int) int {
 	row := e.bb[r]
 
@@ -504,8 +466,6 @@ func (e *Editor) drawVisual(pab *strings.Builder) {
 					pab.Write(row[:endcol])
 				}
 			}
-			//(*pab).writestring(row[startcol-1:])
-			//sess.showedmessage("%v; %v; %v; %v", startcol, endcol, startrow, endRow)
 		}
 	}
 
@@ -581,50 +541,6 @@ func (e *Editor) getLineCharCountWW(r, line int) int {
 	return pos - prev_pos + 1
 }
 
-func (e *Editor) getLineCharCountWW_old(r, line int) int {
-	row := e.bb[r]
-
-	if len(row) == 0 {
-		return 0
-	}
-
-	if len(row) <= e.screencols-e.left_margin_offset {
-		return len(row)
-	}
-
-	lines := 0
-	pos := -1
-	prev_pos := 0
-	for {
-
-		// we know the first time around this can't be true
-		// could add if (line > 1 && row.substr(pos+1).size() ...);
-		if len(row[pos+1:]) <= e.screencols-e.left_margin_offset {
-			return len(row[pos+1:])
-		}
-
-		prev_pos = pos
-		pos = bytes.LastIndex(row[:pos+e.screencols-e.left_margin_offset], []byte(" "))
-
-		if pos == -1 {
-			pos = prev_pos + e.screencols - e.left_margin_offset
-
-			// only replace if you have enough characters without a space to trigger this
-			// need to start at the beginning each time you hit this
-			// unless you want to save the position which doesn't seem worth it
-		} else if pos == prev_pos {
-			row = bytes.ReplaceAll(row[:pos+1], []byte(" "), []byte("+")) // + row[pos+1:]
-			row = append(row, row[pos+1:]...)
-			pos = prev_pos + e.screencols - e.left_margin_offset
-		}
-
-		lines++
-		if lines == line {
-			break
-		}
-	}
-	return pos - prev_pos
-}
 func (e *Editor) drawPlainRows(pab *strings.Builder) {
 	note := e.generateWWStringFromBuffer() // need the \t for line num to be correct
 	nnote := strings.Split(note, "\n")
@@ -781,17 +697,14 @@ func (e *Editor) generateWWStringFromBuffer2() string {
 				break
 			}
 
-			//pos = bytes.LastIndex(row[:prev_pos+width], []byte(" "))
 			pos = bytes.LastIndex(row[prev_pos:prev_pos+width], []byte(" "))
-			//if pos == -1 || pos == prev_pos-1 {
 			if pos == -1 {
 				pos = prev_pos + width - 1
-				/// else added 06/25/2021
 			} else {
 				pos = pos + prev_pos
 			}
 
-			ab.Write(row[prev_pos : pos+1]) //? pos+1
+			ab.Write(row[prev_pos : pos+1])
 			ab.Write([]byte("\n"))
 			y++
 			prev_pos = pos + 1

@@ -456,17 +456,9 @@ func readNoteIntoBuffer(e *Editor, id int) {
 
 	e.bb = bytes.Split([]byte(note), []byte("\n")) // yes, you need to do it this way
 
-	// CreateBuffer(listed bool, scratch bool) (buffer Buffer, err error)
 	e.vbuf, err = v.CreateBuffer(true, false)
 	if err != nil {
 		sess.showOrgMessage("%v", err)
-	}
-
-	// this allows you to change current buffer without saving
-	// isModified still works when hidden is true
-	err = v.SetOption("hidden", true)
-	if err != nil {
-		sess.showEdMessage("hidden option error")
 	}
 
 	err = v.SetCurrentBuffer(e.vbuf)
@@ -479,18 +471,6 @@ func readNoteIntoBuffer(e *Editor, id int) {
 	if err != nil {
 		sess.showEdMessage("Error in SetBufferLines in dbfuc: %v", err)
 	}
-	/*
-	 set hidden allows redirect of messages
-	 to work since current buffer does
-	 not need to be saved
-	 alternative is to use v.Input(":set hidden\n")
-	*/
-	err = v.SetBufferOption(e.vbuf, "hidden", true)
-	if err != nil {
-		sess.showEdMessage("Error in SetBufferLines in dbfuc: %v", err)
-	}
-
-	//alternative is just to use v.Input(":w ...")
 	err = v.Command(fmt.Sprintf("w temp/buf%d", e.vbuf))
 	if err != nil {
 		sess.showEdMessage("Error in writing file in dbfuc: %v", err)

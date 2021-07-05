@@ -6,12 +6,12 @@ import (
 )
 
 type Output struct {
-	rowOffset          int //first row based on user scroll
-	screenlines        int //number of lines for this Window
-	screencols         int //number of columns for this Window
-	left_margin        int
-	left_margin_offset int
-	top_margin         int
+	rowOffset   int //first row based on user scroll
+	screenlines int //number of lines for this Window
+	screencols  int //number of columns for this Window
+	left_margin int
+	//left_margin_offset int
+	top_margin int
 	//first_visible_row  int
 	is_below bool
 	rows     []string
@@ -49,11 +49,10 @@ func (o *Output) drawText() {
 
 	y := 0
 	filerow := o.rowOffset
-	flag := false
 
 	for {
 
-		if flag {
+		if y == o.screenlines-1 {
 			break
 		}
 
@@ -64,9 +63,6 @@ func (o *Output) drawText() {
 		row := o.rows[filerow]
 
 		if len(row) == 0 {
-			if y == o.screenlines-1 {
-				break
-			}
 			ab.WriteString(lf_ret)
 			filerow++
 			y++
@@ -74,13 +70,11 @@ func (o *Output) drawText() {
 		}
 
 		pos := 0
-		prev_pos := 0 //except for start -> pos + 1
+		prev_pos := 0
 		for {
-			/* this is needed because it deals where the end of the line doesn't have a space*/
-			if prev_pos+o.screencols-o.left_margin_offset > len(row)-1 { //? if need -1;cpp generatewwstring had it
+			if prev_pos+o.screencols > len(row)-1 {
 				ab.WriteString(row[prev_pos:])
 				if y == o.screenlines-1 {
-					flag = true
 					break
 				}
 				ab.WriteString(lf_ret)
@@ -89,15 +83,16 @@ func (o *Output) drawText() {
 				break
 			}
 
-			pos = strings.LastIndex(row[:prev_pos+o.screencols-o.left_margin_offset], " ")
+			pos = strings.LastIndex(row[:prev_pos+o.screencols], " ")
 
-			if pos == -1 || pos == prev_pos-1 {
-				pos = prev_pos + o.screencols - o.left_margin_offset - 1
+			if pos == -1 {
+				pos = prev_pos + o.screencols - 1
+			} else {
+				pos = pos + prev_pos
 			}
 
-			ab.WriteString(row[prev_pos : pos+1]) //? pos+1
+			ab.WriteString(row[prev_pos : pos+1])
 			if y == o.screenlines-1 {
-				flag = true
 				break
 			}
 			ab.WriteString(lf_ret)
@@ -106,7 +101,6 @@ func (o *Output) drawText() {
 		}
 	}
 	fmt.Print(ab.String())
-	//o.drawStatusBar()
 }
 
 func (o *Output) drawStatusBar() {
