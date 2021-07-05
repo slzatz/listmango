@@ -354,6 +354,7 @@ func attachUIOption() map[string]interface{} {
 	return o
 }
 
+/*
 //func handleRedraw(updates [][]interface{}) {
 func handleRedraw(update []interface{}) {
 	//s := w.screen
@@ -410,6 +411,7 @@ func handleRedraw(update []interface{}) {
 	}
 	//}
 }
+*/
 
 /*
 func (win *Window) updateGridContent(row, colStart int, cells []interface{}) {
@@ -485,6 +487,7 @@ func (win *Window) updateGridContent(row, colStart int, cells []interface{}) {
 }
 */
 
+/*
 func updateLine(col, row int, cells []interface{}) (line string, highlight []int) {
 	//line := ""
 	//highlight := []int64{}
@@ -540,233 +543,4 @@ func updateLine(col, row int, cells []interface{}) (line string, highlight []int
 	//w.queueRedraw(colStart, row, col-colStart+1, 1)
 	return
 }
-
-/*
-func handleRedraw(updates [][]interface{}) {
-	//s := w.screen
-	for _, update := range updates {
-		event := update[0].(string)
-		args := update[1:]
-		//editor.putLog("start   ", event)
-		switch event {
-		// Global Events
-		case "set_title":
-			titleStr := (update[1].([]interface{}))[0].(string)
-			sess.showEdMessage(title)
-			//editor.window.SetupTitle(titleStr)
-			//if runtime.GOOS == "linux" {
-			//	editor.window.SetWindowTitle(titleStr)
-			//}
-
-		case "set_icon":
-		case "mode_info_set":
-			w.modeInfoSet(args)
-			w.cursor.modeIdx = 0
-		case "option_set":
-			w.setOption(update)
-		case "mode_change":
-			arg := update[len(update)-1].([]interface{})
-			w.mode = arg[0].(string)
-			w.modeIdx = util.ReflectToInt(arg[1])
-			if w.cursor.modeIdx != w.modeIdx {
-				w.cursor.modeIdx = w.modeIdx
-			}
-			w.disableImeInNormal()
-		case "mouse_on":
-		case "mouse_off":
-		case "busy_start":
-		case "busy_stop":
-		case "suspend":
-		case "update_menu":
-		case "bell":
-		case "visual_bell":
-		case "flush":
-			w.flush()
-
-		// Grid Events
-		case "grid_resize":
-			s.gridResize(args)
-		case "default_colors_set":
-			for _, u := range update[1:] {
-				w.setColorsSet(u.([]interface{}))
-			}
-			// Show a window when connecting to the remote nvim.
-			// The reason for handling the process here is that
-			// in some cases, VimEnter will not occur if an error occurs in the remote nvim.
-			if !editor.window.IsVisible() {
-				if editor.opts.Ssh != "" {
-					editor.window.Show()
-				}
-			}
-
-		case "hl_attr_define":
-			s.setHlAttrDef(args)
-			// if goneovim own statusline is visible
-			if w.drawStatusline {
-				w.statusline.getColor()
-			}
-		case "hl_group_set":
-			s.setHighlightGroup(args)
-		case "grid_line":
-			s.gridLine(args)
-		case "grid_clear":
-			s.gridClear(args)
-		case "grid_destroy":
-			s.gridDestroy(args)
-		case "grid_cursor_goto":
-			s.gridCursorGoto(args)
-		case "grid_scroll":
-			s.gridScroll(args)
-
-		// Multigrid Events
-		case "win_pos":
-			s.windowPosition(args)
-		case "win_float_pos":
-			s.windowFloatPosition(args)
-		case "win_external_pos":
-			s.windowExternalPosition(args)
-		case "win_hide":
-			s.windowHide(args)
-		case "win_scroll_over_start":
-			// old impl
-			// s.windowScrollOverStart()
-		case "win_scroll_over_reset":
-			// old impl
-			// s.windowScrollOverReset()
-		case "win_close":
-			s.windowClose()
-		case "msg_set_pos":
-			s.msgSetPos(args)
-		case "win_viewport":
-			w.windowViewport(args)
-
-		// Popupmenu Events
-		case "popupmenu_show":
-			if w.cmdline != nil {
-				if w.cmdline.shown {
-					w.cmdline.cmdWildmenuShow(args)
-				}
-			}
-			if w.popup != nil {
-				if w.cmdline != nil {
-					if !w.cmdline.shown {
-						w.popup.showItems(args)
-					}
-				} else {
-					w.popup.showItems(args)
-				}
-			}
-		case "popupmenu_select":
-			if w.cmdline != nil {
-				if w.cmdline.shown {
-					w.cmdline.cmdWildmenuSelect(args)
-				}
-			}
-			if w.popup != nil {
-				if w.cmdline != nil {
-					if !w.cmdline.shown {
-						w.popup.selectItem(args)
-					}
-				} else {
-					w.popup.selectItem(args)
-				}
-			}
-		case "popupmenu_hide":
-			if w.cmdline != nil {
-				if w.cmdline.shown {
-					w.cmdline.cmdWildmenuHide()
-				}
-			}
-			if w.popup != nil {
-				if w.cmdline != nil {
-					if !w.cmdline.shown {
-						w.popup.hide()
-					}
-				} else {
-					w.popup.hide()
-				}
-			}
-		// Tabline Events
-		case "tabline_update":
-			if w.tabline != nil {
-				w.tabline.handle(args)
-			}
-
-		// Cmdline Events
-		case "cmdline_show":
-			if w.cmdline != nil {
-				w.cmdline.show(args)
-			}
-
-		case "cmdline_pos":
-			if w.cmdline != nil {
-				w.cmdline.changePos(args)
-			}
-
-		case "cmdline_special_char":
-
-		case "cmdline_char":
-			if w.cmdline != nil {
-				w.cmdline.putChar(args)
-			}
-		case "cmdline_hide":
-			if w.cmdline != nil {
-				w.cmdline.hide()
-			}
-		case "cmdline_function_show":
-			if w.cmdline != nil {
-				w.cmdline.functionShow()
-			}
-		case "cmdline_function_hide":
-			if w.cmdline != nil {
-				w.cmdline.functionHide()
-			}
-		case "cmdline_block_show":
-		case "cmdline_block_append":
-		case "cmdline_block_hide":
-
-		// // -- deprecated events
-		// case "wildmenu_show":
-		// 	w.cmdline.wildmenuShow(args)
-		// case "wildmenu_select":
-		// 	w.cmdline.wildmenuSelect(args)
-		// case "wildmenu_hide":
-		// 	w.cmdline.wildmenuHide()
-
-		// Message/Dialog Events
-		case "msg_show":
-			w.message.msgShow(args)
-		case "msg_clear":
-			w.message.msgClear()
-		case "msg_showmode":
-		case "msg_showcmd":
-		case "msg_ruler":
-		case "msg_history_show":
-			w.message.msgHistoryShow(args)
-
-		default:
-
-		}
-		editor.putLog("finished", event)
-	}
-}
 */
-func ReflectToInt(iface interface{}) int {
-	i, ok := iface.(int64)
-	if ok {
-		return int(i)
-	}
-	j, ok := iface.(uint64)
-	if ok {
-		return int(j)
-	}
-	k, ok := iface.(int)
-	if ok {
-		return int(k)
-	}
-	l, ok := iface.(uint)
-	if ok {
-		return int(l)
-	}
-	return 0
-}

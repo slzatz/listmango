@@ -112,6 +112,9 @@ func editorProcessKey(c int) bool { //bool returned is whether to redraw
 				p.drawOverlay()
 				return false
 			}
+		case 'a':
+			p.mode = NORMAL
+			return false
 		}
 		// enter a number and that's the selected replacement for a mispelling
 		if c == '\r' && p.mode == SPELLING {

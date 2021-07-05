@@ -485,10 +485,12 @@ func readNoteIntoBuffer(e *Editor, id int) {
 	 not need to be saved
 	 alternative is to use v.Input(":set hidden\n")
 	*/
+	/* duplicates above????
 	err = v.SetBufferOption(e.vbuf, "hidden", true)
 	if err != nil {
 		sess.showEdMessage("Error in SetBufferLines in dbfuc: %v", err)
 	}
+	*/
 
 	//alternative is just to use v.Input(":w ...")
 	err = v.Command(fmt.Sprintf("w temp/buf%d", e.vbuf))

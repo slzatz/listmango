@@ -1111,6 +1111,32 @@ func (e *Editor) drawOverlay() {
 	}
 }
 
+func (e *Editor) drawOverlay2(startRow int) {
+
+	fmt.Printf("\x1b[?25l\x1b[%d;%dH", e.top_margin+startRow, e.left_margin+1)
+	lf_ret := fmt.Sprintf("\r\n\x1b[%dC", e.left_margin)
+
+	// erase specific editors 'window'
+	erase_chars := fmt.Sprintf("\x1b[%dX", e.screencols)
+	for i := startRow; i < e.screenlines; i++ {
+		fmt.Printf("%s%s", erase_chars, lf_ret)
+	}
+
+	fmt.Printf("\x1b[%d;%dH", e.top_margin+startRow, e.left_margin+1)
+
+	fr := e.previewLineOffset - 1
+	y := 0
+	rows := e.overlay
+	for {
+		fr++
+		if fr > len(rows)-1 || y+startRow > e.screenlines-1 {
+			break
+		}
+		fmt.Printf("%s%s", rows[fr], lf_ret)
+		y++
+	}
+}
+
 // this func is reason that we are writing notes to file
 // allows easy testing if a file is modified with BufferOption
 func (e *Editor) isModified() bool {
