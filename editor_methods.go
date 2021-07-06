@@ -269,7 +269,8 @@ func (e *Editor) getScreenXFromRowColWW(r, c int) int {
 			break
 		}
 
-		pos = bytes.LastIndex(row[prev_pos:pos+width], []byte(" "))
+		//pos = bytes.LastIndex(row[prev_pos:pos+width], []byte(" "))
+		pos = bytes.LastIndex(row[prev_pos:prev_pos+width], []byte(" "))
 
 		if pos == -1 {
 			pos = prev_pos + width - 1
@@ -316,7 +317,7 @@ func (e *Editor) getLinesInRowWW(r int) int {
 			break
 		}
 
-		pos = bytes.LastIndex(row[prev_pos:pos+width], []byte(" "))
+		pos = bytes.LastIndex(row[prev_pos:prev_pos+width], []byte(" "))
 
 		if pos == -1 {
 			pos = prev_pos + width - 1
@@ -351,7 +352,7 @@ func (e *Editor) getLineInRowWW(r, c int) int {
 			break
 		}
 
-		pos = bytes.LastIndex(row[prev_pos:pos+width], []byte(" "))
+		pos = bytes.LastIndex(row[prev_pos:prev_pos+width], []byte(" "))
 
 		if pos == -1 {
 			pos = prev_pos + width - 1

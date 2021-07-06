@@ -1244,7 +1244,6 @@ func generateWWString(text string, width int) string {
 			continue
 		}
 
-		//if strings.Index(s, "\x1b]8;;http") != -1 {
 		if strings.Index(s, "](http") != -1 {
 			ab.WriteString(s)
 			ab.WriteString("\n")
@@ -1264,9 +1263,9 @@ func generateWWString(text string, width int) string {
 				filerow++
 				break
 			}
-			//pos = strings.LastIndex(s[:prev_pos+width], " ")
+
 			pos = strings.LastIndex(s[prev_pos:prev_pos+width], " ")
-			if pos == -1 || pos == prev_pos-1 {
+			if pos == -1 {
 				pos = prev_pos + width - 1
 			} else {
 				pos = pos + prev_pos
