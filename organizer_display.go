@@ -467,6 +467,14 @@ func (o *Organizer) drawPreview() {
 		note, _ = r.Render(note)
 		// glamour seems to add a '\n' at the start
 		note = strings.TrimSpace(note)
+
+		/* these two below work
+		note = strings.ReplaceAll(note, "\n\n\n", "\n\n")
+		note = strings.ReplaceAll(note, "\n\x1b[0m\n\n", "\n\n") //headings handled this way
+		*/
+
+		note = strings.ReplaceAll(note, "\n\x1b[0m", "\x1b[0m\n") //headings seem to place \x1b[0m after the return
+		note = strings.ReplaceAll(note, "\n\n\n", "\n\n")
 	}
 
 	if o.mode == FIND {
