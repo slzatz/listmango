@@ -955,7 +955,7 @@ func (e *Editor) drawPreview() {
 		if fr > len(rows)-1 || y > e.screenlines-1 {
 			break
 		}
-		if strings.Contains(rows[fr], "Image") {
+		if strings.Contains(rows[fr], "Im@ge") {
 			fmt.Printf("Loading Image ... \x1b[%dG", e.left_margin+1)
 			prevY := y
 			path := getStringInBetween(rows[fr], "|", "|")

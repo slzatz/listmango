@@ -194,7 +194,7 @@ func (o *Organizer) drawPreviewWithImages() {
 		if fr > len(o.note)-1 || y > o.textLines-1 {
 			break
 		}
-		if !strings.Contains(o.note[fr], "Image") {
+		if !strings.Contains(o.note[fr], "Im@ge") {
 			fmt.Printf("%s%s", o.note[fr], lf_ret)
 			y++
 			continue
@@ -468,7 +468,7 @@ func (o *Organizer) drawPreview() {
 		// glamour seems to add a '\n' at the start
 		note = strings.TrimSpace(note)
 
-		/* these two below work
+		/* these two below also work
 		note = strings.ReplaceAll(note, "\n\n\n", "\n\n")
 		note = strings.ReplaceAll(note, "\n\x1b[0m\n\n", "\n\n") //headings handled this way
 		*/

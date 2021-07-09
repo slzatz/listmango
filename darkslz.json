@@ -76,7 +76,7 @@
   },
   "image_text": {
     "color": "243",
-    "format": "Image: {{.text}} →"
+    "format": "Im@ge: {{.text}} →"
   },
   "code": {
     "color": "203"
