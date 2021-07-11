@@ -10,22 +10,20 @@ type Output struct {
 	screenlines int //number of lines for this Window
 	screencols  int //number of columns for this Window
 	left_margin int
-	//left_margin_offset int
-	top_margin int
-	//first_visible_row  int
-	is_below bool
-	rows     []string
-	id       int // db id of related entry
-	//last_visible_row   int
+	top_margin  int
+	is_below    bool
+	rows        []string
+	id          int // db id of related entry
 }
 
+/*
 func NewOutput() *Output {
 	return &Output{
 		rowOffset: 0, //the number of lines of text at the top scrolled off the screen
-		//first_visible_row: 0,
-		is_below: false,
+		is_below:  false,
 	}
 }
+*/
 
 func (o *Output) drawText() {
 	// probably unnecessary

@@ -19,7 +19,7 @@ type Editor struct {
 	command_line       string //for commands on the command line; string doesn't include ':'
 	command            string // right now includes normal mode commands and command line commands
 	last_command       string
-	first_visible_row  int
+	firstVisibleRow    int
 	spellcheck         bool
 	highlightSyntax    bool
 	numberLines        bool
@@ -48,7 +48,7 @@ func NewEditor() *Editor {
 		mode:               NORMAL,
 		command:            "",
 		command_line:       "",
-		first_visible_row:  0,
+		firstVisibleRow:    0,
 		spellcheck:         false,
 		highlightSyntax:    true, // applies to golang, c++ etc. and markdown
 		numberLines:        true,

@@ -189,9 +189,7 @@ func (e *Editor) compile() {
 	rows = append(rows, "------------------------")
 
 	op := e.output
-	op.rowOffset = 0 // in use
-	//op.first_visible_row = 0 // notin use
-	//op.last_visible_row = 0  // not in use and probably never
+	op.rowOffset = 0
 	op.rows = rows
 	op.drawText()
 	// no need to call drawFrame or drawStatusBar
@@ -263,8 +261,6 @@ func (e *Editor) run() {
 
 	op := e.output
 	op.rowOffset = 0
-	//op.first_visible_row = 0 // not in use
-	//op.last_visible_row = 0
 	op.rows = rows
 	op.drawText()
 	// no need to call drawFrame or drawStatusBar

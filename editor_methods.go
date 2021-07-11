@@ -542,7 +542,7 @@ func (e *Editor) drawPlainRows(pab *strings.Builder) {
 		fmt.Fprintf(&numCols, "\x1b[?25l\x1b[%d;%dH", e.top_margin, e.left_margin+1)
 
 		s = fmt.Sprintf("\x1b[%dC", e.left_margin_offset) + "%s" + lf_ret
-		for n := e.first_visible_row; n < len(nnote); n++ {
+		for n := e.firstVisibleRow; n < len(nnote); n++ {
 			row := nnote[n]
 			fmt.Fprintf(&numCols, "\x1b[48;5;235m\x1b[38;5;245m%3d \x1b[49m", n+1)
 			line := strings.Split(row, "\t")
@@ -554,7 +554,7 @@ func (e *Editor) drawPlainRows(pab *strings.Builder) {
 		pab.WriteString(numCols.String())
 	} else {
 		s = "%s" + lf_ret
-		for n := e.first_visible_row; n < len(nnote); n++ {
+		for n := e.firstVisibleRow; n < len(nnote); n++ {
 			row := nnote[n]
 			line := strings.Split(row, "\t")
 			for i := 0; i < len(line); i++ {
@@ -606,7 +606,7 @@ func (e *Editor) drawCodeRows(pab *strings.Builder) {
 		fmt.Fprintf(&numCols, "\x1b[?25l\x1b[%d;%dH", e.top_margin, e.left_margin+1)
 
 		s := fmt.Sprintf("\x1b[%dC", e.left_margin_offset) + "%s" + lf_ret
-		for n := e.first_visible_row; n < len(nnote); n++ {
+		for n := e.firstVisibleRow; n < len(nnote); n++ {
 			row := nnote[n]
 			fmt.Fprintf(&numCols, "\x1b[48;5;235m\x1b[38;5;245m%3d \x1b[49m", n+1)
 			line := strings.Split(row, "\t")
@@ -618,7 +618,7 @@ func (e *Editor) drawCodeRows(pab *strings.Builder) {
 		pab.WriteString(numCols.String())
 	} else {
 		s := "%s" + lf_ret
-		for n := e.first_visible_row; n < len(nnote); n++ {
+		for n := e.firstVisibleRow; n < len(nnote); n++ {
 			row := nnote[n]
 			line := strings.Split(row, "\t")
 			for i := 0; i < len(line); i++ {
@@ -810,7 +810,7 @@ func (e *Editor) drawFrame() {
 func (e *Editor) scroll() {
 
 	if e.fc == 0 && e.fr == 0 {
-		e.cy, e.cx, e.lineOffset, e.first_visible_row = 0, 0, 0, 0
+		e.cy, e.cx, e.lineOffset, e.firstVisibleRow = 0, 0, 0, 0
 		return
 	}
 
@@ -829,7 +829,7 @@ func (e *Editor) scroll() {
 	}
 
 	if e.lineOffset == 0 {
-		e.first_visible_row = 0
+		e.firstVisibleRow = 0
 	}
 
 	e.cy = cy - e.lineOffset
@@ -841,7 +841,7 @@ func (e *Editor) scroll() {
 func (e *Editor) adjustFirstVisibleRow() {
 
 	if e.lineOffset == 0 {
-		e.first_visible_row = 0
+		e.firstVisibleRow = 0
 		return
 	}
 
@@ -871,7 +871,7 @@ func (e *Editor) adjustFirstVisibleRow() {
 			break
 		}
 	}
-	e.first_visible_row = rowNum
+	e.firstVisibleRow = rowNum
 }
 
 func (e *Editor) readFileIntoNote(filename string) error {
@@ -900,7 +900,7 @@ func (e *Editor) readFileIntoNote(filename string) error {
 	}
 	v.SetBufferLines(e.vbuf, 0, -1, true, e.bb)
 
-	e.fr, e.fc, e.cy, e.cx, e.lineOffset, e.first_visible_row = 0, 0, 0, 0, 0, 0
+	e.fr, e.fc, e.cy, e.cx, e.lineOffset, e.firstVisibleRow = 0, 0, 0, 0, 0, 0
 
 	e.drawText()
 	e.drawStatusBar() // not sure what state of isModified would be so not sure need to draw statubBar
