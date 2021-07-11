@@ -600,18 +600,19 @@ func (e *Editor) drawPlainRows(pab *strings.Builder) {
 }
 
 func (e *Editor) drawCodeRows(pab *strings.Builder) {
-	tid := getFolderTid(e.id)
-	note := e.generateWWStringFromBuffer()
 	var lang string
-	var buf bytes.Buffer
-	switch tid {
-	case 18:
-		lang = "cpp"
-	case 14:
-		lang = "go"
-	default:
+	if taskFolder(e.id) == "code" {
+		c := taskContext(e.id)
+		var ok bool
+		if lang, ok = Languages[c]; !ok {
+			lang = "markdown"
+		}
+	} else {
 		lang = "markdown"
 	}
+
+	note := e.generateWWStringFromBuffer()
+	var buf bytes.Buffer
 	_ = Highlight(&buf, note, lang, "terminal16m", sess.style[sess.styleIndex])
 	note = buf.String()
 	nnote := strings.Split(note, "\n")

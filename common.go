@@ -33,6 +33,13 @@ type dbConfig struct {
 
 var z0 = struct{}{}
 
+var Languages = map[string]string{
+	"golang": "go",
+	"go":     "go",
+	"cpp":    "cpp",
+	"c++":    "cpp",
+}
+
 // these are p.nvimModes some of which overlap
 // with p.modes but some don't
 var modeMap = map[string]Mode{

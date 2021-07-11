@@ -91,8 +91,7 @@ func (e *Editor) writeNote() {
 		sess.showEdMessage("Error in writing file in editor.WriteNote: %v", err)
 	}
 
-	folder_tid := getFolderTid(e.id)
-	if folder_tid == 18 || folder_tid == 14 {
+	if taskFolder(e.id) == "code" {
 		e.code = e.bufferToString()
 		updateCodeFile(e)
 	}
@@ -134,7 +133,8 @@ func (e *Editor) compile() {
 
 	var dir string
 	var cmd *exec.Cmd
-	if getFolderTid(e.id) == 18 {
+	//if getFolderTid(e.id) == 18 {
+	if taskContext(e.id) == "cpp" {
 		dir = "/home/slzatz/clangd_examples/"
 		cmd = exec.Command("make")
 	} else {
@@ -208,7 +208,8 @@ func (e *Editor) run() {
 	var dir string
 	var obj string
 	var cmd *exec.Cmd
-	if getFolderTid(e.id) == 18 {
+	//if getFolderTid(e.id) == 18 {
+	if taskContext(e.id) == "cpp" {
 		obj = "./test_cpp"
 		dir = "/home/slzatz/clangd_examples/"
 	} else {

@@ -165,12 +165,10 @@ func main() {
 
 	org.view = TASK
 	org.taskview = BY_FOLDER
-	//org.filter = "todo"
-	org.filter = "No Folder"
+	org.filter = "todo"
+	//org.filter = "No Folder"
 	org.context_map = make(map[string]int)
-	org.idToContext = make(map[int]string)
 	org.folder_map = make(map[string]int)
-	org.idToFolder = make(map[int]string)
 	org.marked_entries = make(map[int]struct{})
 	org.keywordMap = make(map[string]int)
 

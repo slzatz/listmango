@@ -342,8 +342,7 @@ func (o *Organizer) editNote(id int) {
 		p.id = id
 		p.top_margin = TOP_MARGIN + 1
 
-		folder_tid := getFolderTid(o.rows[o.fr].id)
-		if folder_tid == 18 || folder_tid == 14 {
+		if taskFolder(o.rows[o.fr].id) == "code" {
 			p.output = &Output{}
 			p.output.is_below = true
 			p.output.id = id

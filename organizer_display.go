@@ -274,17 +274,17 @@ func (o *Organizer) drawStatusBar() {
 	if len(o.rows) > 0 {
 		switch o.view {
 		case TASK:
-			e := getEntryInfo(getId())
+			id = getId()
 			switch o.taskview {
 			case BY_FIND:
 				str = "search - " + o.fts_search_terms
 			case BY_FOLDER:
-				str = fmt.Sprintf("%s[f] (%s[c])", o.filter, o.idToContext[e.context_tid])
+				str = fmt.Sprintf("%s[f] (%s[c])", o.filter, taskContext(id))
 			case BY_CONTEXT:
-				str = fmt.Sprintf("%s[c] (%s[f])", o.filter, o.idToFolder[e.folder_tid])
+				str = fmt.Sprintf("%s[c] (%s[f])", o.filter, taskFolder(id))
 			case BY_RECENT:
 				str = fmt.Sprintf("Recent: %s[c] %s[f]",
-					o.idToContext[e.context_tid], o.idToFolder[e.folder_tid])
+					taskContext(id), taskFolder(id))
 			case BY_KEYWORD:
 				str = o.filter + "[k]"
 			}
@@ -428,7 +428,6 @@ func (o *Organizer) drawPreview() {
 		return
 	}
 	id := o.rows[o.fr].id
-	tid := getFolderTid(id)
 	var note string
 	if o.mode != FIND {
 		note = readNoteIntoString(id)
@@ -446,20 +445,18 @@ func (o *Organizer) drawPreview() {
 		}
 	*/
 
-	var code bool
-	if tid == 18 || tid == 14 {
-		code = true
-		var lang string
-		var buf bytes.Buffer
-		switch tid {
-		case 18:
-			lang = "cpp"
-		case 14:
-			lang = "go"
+	var lang string
+	if taskFolder(id) == "code" {
+		c := taskContext(id)
+		var ok bool
+		if lang, ok = Languages[c]; !ok {
+			lang = "markdown"
 		}
-		_ = Highlight(&buf, note, lang, "terminal16m", sess.style[sess.styleIndex])
-		note = buf.String()
-	} else { // render as markdown
+	} else {
+		lang = "markdown"
+	}
+
+	if lang == "markdown" {
 		r, _ := glamour.NewTermRenderer(
 			glamour.WithStylePath("/home/slzatz/listmango/darkslz.json"),
 			glamour.WithWordWrap(0),
@@ -467,14 +464,12 @@ func (o *Organizer) drawPreview() {
 		note, _ = r.Render(note)
 		// glamour seems to add a '\n' at the start
 		note = strings.TrimSpace(note)
-
-		/* these two below also work
-		note = strings.ReplaceAll(note, "\n\n\n", "\n\n")
-		note = strings.ReplaceAll(note, "\n\x1b[0m\n\n", "\n\n") //headings handled this way
-		*/
-
 		note = strings.ReplaceAll(note, "\n\x1b[0m", "\x1b[0m\n") //headings seem to place \x1b[0m after the return
 		note = strings.ReplaceAll(note, "\n\n\n", "\n\n")
+	} else {
+		var buf bytes.Buffer
+		_ = Highlight(&buf, note, lang, "terminal16m", sess.style[sess.styleIndex])
+		note = buf.String()
 	}
 
 	if o.mode == FIND {
@@ -485,9 +480,8 @@ func (o *Organizer) drawPreview() {
 		note = strings.ReplaceAll(note, "qx", "\x1b[48;5;31m") //^^
 		note = strings.ReplaceAll(note, "qy", "\x1b[0m")       // %%
 	}
-	// I think the note should be split here
 	o.note = strings.Split(note, "\n")
-	if code || !sess.imagePreview {
+	if lang != "markdown" || !sess.imagePreview {
 		o.drawPreviewWithoutImages()
 	} else {
 		o.drawPreviewWithImages()

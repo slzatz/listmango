@@ -61,7 +61,6 @@ func generateContextMap() {
 
 		err = rows.Scan(&tid, &title)
 		org.context_map[title] = tid
-		org.idToContext[tid] = title
 	}
 }
 
@@ -78,7 +77,6 @@ func generateFolderMap() {
 
 		err = rows.Scan(&tid, &title)
 		org.folder_map[title] = tid
-		org.idToFolder[tid] = title
 	}
 }
 
@@ -536,8 +534,41 @@ func getEntryInfo(id int) Entry {
 	return e
 }
 
+/*
 func getFolderTid(id int) int {
 	row := db.QueryRow("SELECT folder_tid FROM task WHERE id=?;", id)
+	var tid int
+	err := row.Scan(&tid)
+	if err != nil {
+		return -1
+	}
+	return tid
+}
+*/
+
+func taskFolder(id int) string {
+	//row := db.QueryRow("SELECT folder.title FROM folder JOIN task on task.folder_tid = folder.tid WHERE task.id=?;", id)
+	// below seems better because where clause is on task
+	row := db.QueryRow("SELECT folder.title FROM task JOIN folder on task.folder_tid = folder.tid WHERE task.id=?;", id)
+	var title string
+	err := row.Scan(&title)
+	if err != nil {
+		return ""
+	}
+	return title
+}
+
+func taskContext(id int) string {
+	row := db.QueryRow("SELECT context.title FROM task JOIN context on task.context_tid = context.tid WHERE task.id=?;", id)
+	var title string
+	err := row.Scan(&title)
+	if err != nil {
+		return ""
+	}
+	return title
+}
+func getContextTid(id int) int {
+	row := db.QueryRow("SELECT context_tid FROM task WHERE id=?;", id)
 	var tid int
 	err := row.Scan(&tid)
 	if err != nil {
@@ -1281,7 +1312,8 @@ func generateWWString(text string, width int) string {
 
 func updateCodeFile(e *Editor) {
 	var filePath string
-	if tid := getFolderTid(e.id); tid == 18 {
+	//if tid := getFolderTid(e.id); tid == 18 {
+	if taskContext(e.id) == "cpp" {
 		filePath = "/home/slzatz/clangd_examples/test.cpp"
 		//lsp_name = "clangd";
 	} else {
