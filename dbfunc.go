@@ -1283,28 +1283,28 @@ func generateWWString(text string, width int) string {
 			continue
 		}
 
-		pos := 0
-		prev_pos := 0
+		start := 0
+		end := 0
 
 		for {
-			if prev_pos+width > len(s)-1 {
-				ab.WriteString(s[prev_pos:])
+			if start+width > len(s)-1 {
+				ab.WriteString(s[start:])
 				ab.WriteString("\n")
 				y++
 				filerow++
 				break
 			}
 
-			pos = strings.LastIndex(s[prev_pos:prev_pos+width], " ")
+			pos := strings.LastIndex(s[start:start+width], " ")
 			if pos == -1 {
-				pos = prev_pos + width - 1
+				end = start + width - 1
 			} else {
-				pos = pos + prev_pos
+				end = start + pos
 			}
-			ab.WriteString(s[prev_pos : pos+1])
+			ab.WriteString(s[start : end+1])
 			ab.WriteString("\n")
 			y++
-			prev_pos = pos + 1
+			start = end + 1
 		}
 	}
 	return ab.String()

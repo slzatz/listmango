@@ -20,7 +20,6 @@ type Editor struct {
 	command            string // right now includes normal mode commands and command line commands
 	last_command       string
 	first_visible_row  int
-	last_visible_row   int
 	spellcheck         bool
 	highlightSyntax    bool
 	numberLines        bool

@@ -254,36 +254,28 @@ func (e *Editor) bufferToString() string {
 
 func (e *Editor) getScreenXFromRowColWW(r, c int) int {
 	row := e.bb[r]
-
 	width := e.screencols - e.left_margin_offset
-
 	if width >= len(row) {
 		return c
 	}
-
-	pos := 0
-	prev_pos := 0
+	start := 0
+	end := 0
 	for {
-
-		if width >= len(row[prev_pos:]) {
+		if width >= len(row[start:]) {
 			break
 		}
-
-		//pos = bytes.LastIndex(row[prev_pos:pos+width], []byte(" "))
-		pos = bytes.LastIndex(row[prev_pos:prev_pos+width], []byte(" "))
-
+		pos := bytes.LastIndex(row[start:start+width], []byte(" "))
 		if pos == -1 {
-			pos = prev_pos + width - 1
+			end = start + width - 1
 		} else {
-			pos = pos + prev_pos
+			end = start + pos
 		}
-
-		if pos >= c {
+		if end >= c {
 			break
 		}
-		prev_pos = pos + 1
+		start = end + 1
 	}
-	return c - prev_pos
+	return c - start
 }
 
 func (e *Editor) getScreenYFromRowColWW(r, c int) int {
@@ -299,73 +291,56 @@ func (e *Editor) getScreenYFromRowColWW(r, c int) int {
 
 func (e *Editor) getLinesInRowWW(r int) int {
 	row := e.bb[r]
-
 	width := e.screencols - e.left_margin_offset
-
 	if width >= len(row) {
 		return 1
 	}
-
 	lines := 0
-	pos := 0
-	prev_pos := 0
-
+	start := 0
+	end := 0
 	for {
 
-		if width >= len(row[prev_pos:]) {
+		if width >= len(row[start:]) {
 			lines++
 			break
 		}
-
-		pos = bytes.LastIndex(row[prev_pos:prev_pos+width], []byte(" "))
-
+		pos := bytes.LastIndex(row[start:start+width], []byte(" "))
 		if pos == -1 {
-			pos = prev_pos + width - 1
+			end = start + width - 1
 		} else {
-			pos = pos + prev_pos
+			end = start + pos
 		}
-
 		lines++
-
-		prev_pos = pos + 1
+		start = end + 1
 	}
 	return lines
 }
 
 func (e *Editor) getLineInRowWW(r, c int) int {
 	row := e.bb[r]
-
 	width := e.screencols - e.left_margin_offset
-
 	if width >= len(row) {
 		return 1
 	}
-
 	lines := 0
-	pos := 0
-	prev_pos := 0
-
+	start := 0
+	end := 0
 	for {
-
-		if width >= len(row[prev_pos:]) {
+		if width >= len(row[start:]) {
 			lines++
 			break
 		}
-
-		pos = bytes.LastIndex(row[prev_pos:prev_pos+width], []byte(" "))
-
+		pos := bytes.LastIndex(row[start:start+width], []byte(" "))
 		if pos == -1 {
-			pos = prev_pos + width - 1
+			end = start + width - 1
 		} else {
-			pos = pos + prev_pos
+			end = start + pos
 		}
-
 		lines++
-
-		if pos >= c {
+		if end >= c {
 			break
 		}
-		prev_pos = pos + 1
+		start = end + 1
 	}
 	return lines
 }
@@ -687,29 +662,29 @@ func (e *Editor) generateWWStringFromBuffer2() string {
 			continue
 		}
 
-		pos := 0
-		prev_pos := 0 //except for start -> pos + 1
+		start := 0
+		end := 0
 		for {
 			// if remainder of line is less than screen width
-			if prev_pos+width > len(row)-1 {
-				ab.Write(row[prev_pos:])
+			if start+width > len(row)-1 {
+				ab.Write(row[start:])
 				ab.Write([]byte("\n"))
 				y++
 				filerow++
 				break
 			}
 
-			pos = bytes.LastIndex(row[prev_pos:prev_pos+width], []byte(" "))
+			pos := bytes.LastIndex(row[start:start+width], []byte(" "))
 			if pos == -1 {
-				pos = prev_pos + width - 1
+				end = start + width - 1
 			} else {
-				pos = pos + prev_pos
+				end = start + pos
 			}
 
-			ab.Write(row[prev_pos : pos+1])
+			ab.Write(row[start : end+1])
 			ab.Write([]byte("\n"))
 			y++
-			prev_pos = pos + 1
+			start = end + 1
 		}
 	}
 }
@@ -737,8 +712,7 @@ func (e *Editor) generateWWStringFromBuffer() string {
 	width := e.screencols - e.left_margin_offset
 
 	for {
-		if filerow == numRows || y == e.screenlines+e.lineOffset-1 {
-			e.last_visible_row = filerow - 1
+		if filerow == numRows || y == e.screenlines+e.lineOffset {
 			return ab.String()[:ab.Len()-1] // delete last \n
 		}
 
@@ -751,33 +725,32 @@ func (e *Editor) generateWWStringFromBuffer() string {
 			continue
 		}
 
-		pos := 0
-		prev_pos := 0
+		start := 0
+		end := 0
 		for {
 			// if remainder of line is less than screen width
-			if prev_pos+width > len(row)-1 {
-				ab.Write(row[prev_pos:])
+			if start+width > len(row)-1 {
+				ab.Write(row[start:])
 				ab.Write([]byte("\n"))
 				y++
 				filerow++
 				break
 			}
 
-			pos = bytes.LastIndex(row[prev_pos:prev_pos+width], []byte(" "))
+			pos := bytes.LastIndex(row[start:start+width], []byte(" "))
 			if pos == -1 {
-				pos = prev_pos + width - 1
+				end = start + width - 1
 			} else {
-				pos = pos + prev_pos
+				end = start + pos
 			}
 
-			ab.Write(row[prev_pos : pos+1])
+			ab.Write(row[start : end+1])
 			if y == e.screenlines+e.lineOffset-1 {
-				e.last_visible_row = filerow - 1
 				return ab.String()
 			}
 			ab.Write([]byte("\t"))
 			y++
-			prev_pos = pos + 1
+			start = end + 1
 		}
 	}
 }
@@ -837,7 +810,7 @@ func (e *Editor) drawFrame() {
 func (e *Editor) scroll() {
 
 	if e.fc == 0 && e.fr == 0 {
-		e.cy, e.cx, e.lineOffset, e.first_visible_row, e.last_visible_row = 0, 0, 0, 0, 0
+		e.cy, e.cx, e.lineOffset, e.first_visible_row = 0, 0, 0, 0
 		return
 	}
 
@@ -927,7 +900,7 @@ func (e *Editor) readFileIntoNote(filename string) error {
 	}
 	v.SetBufferLines(e.vbuf, 0, -1, true, e.bb)
 
-	e.fr, e.fc, e.cy, e.cx, e.lineOffset, e.first_visible_row, e.last_visible_row = 0, 0, 0, 0, 0, 0, 0
+	e.fr, e.fc, e.cy, e.cx, e.lineOffset, e.first_visible_row = 0, 0, 0, 0, 0, 0
 
 	e.drawText()
 	e.drawStatusBar() // not sure what state of isModified would be so not sure need to draw statubBar
