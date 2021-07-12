@@ -1149,7 +1149,8 @@ func synchronize(reportOnly bool) (log string) {
 		return
 	}
 	fmt.Fprintf(&lg, "\nClient UTC timestamp: %s\n", client_ts)
-	fmt.Fprintf(&lg, "Server UTC timestamp: %s", tc(server_ts, 19, false))
+	fmt.Fprintf(&lg, "Server UTC timestamp: %s", strings.Replace(tc(server_ts, 19, false), "T", " ", 1))
+	fmt.Fprintf(&lg, "\n### Synchronization succeeded")
 
 	return
 }
