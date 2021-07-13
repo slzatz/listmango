@@ -26,6 +26,7 @@ var e_lookup2 = map[string]interface{}{
 	leader + "s":         (*Editor).nextStyle,
 	leader + "w":         showWindows,
 	leader + "c":         (*Editor).showSpellingPreview,
+	leader + "t":         (*Editor).readGoTemplate,
 }
 
 // needs rewriting
@@ -436,4 +437,8 @@ func (e *Editor) suggest() {
 	e.mode = SPELLING
 	e.previewLineOffset = 0
 	e.drawOverlay()
+}
+
+func (e *Editor) readGoTemplate() {
+	e.readFileIntoNote("go.template")
 }
