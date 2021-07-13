@@ -1,3 +1,6 @@
 *.json
 *.config
 *.ini
+*.db
+*.bak
+*.test
