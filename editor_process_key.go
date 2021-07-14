@@ -224,9 +224,10 @@ func editorProcessKey(c int) bool { //bool returned is whether to redraw
 	if z, found := termcodes[c]; found {
 		v.FeedKeys(z, "t", true)
 		// if c is a control character we don't want to send to nvim 07012021
-		// except we do want to send carriage return (13), ctrl-v (22) and escape (27)
+		// except we do want to send carriage return (13), ctrl-v (22), tab (9) and escape (27)
 		// escape is dealt with first thing
-	} else if c < 32 && !(c == 13 || c == 22) {
+		//} else if c < 32 && !(c == 13 || c == 22) {
+	} else if c < 32 && !(c == 13 || c == 22 || c == 9) {
 		return false
 	} else {
 		// < is special since it allows keycodes like <CR>
@@ -234,7 +235,10 @@ func editorProcessKey(c int) bool { //bool returned is whether to redraw
 			v.Input("<LT>")
 		} else {
 			_, err := v.Input(string(c))
-			//sess.showOrgMessage(string(c)) /// debug
+			if c == 9 {
+				c = 35
+			}
+			sess.showOrgMessage(string(c)) /// debug
 			if err != nil {
 				sess.showEdMessage("Error in nvim.Input: %v", err)
 			}
@@ -303,6 +307,7 @@ func editorProcessKey(c int) bool { //bool returned is whether to redraw
 	//below is done for everything except SEARCH and EX_COMMAND
 	p.bb, _ = v.BufferLines(p.vbuf, 0, -1, true) //reading updated buffer
 	pos, _ := v.WindowCursor(w)                  //set screen cx and cy from pos
+
 	p.fr = pos[0] - 1
 	p.fc = pos[1]
 

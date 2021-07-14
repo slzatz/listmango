@@ -254,6 +254,9 @@ func (e *Editor) bufferToString() string {
 
 func (e *Editor) getScreenXFromRowColWW(r, c int) int {
 	row := e.bb[r]
+	row = bytes.ReplaceAll(row, []byte("\t"), []byte("$$$$")) ////////////
+	tabCount := bytes.Count(e.bb[r][:c], []byte("\t"))
+	c = c + 3*tabCount
 	width := e.screencols - e.left_margin_offset
 	if width >= len(row) {
 		return c
@@ -291,6 +294,7 @@ func (e *Editor) getScreenYFromRowColWW(r, c int) int {
 
 func (e *Editor) getLinesInRowWW(r int) int {
 	row := e.bb[r]
+	row = bytes.ReplaceAll(row, []byte("\t"), []byte("$$$$")) ////////////
 	width := e.screencols - e.left_margin_offset
 	if width >= len(row) {
 		return 1
@@ -318,6 +322,7 @@ func (e *Editor) getLinesInRowWW(r int) int {
 
 func (e *Editor) getLineInRowWW(r, c int) int {
 	row := e.bb[r]
+	row = bytes.ReplaceAll(row, []byte("\t"), []byte("$$$$")) ////////////
 	width := e.screencols - e.left_margin_offset
 	if width >= len(row) {
 		return 1
@@ -716,7 +721,9 @@ func (e *Editor) generateWWStringFromBuffer() string {
 			return ab.String()[:ab.Len()-1] // delete last \n
 		}
 
-		row := e.bb[filerow]
+		//row := e.bb[filerow]
+
+		row := bytes.ReplaceAll(e.bb[filerow], []byte("\t"), []byte("    ")) ////////////
 
 		if len(row) == 0 {
 			ab.Write([]byte("\n"))
