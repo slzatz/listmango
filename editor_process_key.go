@@ -229,9 +229,15 @@ func editorProcessKey(c int) bool { //bool returned is whether to redraw
 	} else if c < 32 && !(c == 13 || c == 22) {
 		return false
 	} else {
-		_, err := v.Input(string(c))
-		if err != nil {
-			sess.showEdMessage("Error in nvim.Input: %v", err)
+		// < is special since it allows keycodes like <CR>
+		if c == '<' {
+			v.Input("<LT>")
+		} else {
+			_, err := v.Input(string(c))
+			//sess.showOrgMessage(string(c)) /// debug
+			if err != nil {
+				sess.showEdMessage("Error in nvim.Input: %v", err)
+			}
 		}
 	}
 
