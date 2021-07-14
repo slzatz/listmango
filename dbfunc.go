@@ -471,7 +471,7 @@ func readNoteIntoBuffer(e *Editor, id int) {
 	}
 	err = v.Command(fmt.Sprintf("w temp/buf%d", e.vbuf))
 	if err != nil {
-		sess.showEdMessage("Error in writing file in dbfuc: %v", err)
+		sess.showEdMessage("Error in writing file in dbfunc: %v", err)
 	}
 }
 
@@ -1267,6 +1267,8 @@ func generateWWString(text string, width int) string {
 		if filerow == len(ss) {
 			return ab.String()
 		}
+
+		s = strings.ReplaceAll(s, "\t", "    ")
 
 		if s == "" {
 			ab.WriteString("\n")

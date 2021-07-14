@@ -26,7 +26,7 @@ func highlightMispelledWords(rows []string) []string {
 	}
 	err = cmd.Start()
 	if err != nil {
-		sess.showEdMessage("Problem in highlightMispelled stdin: %v", err)
+		sess.showEdMessage("Problem in cmd.Start (nuspell) stdin: %v", err)
 		return highlighted_rows
 	}
 	buf_out := bufio.NewReader(stdout)

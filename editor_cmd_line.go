@@ -38,6 +38,7 @@ var e_lookup_C = map[string]func(*Editor){
 	"quit!":    (*Editor).quitActions,
 	"q!":       (*Editor).quitActions,
 	"x":        (*Editor).quitActions,
+	"fmt":      (*Editor).goFormat,
 }
 
 /* EDITOR cpp COMMAND_LINE mode lookup
@@ -508,4 +509,61 @@ func (e *Editor) number() {
 	}
 	e.drawText()
 	sess.showEdMessage("Line numbering is %t", e.numberLines)
+}
+
+func (e *Editor) goFormat() {
+	bb := [][]byte{}
+	cmd := exec.Command("gofmt")
+	stdout, err := cmd.StdoutPipe()
+	if err != nil {
+		sess.showEdMessage("Problem in gofmt stdout: %v", err)
+		return
+	}
+	buf_out := bufio.NewReader(stdout)
+
+	stdin, err := cmd.StdinPipe()
+	if err != nil {
+		sess.showEdMessage("Problem in gofmt stdin: %v", err)
+		return
+	}
+	err = cmd.Start()
+	if err != nil {
+		sess.showEdMessage("Problem in cmd.Start (gofmt) stdin: %v", err)
+		return
+	}
+
+	for _, row := range e.bb {
+		io.WriteString(stdin, string(row)+"\n")
+	}
+	stdin.Close()
+
+	for {
+		bytes, err := buf_out.ReadBytes('\n')
+
+		if err == io.EOF {
+			break
+		}
+
+		/*
+			if len(bytes) == 0 {
+				break
+			}
+		*/
+
+		bb = append(bb, bytes[:len(bytes)-1])
+	}
+	e.bb = bb
+
+	err = v.SetBufferLines(e.vbuf, 0, -1, true, e.bb)
+	if err != nil {
+		sess.showEdMessage("Error in SetBufferLines in dbfuc: %v", err)
+	}
+	e.drawText()
+	/*
+		err = v.Command(fmt.Sprintf("w temp/buf%d", e.vbuf))
+		if err != nil {
+			sess.showEdMessage("Error in writing file in dbfunc: %v", err)
+		}
+	*/
+
 }
