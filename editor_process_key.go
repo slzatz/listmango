@@ -2,6 +2,9 @@ package main
 
 import (
 	"fmt"
+	"io/ioutil"
+	"os/user"
+	"path/filepath"
 	"strings"
 
 	//"sync/atomic"
@@ -198,6 +201,8 @@ func editorProcessKey(c int) bool { //bool returned is whether to redraw
 				cmd0(p)
 				p.command_line = ""
 				p.mode = NORMAL
+				tabCompletion.idx = 0
+				tabCompletion.list = nil
 				return false
 			}
 
@@ -207,6 +212,49 @@ func editorProcessKey(c int) bool { //bool returned is whether to redraw
 			return false
 		} //end 'r'
 
+		if c == '\t' {
+			pos := strings.Index(p.command_line, " ")
+			if tabCompletion.list == nil {
+				sess.showOrgMessage("tab")
+				var s string
+				if pos != -1 {
+					s = p.command_line[pos+1:]
+					//cl := p.command_line
+					dir := filepath.Dir(s)
+					if dir == "~" {
+						usr, _ := user.Current()
+						dir = usr.HomeDir
+					} else if strings.HasPrefix(dir, "~/") {
+						usr, _ := user.Current()
+						dir = filepath.Join(usr.HomeDir, dir[2:])
+					}
+
+					partial := filepath.Base(s)
+					paths, _ := ioutil.ReadDir(dir)
+					sess.showOrgMessage("dir: %s  base: %s", dir, partial)
+
+					for _, path := range paths {
+						if strings.HasPrefix(path.Name(), partial) {
+							//tabCompletion.list = append(tabCompletion.list, path.Name())
+							tabCompletion.list = append(tabCompletion.list, filepath.Join(dir, path.Name()))
+						}
+					}
+				}
+				if len(tabCompletion.list) == 0 {
+					return false
+				}
+			} else {
+				tabCompletion.idx++
+				if tabCompletion.idx > len(tabCompletion.list)-1 {
+					tabCompletion.idx = 0
+				}
+			}
+			p.command_line = p.command_line[:pos+1] + tabCompletion.list[tabCompletion.idx]
+			sess.showEdMessage(":%s", p.command_line)
+			//sess.showOrgMessage(":%s", tabCompletion.list[tabCompletion.idx])
+			return false
+		}
+
 		if c == DEL_KEY || c == BACKSPACE {
 			if len(p.command_line) > 0 {
 				p.command_line = p.command_line[:len(p.command_line)-1]
@@ -214,6 +262,9 @@ func editorProcessKey(c int) bool { //bool returned is whether to redraw
 		} else {
 			p.command_line += string(c)
 		}
+
+		tabCompletion.idx = 0
+		tabCompletion.list = nil
 
 		sess.showEdMessage(":%s", p.command_line)
 		return false //end EX_COMMAND
