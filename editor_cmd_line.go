@@ -513,7 +513,8 @@ func (e *Editor) number() {
 
 func (e *Editor) goFormat() {
 	bb := [][]byte{}
-	cmd := exec.Command("gofmt")
+	//cmd := exec.Command("gofmt")
+	cmd := exec.Command("goimports")
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
 		sess.showEdMessage("Problem in gofmt stdout: %v", err)
@@ -558,7 +559,13 @@ func (e *Editor) goFormat() {
 	if err != nil {
 		sess.showEdMessage("Error in SetBufferLines in dbfuc: %v", err)
 	}
+	//v.Input("gg0")
+	pos, _ := v.WindowCursor(w) //screen cx and cy set from pos
+	p.fr = pos[0] - 1
+	p.fc = pos[1]
+	p.scroll()
 	e.drawText()
+	sess.returnCursor()
 	/*
 		err = v.Command(fmt.Sprintf("w temp/buf%d", e.vbuf))
 		if err != nil {
