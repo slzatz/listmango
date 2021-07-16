@@ -198,10 +198,10 @@ func (e *Editor) compile() {
 
 func (e *Editor) run() {
 
-	var args string
+	var args []string
 	pos := strings.Index(e.command_line, " ")
 	if pos != -1 {
-		args = e.command_line[pos+1:]
+		args = strings.Split(e.command_line[pos+1:], " ")
 	}
 
 	var dir string
@@ -215,7 +215,7 @@ func (e *Editor) run() {
 		obj = "./main"
 		dir = "/home/slzatz/go_fragments/"
 	}
-	cmd = exec.Command(obj, args)
+	cmd = exec.Command(obj, args...)
 	cmd.Dir = dir
 
 	stdout, err := cmd.StdoutPipe()

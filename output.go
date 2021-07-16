@@ -67,11 +67,11 @@ func (o *Output) drawText() {
 			continue
 		}
 
-		pos := 0
-		prev_pos := 0
+		start := 0
+		end := 0
 		for {
-			if prev_pos+o.screencols > len(row)-1 {
-				ab.WriteString(row[prev_pos:])
+			if start+o.screencols > len(row)-1 {
+				ab.WriteString(row[start:])
 				if y == o.screenlines-1 {
 					break
 				}
@@ -81,20 +81,20 @@ func (o *Output) drawText() {
 				break
 			}
 
-			pos = strings.LastIndex(row[:prev_pos+o.screencols], " ")
+			pos := strings.LastIndex(row[start:start+o.screencols], " ")
 
 			if pos == -1 {
-				pos = prev_pos + o.screencols - 1
+				end = start + o.screencols - 1
 			} else {
-				pos = pos + prev_pos
+				end = start + pos
 			}
 
-			ab.WriteString(row[prev_pos : pos+1])
+			ab.WriteString(row[start : end+1])
 			if y == o.screenlines-1 {
 				break
 			}
 			ab.WriteString(lf_ret)
-			prev_pos = pos + 1
+			start = end + 1
 			y++
 		}
 	}
