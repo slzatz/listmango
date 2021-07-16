@@ -145,7 +145,7 @@ func (o *Organizer) delChar() {
 		return
 	}
 	*t = (*t)[:o.fc] + (*t)[o.fc+1:]
-	if len(*t) == o.fc {
+	if len(*t) == o.fc && o.fc != 0 {
 		o.fc--
 	}
 	o.rows[o.fr].dirty = true
