@@ -36,6 +36,7 @@ var Languages = map[string]string{
 	"go":     "go",
 	"cpp":    "cpp",
 	"c++":    "cpp",
+	"python": "python",
 }
 
 // these are p.nvimModes some of which overlap

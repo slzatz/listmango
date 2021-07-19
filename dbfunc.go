@@ -1314,13 +1314,18 @@ func generateWWString(text string, width int) string {
 
 func updateCodeFile(e *Editor) {
 	var filePath string
-	//if tid := getFolderTid(e.id); tid == 18 {
-	if taskContext(e.id) == "cpp" {
+	lang := Languages[taskContext(e.id)]
+	if lang == "cpp" {
 		filePath = "/home/slzatz/clangd_examples/test.cpp"
 		//lsp_name = "clangd";
-	} else {
+	} else if lang == "go" {
 		filePath = "/home/slzatz/go_fragments/main.go"
 		//lsp_name = "gopls";
+	} else if lang == "python" {
+		filePath = "/home/slzatz/python_fragments/main.py"
+	} else {
+		sess.showEdMessage("I don't recognize %q", taskContext(e.id))
+		return
 	}
 
 	f, err := os.OpenFile(filePath, os.O_RDWR|os.O_CREATE, 0755)

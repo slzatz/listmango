@@ -134,13 +134,19 @@ func (e *Editor) compile() {
 
 	var dir string
 	var cmd *exec.Cmd
-	//if getFolderTid(e.id) == 18 {
-	if taskContext(e.id) == "cpp" {
+	lang := Languages[taskContext(e.id)]
+	if lang == "cpp" {
 		dir = "/home/slzatz/clangd_examples/"
 		cmd = exec.Command("make")
-	} else {
+	} else if lang == "go" {
 		dir = "/home/slzatz/go_fragments/"
 		cmd = exec.Command("go", "build", "main.go")
+	} else if lang == "python" {
+		sess.showEdMessage("You don't have to compile python")
+		return
+	} else {
+		sess.showEdMessage("I don't recognize %q", taskContext(e.id))
+		return
 	}
 	cmd.Dir = dir
 
@@ -215,6 +221,21 @@ func (e *Editor) run() {
 		obj = "./main"
 		dir = "/home/slzatz/go_fragments/"
 	}
+	lang := Languages[taskContext(e.id)]
+	if lang == "cpp" {
+		dir = "/home/slzatz/clangd_examples/"
+		cmd = exec.Command("make")
+	} else if lang == "go" {
+		dir = "/home/slzatz/go_fragments/"
+		cmd = exec.Command("go", "build", "main.go")
+	} else if lang == "python" {
+		obj = "./main.py"
+		dir = "/home/slzatz/python_fragments/"
+	} else {
+		sess.showEdMessage("I don't recognize %q", taskContext(e.id))
+		return
+	}
+
 	cmd = exec.Command(obj, args...)
 	cmd.Dir = dir
 
