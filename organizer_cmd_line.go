@@ -59,6 +59,7 @@ var cmd_lookup = map[string]func(*Organizer, int){
 	"save":           (*Organizer).save,
 	"image":          (*Organizer).setImage,
 	"images":         (*Organizer).setImage,
+	"lsp":            (*Organizer).launchLsp,
 	//"showmarkdown":   (*Organizer).showMarkdown,
 	//"showm":          (*Organizer).showMarkdown,
 	/*
@@ -776,4 +777,7 @@ func (o *Organizer) setImage(pos int) {
 	o.mode = o.last_mode
 	o.drawPreview()
 	o.command_line = ""
+}
+
+func (o *Organizer) launchLsp(unused int) {
 }
