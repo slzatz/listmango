@@ -780,4 +780,5 @@ func (o *Organizer) setImage(pos int) {
 }
 
 func (o *Organizer) launchLsp(unused int) {
+	lsp.launchLsp()
 }
