@@ -42,7 +42,7 @@ var jsonNotification = JsonNotification{
 	Params:  struct{}{},
 }
 
-func main() {
+func launchLsp() {
 	jsonRequest := JsonRequest{
 		Jsonrpc: "2.0",
 		Id:      1,
@@ -83,7 +83,7 @@ func main() {
 	header := fmt.Sprintf("Content-Length: %d\r\n\r\n", len(s))
 	s = header + s
 
-	//Client sends initialize method and server replies with result (not method): {Capabilities ...)
+	//Client sends initialize method and server replies with result (not method): Capabilities ...)
 	io.WriteString(stdin, s)
 	fmt.Println("#3")
 
@@ -217,45 +217,9 @@ func main() {
 	}
 	time.Sleep(time.Second * 2)
 
-	// below create some files to test diagnostics
-	var j int32
-	for i := 0; i < 2; i++ {
-		select {
-		case xyz := <-drawCommands:
-			fmt.Println(xyz)
-		default:
-			fmt.Println("A -> There wasn't anything on the channel")
-		}
-		time.Sleep(time.Second * 2)
-		text := "package main\nimport \"fmt\"\n func main() {\n fmt.Println(\"hello\"\n}\n"
-		j++
-		fmt.Printf("Sent INCORRECT:\n%s", text)
-		sendDidChangeNotification(&stdin, text, j)
-		//start := time.Now()
+}
 
-		time.Sleep(time.Millisecond * 400)
-		select {
-		case xyz := <-drawCommands:
-			fmt.Println(xyz)
-		default:
-			fmt.Println("B -> There wasn't anything on the channel")
-		}
-
-		time.Sleep(time.Second * 2)
-		text = "package main\nimport \"fmt\"\n func main() {\n fmt.Println(\"hello\")\n}\n"
-		j++
-		fmt.Printf("Sent CORRECT:\n%s", text)
-		sendDidChangeNotification(&stdin, text, j)
-		time.Sleep(time.Millisecond * 400)
-		select {
-		case xyz := <-drawCommands:
-			fmt.Println(xyz)
-		default:
-			fmt.Println("C -> There wasn't anything on the channel")
-		}
-
-	}
-
+func shutdownLsp() {
 	time.Sleep(time.Second * 2)
 
 	select {
