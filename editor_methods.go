@@ -9,6 +9,7 @@ import (
 	"strings"
 )
 
+/*
 func find_first_not_of(row *string, delimiters string, pos int) int {
 	pos++
 	for i, char := range (*row)[pos:] {
@@ -20,6 +21,7 @@ func find_first_not_of(row *string, delimiters string, pos int) int {
 	}
 	return -1
 }
+*/
 
 //'automatically' happens in NORMAL and INSERT mode
 //return true -> redraw; false -> don't redraw
