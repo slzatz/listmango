@@ -494,12 +494,3 @@ func (s *Session) signalHandler() {
 	//s.moveDivider(s.cfg.ed_pct)
 	moveDivider(60)
 }
-
-/*
-func (s Session) moveDivider()
-func (s Session) drawOrgFilters
-func (s Session) displayContainerInfo
-func (s Session) updateCodeFile()
-func (s Session) loadMeta()
-func (s Session) quitApp()
-*/

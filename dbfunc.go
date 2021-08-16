@@ -170,25 +170,25 @@ func updateTaskFolder(new_folder string, id int) {
 	}
 }
 
-func updateNote(e *Editor) {
+func updateNote(id int, text string) {
 
-	text := e.bufferToString()
+	//text := e.bufferToString()
 
 	_, err := db.Exec("UPDATE task SET note=?, modified=datetime('now') WHERE id=?;",
-		text, e.id)
+		text, id)
 	if err != nil {
-		sess.showOrgMessage("Error in updateNote for entry with id %d: %v", e.id, err)
+		sess.showOrgMessage("Error in updateNote for entry with id %d: %v", id, err)
 		return
 	}
 
 	/***************fts virtual table update*********************/
 
-	_, err = fts_db.Exec("UPDATE fts SET note=? WHERE lm_id=?;", text, e.id)
+	_, err = fts_db.Exec("UPDATE fts SET note=? WHERE lm_id=?;", text, id)
 	if err != nil {
-		sess.showOrgMessage("Error in updateNote updating fts for entry with id %d: %v", e.id, err)
+		sess.showOrgMessage("Error in updateNote updating fts for entry with id %d: %v", id, err)
 	}
 
-	sess.showOrgMessage("Updated note and fts entry for item %d", e.id)
+	sess.showOrgMessage("Updated note and fts entry for item %d", id)
 }
 
 func getSyncItems(max int) {
@@ -1312,9 +1312,9 @@ func generateWWString(text string, width int) string {
 	return ab.String()
 }
 
-func updateCodeFile(e *Editor) {
+func updateCodeFile(id int, text string) {
 	var filePath string
-	lang := Languages[taskContext(e.id)]
+	lang := Languages[taskContext(id)]
 	if lang == "cpp" {
 		filePath = "/home/slzatz/clangd_examples/test.cpp"
 		//lsp_name = "clangd";
@@ -1324,7 +1324,7 @@ func updateCodeFile(e *Editor) {
 	} else if lang == "python" {
 		filePath = "/home/slzatz/python_fragments/main.py"
 	} else {
-		sess.showEdMessage("I don't recognize %q", taskContext(e.id))
+		sess.showEdMessage("I don't recognize %q", taskContext(id))
 		return
 	}
 
@@ -1338,7 +1338,7 @@ func updateCodeFile(e *Editor) {
 	f.Truncate(0)
 
 	//n, err := f.WriteString(sess.e.code)
-	f.WriteString(e.code)
+	f.WriteString(text)
 
 	f.Sync()
 

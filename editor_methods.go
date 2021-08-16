@@ -7,6 +7,7 @@ import (
 	"image"
 	"os"
 	"strings"
+	"time"
 )
 
 /*
@@ -368,12 +369,44 @@ func (e *Editor) drawText() {
 		fmt.Print(ab.String())
 		//go e.drawHighlightedBraces() // this will produce data race
 		e.drawHighlightedBraces() //has to come after drawing rows
+		//e.drawDiagnostics()
 	} else {
 		//e.drawBuffer(&ab)
 		e.drawPlainRows(&ab)
 		fmt.Print(ab.String())
 	}
 	//e.drawStatusBar()
+}
+
+func (e *Editor) drawDiagnostics() {
+
+	op := e.output
+	op.rowOffset = 0
+	select {
+	case s := <-drawCommands:
+		op.rows = strings.Split(s, "\n")
+		//fmt.Println(xyz)
+	default:
+		op.rows = []string{"Did not receive ANY diagnostics"}
+		//fmt.Println("There wasn't anything on the channel")
+	}
+	op.drawText()
+}
+
+func (e *Editor) drawDiagnostics2() {
+
+	op := e.output
+	op.rowOffset = 0
+	select {
+	case s := <-drawCommands:
+		op.rows = strings.Split(s, "\n")
+	//fmt.Println(xyz)
+	case <-time.After(2 * time.Second):
+
+		op.rows = []string{"Did not receive ANY diagnostics"}
+		//fmt.Println("There wasn't anything on the channel")
+	}
+	op.drawText()
 }
 
 func (e *Editor) drawVisual(pab *strings.Builder) {

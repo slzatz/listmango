@@ -780,5 +780,7 @@ func (o *Organizer) setImage(pos int) {
 }
 
 func (o *Organizer) launchLsp(unused int) {
-	lsp.launchLsp()
+	launchLsp()
+	o.mode = o.last_mode
+	o.command_line = ""
 }

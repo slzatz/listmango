@@ -84,7 +84,15 @@ func (e *Editor) saveNoteToFile() {
 }
 
 func (e *Editor) writeNote() {
-	updateNote(e)
+	text := e.bufferToString()
+
+	if taskFolder(e.id) == "code" {
+		sendDidChangeNotification(text)
+		e.drawDiagnostics2()
+		updateCodeFile(e.id, text)
+	}
+
+	updateNote(e.id, text)
 
 	//uses nvim to write note to file for sole purpose of setting isModified to false
 	err := v.Command("w")
@@ -92,12 +100,15 @@ func (e *Editor) writeNote() {
 		sess.showEdMessage("Error in writing file in editor.WriteNote: %v", err)
 	}
 
-	if taskFolder(e.id) == "code" {
-		e.code = e.bufferToString()
-		updateCodeFile(e)
-	}
 	e.drawStatusBar() //need this since now refresh won't do it unless redraw =true
 	sess.showEdMessage("")
+
+	/*
+		if taskFolder(e.id) == "code" {
+			time.Sleep(time.Second)
+			e.drawDiagnostics()
+		}
+	*/
 }
 
 func (e *Editor) readFile() {
@@ -328,7 +339,8 @@ func (e *Editor) modified() {
 func (e *Editor) quitActions() {
 	cmd := e.command_line
 	if cmd == "x" {
-		updateNote(e)
+		text := e.bufferToString()
+		updateNote(e.id, text)
 
 	} else if cmd == "q!" || cmd == "quit!" {
 		// do nothing = allow editor to be closed

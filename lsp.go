@@ -1,4 +1,4 @@
-package lsp
+package main
 
 import (
 	"bufio"
@@ -42,6 +42,21 @@ var jsonNotification = JsonNotification{
 	Params:  struct{}{},
 }
 
+func counter() func() int32 {
+	var n int32
+	n = 3
+	return func() int32 {
+		n++
+		return n
+	}
+}
+
+var version = counter()
+
+var stdin io.WriteCloser
+var buffer_out0 *bufio.Reader
+var drawCommands = make(chan string)
+
 func launchLsp() {
 	jsonRequest := JsonRequest{
 		Jsonrpc: "2.0",
@@ -60,12 +75,12 @@ func launchLsp() {
 		log.Fatal(err)
 	}
 	s := string(b)
-	fmt.Printf("\n\n-------------------------------\n\n")
-	fmt.Printf("Sending: %s", s[:40])
-	fmt.Printf("\n\n-------------------------------\n\n")
+	//fmt.Printf("\n\n-------------------------------\n\n")
+	//fmt.Printf("Sending: %s", s[:40])
+	//fmt.Printf("\n\n-------------------------------\n\n")
 
 	cmd := exec.Command("gopls", "serve", "-rpc.trace", "-logfile", "/home/slzatz/gopls_log")
-	stdin, err := cmd.StdinPipe()
+	stdin, err = cmd.StdinPipe()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -73,39 +88,39 @@ func launchLsp() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Println("#1")
+	//fmt.Println("#1")
 	err = cmd.Start()
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Println("#2")
+	//fmt.Println("#2")
 
 	header := fmt.Sprintf("Content-Length: %d\r\n\r\n", len(s))
 	s = header + s
 
 	//Client sends initialize method and server replies with result (not method): Capabilities ...)
 	io.WriteString(stdin, s)
-	fmt.Println("#3")
+	//fmt.Println("#3")
 
 	//time.Sleep(2 * time.Second)
 
 	//buffer_out0 := bufio.NewReader(stdout)
-	buffer_out0 := bufio.NewReaderSize(stdout, 10000)
+	buffer_out0 = bufio.NewReaderSize(stdout, 10000)
 	p := make([]byte, 10000)
-	fmt.Printf("buffer_out0 = %v\n", buffer_out0.Size())
-	n, err := buffer_out0.Read(p)
+	//fmt.Printf("buffer_out0 = %v\n", buffer_out0.Size())
+	_, err = buffer_out0.Read(p)
 	if err != nil {
 		log.Fatal(err)
 	}
 	fullRead := string(p)
-	fmt.Printf("Number of bytes read = %d\n", n)
-	fmt.Printf("\n\n-------------------------------\n\n")
-	fmt.Printf("Full Read = %s", fullRead)
+	//fmt.Printf("Number of bytes read = %d\n", n)
+	//fmt.Printf("\n\n-------------------------------\n\n")
+	//fmt.Printf("Full Read = %s", fullRead)
 
 	idx := strings.Index(fullRead, "\r\n\r\n")
-	jsonRead := fullRead[idx+4:]
-	fmt.Printf("\n\n-------------------------------\n\n")
-	fmt.Printf("jsonRead = %v", jsonRead[:40])
+	//jsonRead := fullRead[idx+4:]
+	//fmt.Printf("\n\n-------------------------------\n\n")
+	//fmt.Printf("jsonRead = %v", jsonRead[:40])
 	idx0 := bytes.Index(p, []byte(":")) + 2
 	idx = bytes.Index(p, []byte("\r\n\r\n"))
 	length, _ := strconv.Atoi(string(p[idx0:idx]))
@@ -122,10 +137,12 @@ func launchLsp() {
 		log.Fatal(err)
 	}
 
-	fmt.Printf("\n\n-------------------------------\n\n")
-	fmt.Printf("Result = %+v\n", v)
-	fmt.Printf("length = %d", length)
-	fmt.Printf("\n\n-------------------------------\n\n")
+	/*
+		fmt.Printf("\n\n-------------------------------\n\n")
+		fmt.Printf("Result = %+v\n", v)
+		fmt.Printf("length = %d", length)
+		fmt.Printf("\n\n-------------------------------\n\n")
+	*/
 
 	//fmt.Printf("ServerInfo: %v\n", v.Result.ServerInfo)
 	//fmt.Printf("WorkSpace: %v\n", v.Result.Capabilities.Workspace)
@@ -142,18 +159,19 @@ func launchLsp() {
 	header = fmt.Sprintf("Content-Length: %d\r\n\r\n", len(s))
 	s = header + s
 	io.WriteString(stdin, s)
-	fmt.Println("#4")
+	//fmt.Println("#4")
 	pp := make([]byte, 10000)
-	fmt.Printf("buffer_out0 = %v\n", buffer_out0.Size())
-	n, err = buffer_out0.Read(pp)
+	//fmt.Printf("buffer_out0 = %v\n", buffer_out0.Size())
+	_, err = buffer_out0.Read(pp)
 	if err != nil {
 		log.Fatal(err)
 	}
 	fullRead = string(pp)
-	fmt.Printf("Number of bytes read = %d\n", n)
-	fmt.Printf("\n\n-------------------------------\n\n")
-	fmt.Printf("Full Read = %s", fullRead)
-
+	/*
+		fmt.Printf("Number of bytes read = %d\n", n)
+		fmt.Printf("\n\n-------------------------------\n\n")
+		fmt.Printf("Full Read = %s", fullRead)
+	*/
 	// Client sends notification method:did/Open and server replies with notification (no id) method "window/logMessage"
 	// It looks like this is a notification and should not have an id
 	//jsonMethod.Method = "textDocument/didOpen"
@@ -174,56 +192,59 @@ func launchLsp() {
 	s = string(b)
 	header = fmt.Sprintf("Content-Length: %d\r\n\r\n", len(s))
 	s = header + s
-	fmt.Printf("\n\n%s\n\n", s)
+	//fmt.Printf("\n\n%s\n\n", s)
 	io.WriteString(stdin, s)
 	ppp := make([]byte, 10000)
 	//time.Sleep(2 * time.Second)
-	fmt.Println("#5")
-	n, err = buffer_out0.Read(ppp)
+	//fmt.Println("#5")
+	_, err = buffer_out0.Read(ppp)
 	if err != nil {
 		log.Fatal(err)
 	}
 	fullRead = string(ppp)
-	fmt.Printf("Number of bytes read = %d\n", n)
-	fmt.Printf("\n\n-------------------------------\n\n")
-	fmt.Printf("Full Read = %s", fullRead)
-
+	/*
+		fmt.Printf("Number of bytes read = %d\n", n)
+		fmt.Printf("\n\n-------------------------------\n\n")
+		fmt.Printf("Full Read = %s", fullRead)
+	*/
 	//z := make([]byte, 10000)
-	fmt.Printf("\n\nEntering for loop\n\n")
+	//fmt.Printf("\n\nEntering for loop\n\n")
 	diagnostics := make(chan []protocol.Diagnostic)
-	drawCommands := make(chan string)
-	go receiveDiagnostics(diagnostics, drawCommands)
-	go readMessages(buffer_out0, diagnostics)
+	//drawCommands := make(chan string)
+	go receiveDiagnostics(diagnostics)
+	go readMessages(diagnostics)
 
-	select {
-	case xyz := <-drawCommands:
-		fmt.Println(xyz)
-	default:
-		fmt.Println("There wasn't anything on the channel")
+	// draining off any diagnostics/drawCommands before issuing didChange
+	timeout := time.After(2 * time.Second)
+L:
+	for {
+		select {
+		case <-drawCommands:
+		case <-timeout:
+			break L
+		default:
+		}
 	}
-	time.Sleep(time.Second * 2)
-	select {
-	case xyz := <-drawCommands:
-		fmt.Println(xyz)
-	default:
-		fmt.Println("There wasn't anything on the channel")
-	}
-	time.Sleep(time.Second * 2)
-	select {
-	case xyz := <-drawCommands:
-		fmt.Println(xyz)
-	default:
-		fmt.Println("There wasn't anything on the channel")
-	}
-	time.Sleep(time.Second * 2)
+	/*
+		for i := 0; i < 3; i++ {
+			select {
+			case <-drawCommands:
+				//fmt.Println(xyz)
+			default:
+				//fmt.Println("There wasn't anything on the channel")
+			}
+			time.Sleep(time.Second)
+		}
+	*/
 
+	sess.showOrgMessage("LSP launched")
 }
 
-func shutdownLsp() {
+func shutdownLsp(dc chan string) {
 	time.Sleep(time.Second * 2)
 
 	select {
-	case xyz := <-drawCommands:
+	case xyz := <-dc:
 		fmt.Println(xyz)
 	default:
 		fmt.Println("D -> There wasn't anything on the channel")
@@ -234,14 +255,14 @@ func shutdownLsp() {
 	var closeParams protocol.DidCloseTextDocumentParams
 	closeParams.TextDocument.URI = "file:///home/slzatz/go_fragments/main.go"
 	jsonNotification.Params = closeParams
-	b, err = json.Marshal(jsonNotification)
+	b, err := json.Marshal(jsonNotification)
 	if err != nil {
 		log.Fatal(err)
 	}
-	s = string(b)
-	header = fmt.Sprintf("Content-Length: %d\r\n\r\n", len(s))
+	s := string(b)
+	header := fmt.Sprintf("Content-Length: %d\r\n\r\n", len(s))
 	s = header + s
-	fmt.Printf("\n\n%s\n\n", s)
+	//fmt.Printf("\n\n%s\n\n", s)
 	io.WriteString(stdin, s)
 
 	// shutdown request sent to server
@@ -277,13 +298,13 @@ func shutdownLsp() {
 	time.Sleep(3 * time.Second)
 }
 
-func sendDidChangeNotification(stdinp *io.WriteCloser, text string, j int32) {
+func sendDidChangeNotification(text string) {
 	jsonNotification.Method = "textDocument/didChange"
 	jsonNotification.Params = protocol.DidChangeTextDocumentParams{
 		TextDocument: protocol.VersionedTextDocumentIdentifier{
 			TextDocumentIdentifier: protocol.TextDocumentIdentifier{
 				URI: "file:///home/slzatz/go_fragments/main.go"},
-			Version: j},
+			Version: version()},
 		ContentChanges: []protocol.TextDocumentContentChangeEvent{{Text: text}},
 	}
 	b, err := json.Marshal(jsonNotification)
@@ -293,24 +314,26 @@ func sendDidChangeNotification(stdinp *io.WriteCloser, text string, j int32) {
 	s := string(b)
 	header := fmt.Sprintf("Content-Length: %d\r\n\r\n", len(s))
 	s = header + s
-	io.WriteString(*stdinp, s)
+	io.WriteString(stdin, s)
 
 }
 
-func receiveDiagnostics(diagnostics chan []protocol.Diagnostic, dc chan string) { //? []protocol.Diagnostics
+func receiveDiagnostics(diagnostics chan []protocol.Diagnostic) { //? []protocol.Diagnostics
 	for {
 		dd := <-diagnostics
 
 		var ab strings.Builder
 		ab.WriteString("\n-----------------------------------------------\n")
-		fmt.Fprintf(&ab, "->Diagnostics = %+v\n", dd)
+		//fmt.Fprintf(&ab, "->Diagnostics = %+v\n", dd)
 		for i, d := range dd {
-			fmt.Fprintf(&ab, "->Diagnostics = %+v\n", dd)
-			fmt.Fprintf(&ab, "->Diagnostics[%d] = %+v\n", i, d)
-			fmt.Fprintf(&ab, "->Diagnostics[%d].Range = %+v\n", i, d.Range)                                //{Start:{Line:1 Character:0} End:{Line:1 Character:0}}
-			fmt.Fprintf(&ab, "->Diagnostics[%d].Range.Start = %+v\n", i, d.Range.Start)                    //{Line:1 Character:0}
-			fmt.Fprintf(&ab, "->Diagnostics[%d].Range.Start.Line = %v\n", i, d.Range.Start.Line)           //uint32
+			//fmt.Fprintf(&ab, "->Diagnostics = %+v\n", dd)
+			//fmt.Fprintf(&ab, "->Diagnostics[%d] = %+v\n", i, d)
+			//fmt.Fprintf(&ab, "->Diagnostics[%d].Range = %+v\n", i, d.Range)                                //{Start:{Line:1 Character:0} End:{Line:1 Character:0}}
+			//fmt.Fprintf(&ab, "->Diagnostics[%d].Range.Start = %+v\n", i, d.Range.Start)                    //{Line:1 Character:0}
+			fmt.Fprintf(&ab, "->Diagnostics[%d].Range.Start.Line = %v\n", i, d.Range.Start.Line+1)         //uint32
 			fmt.Fprintf(&ab, "->Diagnostics[%d].Range.Start.Character = %v\n", i, d.Range.Start.Character) //uint32
+			fmt.Fprintf(&ab, "->Diagnostics[%d].Range.End.Line = %v\n", i, d.Range.End.Line+1)             //uint32
+			fmt.Fprintf(&ab, "->Diagnostics[%d].Range.End.Character = %v\n", i, d.Range.End.Character)     //uint32
 			fmt.Fprintf(&ab, "->Diagnostics[%d].Message = %s\n", i, d.Message)                             //1
 		}
 		if len(dd) == 0 {
@@ -318,17 +341,17 @@ func receiveDiagnostics(diagnostics chan []protocol.Diagnostic, dc chan string) 
 		}
 		ab.WriteString("\n-----------------------------------------------\n")
 
-		dc <- ab.String()
+		drawCommands <- ab.String()
 
 	}
 }
 
-func readMessages(bufOut *bufio.Reader, diagnostics chan []protocol.Diagnostic) {
+func readMessages(diagnostics chan []protocol.Diagnostic) {
 	// note if more than one jsonrpc message is read at one time; only dealing with first
 	//reader := bufio.NewReaderSize(*stdoutp, 10000)
 	var length int64
 	for {
-		line, err := bufOut.ReadString('\n')
+		line, err := buffer_out0.ReadString('\n')
 		if err == io.EOF {
 			fmt.Printf("\n\nGot EOF presumably from shutdown\n\n")
 			break
@@ -358,7 +381,7 @@ func readMessages(bufOut *bufio.Reader, diagnostics chan []protocol.Diagnostic) 
 		}
 
 		// to read the last two chars of '\r\n\r\n'
-		line, err = bufOut.ReadString('\n')
+		line, err = buffer_out0.ReadString('\n')
 		if err != nil {
 			log.Fatalf("\nRead -> %s\n%v", string(line), err)
 		}
@@ -366,7 +389,7 @@ func readMessages(bufOut *bufio.Reader, diagnostics chan []protocol.Diagnostic) 
 		//data := make([]byte, length+2)
 		data := make([]byte, length)
 
-		if _, err = io.ReadFull(bufOut, data); err != nil {
+		if _, err = io.ReadFull(buffer_out0, data); err != nil {
 			continue
 		}
 

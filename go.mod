@@ -5,6 +5,8 @@ replace github.com/charmbracelet/glamour v0.3.0 => /home/slzatz/glamour
 
 replace github.com/neovim/go-client v1.1.7 => /home/slzatz/go-client
 
+replace go.lsp.dev/protocol v0.11.2 => /home/slzatz/protocol
+
 go 1.16
 
 require (
@@ -18,6 +20,7 @@ require (
 	github.com/muesli/termenv v0.9.0 // indirect
 	github.com/neovim/go-client v1.1.7
 	github.com/yuin/goldmark v1.4.0 // indirect
+	go.lsp.dev/protocol v0.11.2 // indirect
 	golang.org/x/image v0.0.0-20210628002857-a66eb6448b8d // indirect
 	golang.org/x/net v0.0.0-20210813160813-60bc85c4be6d // indirect
 	golang.org/x/sys v0.0.0-20210809222454-d867a43fc93e
