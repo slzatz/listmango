@@ -87,9 +87,9 @@ func (e *Editor) writeNote() {
 	text := e.bufferToString()
 
 	if taskFolder(e.id) == "code" {
-		sendDidChangeNotification(text)
-		e.drawDiagnostics2()
-		updateCodeFile(e.id, text)
+		go sendDidChangeNotification(text)
+		go e.drawDiagnostics()
+		go updateCodeFile(e.id, text)
 	}
 
 	updateNote(e.id, text)
@@ -102,13 +102,6 @@ func (e *Editor) writeNote() {
 
 	e.drawStatusBar() //need this since now refresh won't do it unless redraw =true
 	sess.showEdMessage("")
-
-	/*
-		if taskFolder(e.id) == "code" {
-			time.Sleep(time.Second)
-			e.drawDiagnostics()
-		}
-	*/
 }
 
 func (e *Editor) readFile() {

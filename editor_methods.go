@@ -382,30 +382,30 @@ func (e *Editor) drawDiagnostics() {
 
 	op := e.output
 	op.rowOffset = 0
+	var s string
 	select {
-	case s := <-drawCommands:
-		op.rows = strings.Split(s, "\n")
-		//fmt.Println(xyz)
-	default:
-		op.rows = []string{"Did not receive ANY diagnostics"}
+	case dd := <-diagnostics:
+		var ab strings.Builder
+		ab.WriteString("\n-----------------------------------------------\n")
+		for i, d := range dd {
+			fmt.Fprintf(&ab, "[%d]Start.Line = %v\n", i, d.Range.Start.Line+1)         //uint32
+			fmt.Fprintf(&ab, "[%d]Start.Character = %v\n", i, d.Range.Start.Character) //uint32
+			fmt.Fprintf(&ab, "[%d]End.Line = %v\n", i, d.Range.End.Line+1)             //uint32
+			fmt.Fprintf(&ab, "[%d]End.Character = %v\n", i, d.Range.End.Character)     //uint32
+			fmt.Fprintf(&ab, "[%d]Message = %s\n", i, d.Message)                       //1
+			fmt.Fprintf(&ab, "[%d]Severity = %v\n", i, d.Severity)                     //1
+		}
+		if len(dd) == 0 {
+			fmt.Fprintf(&ab, "->Diagnostics was []\n")
+		}
+		ab.WriteString("\n-----------------------------------------------\n")
+		s = ab.String()
+	case <-time.After(1 * time.Second):
+
+		s = "Did not receive any new diagnostics"
 		//fmt.Println("There wasn't anything on the channel")
 	}
-	op.drawText()
-}
-
-func (e *Editor) drawDiagnostics2() {
-
-	op := e.output
-	op.rowOffset = 0
-	select {
-	case s := <-drawCommands:
-		op.rows = strings.Split(s, "\n")
-	//fmt.Println(xyz)
-	case <-time.After(2 * time.Second):
-
-		op.rows = []string{"Did not receive ANY diagnostics"}
-		//fmt.Println("There wasn't anything on the channel")
-	}
+	op.rows = strings.Split(s, "\n")
 	op.drawText()
 }
 

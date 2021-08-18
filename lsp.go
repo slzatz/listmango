@@ -2,7 +2,6 @@ package main
 
 import (
 	"bufio"
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -54,11 +53,32 @@ func counter() func() int32 {
 var version = counter()
 
 var stdin io.WriteCloser
-var buffer_out0 *bufio.Reader
+var stdoutRdr *bufio.Reader
+
 var drawCommands = make(chan string)
+var diagnostics = make(chan []protocol.Diagnostic)
 
 func launchLsp() {
-	jsonRequest := JsonRequest{
+	cmd := exec.Command("gopls", "serve", "-rpc.trace", "-logfile", "/home/slzatz/gopls_log")
+	stdout, err := cmd.StdoutPipe()
+	if err != nil {
+		sess.showOrgMessage("Failed to create stdout pipe: %v", err)
+		return
+	}
+	stdin, err = cmd.StdinPipe()
+	if err != nil {
+		sess.showOrgMessage("Failed to launch LSP: %v", err)
+		return
+	}
+	err = cmd.Start()
+	if err != nil {
+		sess.showOrgMessage("Failed to start LSP: %v", err)
+		return
+	}
+	stdoutRdr = bufio.NewReaderSize(stdout, 10000)
+
+	//Client sends initialize method and server replies with result (not method): Capabilities ...)
+	initializeRequest := JsonRequest{
 		Jsonrpc: "2.0",
 		Id:      1,
 		Method:  "initialize",
@@ -69,87 +89,21 @@ func launchLsp() {
 	params.ProcessID = 0
 	params.RootURI = "file:///home/slzatz/go_fragments"
 	params.Capabilities = clientcapabilities
-	jsonRequest.Params = params
-	b, err := json.Marshal(jsonRequest)
+	initializeRequest.Params = params
+	b, err := json.Marshal(initializeRequest)
 	if err != nil {
-		log.Fatal(err)
+		sess.showOrgMessage("Failed to marshal client capabilities json request: %v", err)
+		return
 	}
 	s := string(b)
-	//fmt.Printf("\n\n-------------------------------\n\n")
-	//fmt.Printf("Sending: %s", s[:40])
-	//fmt.Printf("\n\n-------------------------------\n\n")
-
-	cmd := exec.Command("gopls", "serve", "-rpc.trace", "-logfile", "/home/slzatz/gopls_log")
-	stdin, err = cmd.StdinPipe()
-	if err != nil {
-		log.Fatal(err)
-	}
-	stdout, err := cmd.StdoutPipe()
-	if err != nil {
-		log.Fatal(err)
-	}
-	//fmt.Println("#1")
-	err = cmd.Start()
-	if err != nil {
-		log.Fatal(err)
-	}
-	//fmt.Println("#2")
-
 	header := fmt.Sprintf("Content-Length: %d\r\n\r\n", len(s))
 	s = header + s
 
-	//Client sends initialize method and server replies with result (not method): Capabilities ...)
 	io.WriteString(stdin, s)
-	//fmt.Println("#3")
-
-	//time.Sleep(2 * time.Second)
-
-	//buffer_out0 := bufio.NewReader(stdout)
-	buffer_out0 = bufio.NewReaderSize(stdout, 10000)
-	p := make([]byte, 10000)
-	//fmt.Printf("buffer_out0 = %v\n", buffer_out0.Size())
-	_, err = buffer_out0.Read(p)
-	if err != nil {
-		log.Fatal(err)
-	}
-	fullRead := string(p)
-	//fmt.Printf("Number of bytes read = %d\n", n)
-	//fmt.Printf("\n\n-------------------------------\n\n")
-	//fmt.Printf("Full Read = %s", fullRead)
-
-	idx := strings.Index(fullRead, "\r\n\r\n")
-	//jsonRead := fullRead[idx+4:]
-	//fmt.Printf("\n\n-------------------------------\n\n")
-	//fmt.Printf("jsonRead = %v", jsonRead[:40])
-	idx0 := bytes.Index(p, []byte(":")) + 2
-	idx = bytes.Index(p, []byte("\r\n\r\n"))
-	length, _ := strconv.Atoi(string(p[idx0:idx]))
-
-	//idx = bytes.Index(p, []byte("\r\n\r\n"))
-	//bb := p[idx+4 : idx+4+2956]
-	bb := p[idx+4 : idx+4+length]
-	//idx = bytes.Index(bb, []byte("\x00"))
-	//fmt.Printf("\n\nIndex = %v\n\n", idx)
-	//var v protocol.InitializeResult
-	var v JsonResult
-	err = json.Unmarshal(bb, &v)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	/*
-		fmt.Printf("\n\n-------------------------------\n\n")
-		fmt.Printf("Result = %+v\n", v)
-		fmt.Printf("length = %d", length)
-		fmt.Printf("\n\n-------------------------------\n\n")
-	*/
-
-	//fmt.Printf("ServerInfo: %v\n", v.Result.ServerInfo)
-	//fmt.Printf("WorkSpace: %v\n", v.Result.Capabilities.Workspace)
+	readMessageAndDiscard()
 
 	//Client sends notification method:initialized and server replies with notification (no id) method "window/showMessage"
 	jsonNotification.Method = "initialized"
-	//jsonRequest.Id = 2
 	jsonNotification.Params = struct{}{}
 	b, err = json.Marshal(jsonNotification)
 	if err != nil {
@@ -162,11 +116,11 @@ func launchLsp() {
 	//fmt.Println("#4")
 	pp := make([]byte, 10000)
 	//fmt.Printf("buffer_out0 = %v\n", buffer_out0.Size())
-	_, err = buffer_out0.Read(pp)
+	_, err = stdoutRdr.Read(pp)
 	if err != nil {
 		log.Fatal(err)
 	}
-	fullRead = string(pp)
+	//fullRead := string(pp)
 	/*
 		fmt.Printf("Number of bytes read = %d\n", n)
 		fmt.Printf("\n\n-------------------------------\n\n")
@@ -197,45 +151,23 @@ func launchLsp() {
 	ppp := make([]byte, 10000)
 	//time.Sleep(2 * time.Second)
 	//fmt.Println("#5")
-	_, err = buffer_out0.Read(ppp)
+	_, err = stdoutRdr.Read(ppp)
 	if err != nil {
 		log.Fatal(err)
 	}
-	fullRead = string(ppp)
-	/*
-		fmt.Printf("Number of bytes read = %d\n", n)
-		fmt.Printf("\n\n-------------------------------\n\n")
-		fmt.Printf("Full Read = %s", fullRead)
-	*/
-	//z := make([]byte, 10000)
-	//fmt.Printf("\n\nEntering for loop\n\n")
-	diagnostics := make(chan []protocol.Diagnostic)
-	//drawCommands := make(chan string)
-	go receiveDiagnostics(diagnostics)
-	go readMessages(diagnostics)
+	go readMessages()
 
-	// draining off any diagnostics/drawCommands before issuing didChange
+	// draining off any diagnostics before issuing didChange
 	timeout := time.After(2 * time.Second)
 L:
 	for {
 		select {
-		case <-drawCommands:
+		case <-diagnostics:
 		case <-timeout:
 			break L
 		default:
 		}
 	}
-	/*
-		for i := 0; i < 3; i++ {
-			select {
-			case <-drawCommands:
-				//fmt.Println(xyz)
-			default:
-				//fmt.Println("There wasn't anything on the channel")
-			}
-			time.Sleep(time.Second)
-		}
-	*/
 
 	sess.showOrgMessage("LSP launched")
 }
@@ -318,40 +250,61 @@ func sendDidChangeNotification(text string) {
 
 }
 
-func receiveDiagnostics(diagnostics chan []protocol.Diagnostic) { //? []protocol.Diagnostics
-	for {
-		dd := <-diagnostics
-
-		var ab strings.Builder
-		ab.WriteString("\n-----------------------------------------------\n")
-		//fmt.Fprintf(&ab, "->Diagnostics = %+v\n", dd)
-		for i, d := range dd {
-			//fmt.Fprintf(&ab, "->Diagnostics = %+v\n", dd)
-			//fmt.Fprintf(&ab, "->Diagnostics[%d] = %+v\n", i, d)
-			//fmt.Fprintf(&ab, "->Diagnostics[%d].Range = %+v\n", i, d.Range)                                //{Start:{Line:1 Character:0} End:{Line:1 Character:0}}
-			//fmt.Fprintf(&ab, "->Diagnostics[%d].Range.Start = %+v\n", i, d.Range.Start)                    //{Line:1 Character:0}
-			fmt.Fprintf(&ab, "->Diagnostics[%d].Range.Start.Line = %v\n", i, d.Range.Start.Line+1)         //uint32
-			fmt.Fprintf(&ab, "->Diagnostics[%d].Range.Start.Character = %v\n", i, d.Range.Start.Character) //uint32
-			fmt.Fprintf(&ab, "->Diagnostics[%d].Range.End.Line = %v\n", i, d.Range.End.Line+1)             //uint32
-			fmt.Fprintf(&ab, "->Diagnostics[%d].Range.End.Character = %v\n", i, d.Range.End.Character)     //uint32
-			fmt.Fprintf(&ab, "->Diagnostics[%d].Message = %s\n", i, d.Message)                             //1
+func readMessageAndDiscard() {
+	var length int64
+	line, err := stdoutRdr.ReadString('\n')
+	/*
+		if err == io.EOF {
+			fmt.Printf("\n\nGot EOF presumably from shutdown\n\n")
+			break
 		}
-		if len(dd) == 0 {
-			fmt.Fprintf(&ab, "->Diagnostics was []\n")
+	*/
+
+	if err != nil {
+		sess.showOrgMessage("Error reading header: %s\n%v", string(line), err)
+		return
+	}
+
+	/*
+		if line == "" {
+			continue
 		}
-		ab.WriteString("\n-----------------------------------------------\n")
+	*/
 
-		drawCommands <- ab.String()
+	colon := strings.IndexRune(line, ':')
+	if colon < 0 {
+		return
+	}
 
+	//name, value := line[:colon], strings.TrimSpace(line[colon+1:])
+	value := strings.TrimSpace(line[colon+1:])
+
+	if length, err = strconv.ParseInt(value, 10, 32); err != nil {
+		return
+	}
+
+	if length <= 0 {
+		return
+	}
+
+	// to read the last two chars of '\r\n\r\n'
+	line, err = stdoutRdr.ReadString('\n')
+	if err != nil {
+		sess.showOrgMessage("Error reading header: %s\n%v", string(line), err)
+		return
+	}
+
+	data := make([]byte, length)
+
+	if _, err = io.ReadFull(stdoutRdr, data); err != nil {
+		sess.showOrgMessage("In Discard, Error ReadFull %v", err)
 	}
 }
 
-func readMessages(diagnostics chan []protocol.Diagnostic) {
-	// note if more than one jsonrpc message is read at one time; only dealing with first
-	//reader := bufio.NewReaderSize(*stdoutp, 10000)
+func readMessages() {
 	var length int64
 	for {
-		line, err := buffer_out0.ReadString('\n')
+		line, err := stdoutRdr.ReadString('\n')
 		if err == io.EOF {
 			fmt.Printf("\n\nGot EOF presumably from shutdown\n\n")
 			break
@@ -369,7 +322,6 @@ func readMessages(diagnostics chan []protocol.Diagnostic) {
 			continue
 		}
 
-		//name, value := line[:colon], strings.TrimSpace(line[colon+1:])
 		value := strings.TrimSpace(line[colon+1:])
 
 		if length, err = strconv.ParseInt(value, 10, 32); err != nil {
@@ -381,21 +333,18 @@ func readMessages(diagnostics chan []protocol.Diagnostic) {
 		}
 
 		// to read the last two chars of '\r\n\r\n'
-		line, err = buffer_out0.ReadString('\n')
+		line, err = stdoutRdr.ReadString('\n')
 		if err != nil {
 			log.Fatalf("\nRead -> %s\n%v", string(line), err)
 		}
 
-		//data := make([]byte, length+2)
 		data := make([]byte, length)
 
-		if _, err = io.ReadFull(buffer_out0, data); err != nil {
+		if _, err = io.ReadFull(stdoutRdr, data); err != nil {
 			continue
 		}
 
-		//fmt.Printf("data = \n%s\n", string(data))
 		var v JsonNotification
-		//err = json.Unmarshal(data[2:], &v)
 		err = json.Unmarshal(data, &v)
 		if err != nil {
 			log.Fatalf("\nB -> %s\n%v", string(data[2:]), err)
@@ -408,12 +357,9 @@ func readMessages(diagnostics chan []protocol.Diagnostic) {
 				Params  protocol.PublishDiagnosticsParams `json:"params"`
 			}
 			var vv JsonPubDiag
-			//err = json.Unmarshal(data[2:], &vv)
 			err = json.Unmarshal(data, &vv)
 
 			diagnostics <- vv.Params.Diagnostics
 		}
-
-		//time.Sleep(time.Second)
 	}
 }
