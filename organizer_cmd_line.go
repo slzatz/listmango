@@ -780,7 +780,7 @@ func (o *Organizer) setImage(pos int) {
 }
 
 func (o *Organizer) launchLsp(unused int) {
-	launchLsp()
+	go launchLsp() // could be race to write to screen
 	o.mode = o.last_mode
 	o.command_line = ""
 }

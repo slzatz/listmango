@@ -369,13 +369,11 @@ func (e *Editor) drawText() {
 		fmt.Print(ab.String())
 		//go e.drawHighlightedBraces() // this will produce data race
 		e.drawHighlightedBraces() //has to come after drawing rows
-		//e.drawDiagnostics()
+		//e.drawDiagnostics() // if here would update with each text change
 	} else {
-		//e.drawBuffer(&ab)
 		e.drawPlainRows(&ab)
 		fmt.Print(ab.String())
 	}
-	//e.drawStatusBar()
 }
 
 func (e *Editor) drawDiagnostics() {
@@ -392,18 +390,36 @@ func (e *Editor) drawDiagnostics() {
 			fmt.Fprintf(&ab, "[%d]Start.Character = %v\n", i, d.Range.Start.Character) //uint32
 			fmt.Fprintf(&ab, "[%d]End.Line = %v\n", i, d.Range.End.Line+1)             //uint32
 			fmt.Fprintf(&ab, "[%d]End.Character = %v\n", i, d.Range.End.Character)     //uint32
-			fmt.Fprintf(&ab, "[%d]Message = %s\n", i, d.Message)                       //1
-			fmt.Fprintf(&ab, "[%d]Severity = %v\n", i, d.Severity)                     //1
+			fmt.Fprintf(&ab, "[%d]Message = %s\n", i, d.Message)                       //string
+			fmt.Fprintf(&ab, "[%d]Severity = %v\n", i, d.Severity)                     //Stringer()
+			ab.WriteString("\n-----------------------------------------------\n")
+			startRow := int(d.Range.Start.Line)
+			/*
+				startCol := int(d.Range.Start.Character)
+				endCol := int(d.Range.End.Character)
+			*/
+			//fmt.Fprintf(&ab, "%d %d %d %d", startLine, startChar, endLine, endChar)
+			//x := e.getScreenXFromRowColWW(startRow, startCol) + e.left_margin + e.left_margin_offset
+			//y := e.getScreenYFromRowColWW(startRow, startCol) + e.top_margin - e.lineOffset // - 1
+			y := e.getScreenYFromRowColWW(startRow, 0) + e.top_margin - e.lineOffset // - 1
+			x := e.left_margin + 1
+			ab.WriteString("\x1b[48;5;244m")
+			fmt.Fprintf(&ab, "\x1b[%d;%dH", y, x)
+			/*
+				row := e.bb[startRow]
+				ab.Write(row[startCol-1 : endCol])
+			*/
+			fmt.Fprintf(&ab, "%*d", 3, startRow+1)
+			ab.WriteString(RESET)
+			break
 		}
 		if len(dd) == 0 {
 			fmt.Fprintf(&ab, "->Diagnostics was []\n")
 		}
-		ab.WriteString("\n-----------------------------------------------\n")
 		s = ab.String()
 	case <-time.After(1 * time.Second):
 
 		s = "Did not receive any new diagnostics"
-		//fmt.Println("There wasn't anything on the channel")
 	}
 	op.rows = strings.Split(s, "\n")
 	op.drawText()
@@ -447,14 +463,14 @@ func (e *Editor) drawVisual(pab *strings.Builder) {
 	}
 
 	if e.mode == VISUAL {
-		startcol, endcol := e.vb_highlight[0][2], e.vb_highlight[1][2]
+		startCol, endcol := e.vb_highlight[0][2], e.vb_highlight[1][2]
 
 		// startRow always <= endRow and need to subtract 1 since counting starts at 1 not zero
 		startRow, endRow := e.vb_highlight[0][1]-1, e.vb_highlight[1][1]-1 //startRow always <= endRow
 		numrows := endRow - startRow + 1
 
-		x := e.getScreenXFromRowColWW(startRow, startcol) + e.left_margin + e.left_margin_offset
-		y := e.getScreenYFromRowColWW(startRow, startcol) + e.top_margin - e.lineOffset // - 1
+		x := e.getScreenXFromRowColWW(startRow, startCol) + e.left_margin + e.left_margin_offset
+		y := e.getScreenYFromRowColWW(startRow, startCol) + e.top_margin - e.lineOffset // - 1
 
 		pab.WriteString("\x1b[48;5;244m")
 		for n := 0; n < numrows; n++ {
@@ -470,9 +486,9 @@ func (e *Editor) drawVisual(pab *strings.Builder) {
 				continue
 			}
 			if numrows == 1 {
-				pab.Write(row[startcol-1 : endcol])
+				pab.Write(row[startCol-1 : endcol])
 			} else if n == 0 {
-				pab.Write(row[startcol-1:])
+				pab.Write(row[startCol-1:])
 			} else if n < numrows-1 {
 				pab.Write(row)
 			} else {

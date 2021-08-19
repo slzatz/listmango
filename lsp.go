@@ -169,7 +169,7 @@ L:
 		}
 	}
 
-	sess.showOrgMessage("LSP launched")
+	sess.showEdMessage("LSP launched")
 }
 
 func shutdownLsp(dc chan string) {
