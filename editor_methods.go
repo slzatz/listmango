@@ -73,11 +73,11 @@ func (e *Editor) findMatchForLeftBrace(leftBrace byte, back bool) bool {
 	}
 
 	x := e.getScreenXFromRowColWW(r, c) + e.left_margin + e.left_margin_offset + 1
-	fmt.Printf("\x1b[%d;%dH\x1b[48;5;244m%s", y+e.top_margin, x, string(rightBrace))
+	fmt.Printf("\x1b[%d;%dH\x1b[48;5;237m%s", y+e.top_margin, x, string(rightBrace))
 
 	x = e.getScreenXFromRowColWW(e.fr, e.fc-b) + e.left_margin + e.left_margin_offset + 1
 	y = e.getScreenYFromRowColWW(e.fr, e.fc-b) + e.top_margin - e.lineOffset // added line offset 12-25-2019
-	fmt.Printf("\x1b[%d;%dH\x1b[48;5;244m%s\x1b[0m", y, x, string(leftBrace))
+	fmt.Printf("\x1b[%d;%dH\x1b[48;5;237m%s\x1b[0m", y, x, string(leftBrace))
 	sess.showEdMessage("r = %d   c = %d", r, c)
 	return true
 }
@@ -103,14 +103,14 @@ func (e *Editor) findMatchForBrace() bool {
 
 	x := e.getScreenXFromRowColWW(r, c) + e.left_margin + e.left_margin_offset + 1
 	//fmt.Printf("\x1b[%d;%dH\x1b[48;5;244m%s", y+e.top_margin, x, string(right_brace))
-	fmt.Printf("\x1b[%d;%dH\x1b[48;5;244m%s", y+e.top_margin, x, "]")
+	fmt.Printf("\x1b[%d;%dH\x1b[48;5;237m%s", y+e.top_margin, x, "]")
 
 	//x = e.getScreenXFromRowColWW(e.fr, e.fc-b) + e.left_margin + e.left_margin_offset + 1
 	x = e.getScreenXFromRowColWW(e.fr, e.fc) + e.left_margin + e.left_margin_offset + 1
 	//y = e.getScreenYFromRowColWW(e.fr, e.fc-b) + e.top_margin - e.line_offset // added line offset 12-25-2019
 	y = e.getScreenYFromRowColWW(e.fr, e.fc) + e.top_margin - e.lineOffset // added line offset 12-25-2019
 	//fmt.Printf("\x1b[%d;%dH\x1b[48;5;244m%s\x1b[0m", y, x, string(left_brace))
-	fmt.Printf("\x1b[%d;%dH\x1b[48;5;244m%s\x1b[0m", y, x, "[")
+	fmt.Printf("\x1b[%d;%dH\x1b[48;5;237m%s\x1b[0m", y, x, "[")
 	v.SetWindowCursor(w, [2]int{e.fr + 1, e.fc}) //set screen cx and cy from pos
 	sess.showEdMessage("r = %d   c = %d; e.fr = %d e.fc = %d", r, c, e.fr, e.fc)
 	return true
@@ -162,11 +162,11 @@ func (e *Editor) findMatchForRightBrace(rightBrace byte, back bool) bool {
 	}
 
 	x := e.getScreenXFromRowColWW(r, c) + e.left_margin + e.left_margin_offset + 1
-	fmt.Printf("\x1b[%d;%dH\x1b[48;5;244m%s", y+e.top_margin, x, string(leftBrace))
+	fmt.Printf("\x1b[%d;%dH\x1b[48;5;237m%s", y+e.top_margin, x, string(leftBrace))
 
 	x = e.getScreenXFromRowColWW(e.fr, e.fc-b) + e.left_margin + e.left_margin_offset + 1
 	y = e.getScreenYFromRowColWW(e.fr, e.fc-b) + e.top_margin - e.lineOffset // added line offset 12-25-2019
-	fmt.Printf("\x1b[%d;%dH\x1b[48;5;244m%s\x1b[0m", y, x, string(rightBrace))
+	fmt.Printf("\x1b[%d;%dH\x1b[48;5;237m%s\x1b[0m", y, x, string(rightBrace))
 	sess.showEdMessage("r = %d   c = %d", r, c)
 	return true
 }
@@ -438,9 +438,9 @@ func (e *Editor) drawVisual(pab *strings.Builder) {
 		y := e.getScreenYFromRowColWW(startRow, 0) - e.lineOffset
 
 		if y >= 0 {
-			fmt.Fprintf(pab, "\x1b[%d;%dH\x1b[48;5;244m", y+e.top_margin, x)
+			fmt.Fprintf(pab, "\x1b[%d;%dH\x1b[48;5;237m", y+e.top_margin, x) //244
 		} else {
-			fmt.Fprintf(pab, "\x1b[%d;%dH\x1b[48;5;244m", e.top_margin, x)
+			fmt.Fprintf(pab, "\x1b[%d;%dH\x1b[48;5;237m", e.top_margin, x)
 		}
 
 		for n := 0; n < (endRow - startRow + 1); n++ { //++n
@@ -455,7 +455,8 @@ func (e *Editor) drawVisual(pab *strings.Builder) {
 					break //out for should be done (theoretically) - 1
 				}
 				line_char_count := e.getLineCharCountWW(rowNum, line)
-				pab.Write(e.bb[rowNum][pos : pos+line_char_count])
+				//pab.Write(e.bb[rowNum][pos : pos+line_char_count])
+				pab.Write(bytes.ReplaceAll(e.bb[rowNum][pos:pos+line_char_count], []byte("\t"), []byte("    ")))
 				pab.WriteString(lf_ret)
 				y += 1
 				pos += line_char_count
@@ -473,7 +474,7 @@ func (e *Editor) drawVisual(pab *strings.Builder) {
 		x := e.getScreenXFromRowColWW(startRow, startCol) + e.left_margin + e.left_margin_offset
 		y := e.getScreenYFromRowColWW(startRow, startCol) + e.top_margin - e.lineOffset // - 1
 
-		pab.WriteString("\x1b[48;5;244m")
+		pab.WriteString("\x1b[48;5;237m")
 		for n := 0; n < numrows; n++ {
 			// i think would check here to see if a row has multiple lines (ie wraps)
 			if n == 0 {
@@ -514,7 +515,7 @@ func (e *Editor) drawVisual(pab *strings.Builder) {
 		x := e.getScreenXFromRowColWW(e.vb_highlight[0][1], left) + e.left_margin + e.left_margin_offset
 		y := e.getScreenYFromRowColWW(e.vb_highlight[0][1], left) + e.top_margin - e.lineOffset - 1
 
-		pab.WriteString("\x1b[48;5;244m")
+		pab.WriteString("\x1b[48;5;237m")
 		for n := 0; n < (e.vb_highlight[1][1] - e.vb_highlight[0][1] + 1); n++ {
 			fmt.Fprintf(pab, "\x1b[%d;%dH", y+n, x)
 			row := e.bb[e.vb_highlight[0][1]+n-1]
