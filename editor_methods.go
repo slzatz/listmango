@@ -10,20 +10,6 @@ import (
 	"time"
 )
 
-/*
-func find_first_not_of(row *string, delimiters string, pos int) int {
-	pos++
-	for i, char := range (*row)[pos:] {
-		if strings.Index(delimiters, string(char)) != -1 {
-			continue
-		} else {
-			return pos + i
-		}
-	}
-	return -1
-}
-*/
-
 //'automatically' happens in NORMAL and INSERT mode
 //return true -> redraw; false -> don't redraw
 func (e *Editor) findMatchForLeftBrace(leftBrace byte, back bool) bool {
@@ -484,11 +470,14 @@ func (e *Editor) drawVisual(pab *strings.Builder) {
 			}
 			row := e.bb[startRow+n]
 
+			// I do not know why this works!!
+			row = bytes.ReplaceAll(row, []byte("\t"), []byte(" "))
+
 			if len(row) == 0 {
 				continue
 			}
 			if numrows == 1 {
-				pab.Write(row[startCol-1 : endcol])
+				pab.Write(row[startCol-1 : endcol-1])
 			} else if n == 0 {
 				pab.Write(row[startCol-1:])
 			} else if n < numrows-1 {
