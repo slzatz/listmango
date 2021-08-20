@@ -208,7 +208,7 @@ func shutdownLsp() {
 	s = header + s
 	io.WriteString(stdin, s)
 
-	// exit notification semt to server
+	// exit notification sent to server
 	jsonNotification.Method = "exit"
 	jsonNotification.Params = nil
 	b, err = json.Marshal(jsonNotification)
@@ -311,7 +311,7 @@ func readMessages() {
 	}
 }
 
-// note in use
+// not in use
 func readMessageAndDiscard() {
 	var length int64
 
