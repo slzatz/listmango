@@ -423,6 +423,7 @@ func (e *Editor) drawDiagnostics() {
 	}
 	op.rows = strings.Split(s, "\n")
 	op.drawText()
+	sess.returnCursor()
 }
 
 func (e *Editor) drawVisual(pab *strings.Builder) {

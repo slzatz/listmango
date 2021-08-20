@@ -16,6 +16,16 @@ import (
 	//"go.lsp.dev/jsonrpc2"
 )
 
+type Lsp struct {
+	name    string
+	rootUri protocol.URI
+	fileUri protocol.URI
+	//lang     string
+	//fileName string
+}
+
+var lsp Lsp
+
 type JsonRequest struct {
 	Jsonrpc string      `json:"jsonrpc"`
 	Id      int         `json:"id"`
@@ -55,11 +65,24 @@ var version = counter()
 var stdin io.WriteCloser
 var stdoutRdr *bufio.Reader
 
-var drawCommands = make(chan string)
+///var drawCommands = make(chan string)
 var diagnostics = make(chan []protocol.Diagnostic)
+var quit = make(chan struct{})
 
-func launchLsp() {
-	cmd := exec.Command("gopls", "serve", "-rpc.trace", "-logfile", "/home/slzatz/gopls_log")
+func launchLsp(lspName string) {
+	var cmd *exec.Cmd
+	switch lspName {
+	case "gopls":
+		lsp.name = "gopls"
+		lsp.rootUri = "file:///home/slzatz/go_fragments"
+		lsp.fileUri = "file:///home/slzatz/go_fragments/main.go"
+		cmd = exec.Command("gopls", "serve", "-rpc.trace", "-logfile", "/home/slzatz/gopls_log")
+	case "clangd":
+		lsp.name = "clangd"
+		lsp.rootUri = "file:///home/slzatz/clangd_examples"
+		lsp.fileUri = "file:///home/slzatz/clangd_examples/test.cpp"
+		cmd = exec.Command("clangd", "--log=verbose")
+	}
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
 		sess.showOrgMessage("Failed to create stdout pipe: %v", err)
@@ -77,6 +100,8 @@ func launchLsp() {
 	}
 	stdoutRdr = bufio.NewReaderSize(stdout, 10000)
 
+	go readMessages() /**************************/
+
 	//Client sends initialize method and server replies with result (not method): Capabilities ...)
 	initializeRequest := JsonRequest{
 		Jsonrpc: "2.0",
@@ -87,7 +112,8 @@ func launchLsp() {
 
 	params := protocol.InitializeParams{}
 	params.ProcessID = 0
-	params.RootURI = "file:///home/slzatz/go_fragments"
+	//params.RootURI = "file:///home/slzatz/go_fragments"
+	params.RootURI = lsp.rootUri
 	params.Capabilities = clientcapabilities
 	initializeRequest.Params = params
 	b, err := json.Marshal(initializeRequest)
@@ -100,7 +126,6 @@ func launchLsp() {
 	s = header + s
 
 	io.WriteString(stdin, s)
-	readMessageAndDiscard()
 
 	//Client sends notification method:initialized and server replies with notification (no id) method "window/showMessage"
 	jsonNotification.Method = "initialized"
@@ -113,32 +138,17 @@ func launchLsp() {
 	header = fmt.Sprintf("Content-Length: %d\r\n\r\n", len(s))
 	s = header + s
 	io.WriteString(stdin, s)
-	//fmt.Println("#4")
-	pp := make([]byte, 10000)
-	//fmt.Printf("buffer_out0 = %v\n", buffer_out0.Size())
-	_, err = stdoutRdr.Read(pp)
-	if err != nil {
-		log.Fatal(err)
-	}
-	//fullRead := string(pp)
-	/*
-		fmt.Printf("Number of bytes read = %d\n", n)
-		fmt.Printf("\n\n-------------------------------\n\n")
-		fmt.Printf("Full Read = %s", fullRead)
-	*/
-	// Client sends notification method:did/Open and server replies with notification (no id) method "window/logMessage"
-	// It looks like this is a notification and should not have an id
-	//jsonMethod.Method = "textDocument/didOpen"
+	// clangd doesn't send anything here
+
+	// Client sends notification method:did/Open and server sends some notification (no id) method "window/logMessage"
 	jsonNotification.Method = "textDocument/didOpen"
-	//jsonMethod.Id = 3
 	var textParams protocol.DidOpenTextDocumentParams
-	textParams.TextDocument.URI = "file:///home/slzatz/go_fragments/main.go"
+	//textParams.TextDocument.URI = "file:///home/slzatz/go_fragments/main.go"
+	textParams.TextDocument.URI = lsp.fileUri
 	textParams.TextDocument.LanguageID = "go"
 	textParams.TextDocument.Text = " "
 	textParams.TextDocument.Version = 1
-	//jsonMethod.Params = textParams
 	jsonNotification.Params = textParams
-	//b, err = json.Marshal(jsonMethod)
 	b, err = json.Marshal(jsonNotification)
 	if err != nil {
 		log.Fatal(err)
@@ -146,16 +156,9 @@ func launchLsp() {
 	s = string(b)
 	header = fmt.Sprintf("Content-Length: %d\r\n\r\n", len(s))
 	s = header + s
-	//fmt.Printf("\n\n%s\n\n", s)
 	io.WriteString(stdin, s)
-	ppp := make([]byte, 10000)
-	//time.Sleep(2 * time.Second)
-	//fmt.Println("#5")
-	_, err = stdoutRdr.Read(ppp)
-	if err != nil {
-		log.Fatal(err)
-	}
-	go readMessages()
+
+	//go readMessages()
 
 	// draining off any diagnostics before issuing didChange
 	timeout := time.After(2 * time.Second)
@@ -169,23 +172,16 @@ L:
 		}
 	}
 
-	sess.showEdMessage("LSP launched")
+	sess.showEdMessage("LSP %s launched", lsp.name)
 }
 
-func shutdownLsp(dc chan string) {
-	time.Sleep(time.Second * 2)
-
-	select {
-	case xyz := <-dc:
-		fmt.Println(xyz)
-	default:
-		fmt.Println("D -> There wasn't anything on the channel")
-	}
+func shutdownLsp() {
 
 	// tell server the file is closed
 	jsonNotification.Method = "textDocument/didClose"
 	var closeParams protocol.DidCloseTextDocumentParams
-	closeParams.TextDocument.URI = "file:///home/slzatz/go_fragments/main.go"
+	//closeParams.TextDocument.URI = "file:///home/slzatz/go_fragments/main.go"
+	closeParams.TextDocument.URI = lsp.fileUri
 	jsonNotification.Params = closeParams
 	b, err := json.Marshal(jsonNotification)
 	if err != nil {
@@ -194,7 +190,6 @@ func shutdownLsp(dc chan string) {
 	s := string(b)
 	header := fmt.Sprintf("Content-Length: %d\r\n\r\n", len(s))
 	s = header + s
-	//fmt.Printf("\n\n%s\n\n", s)
 	io.WriteString(stdin, s)
 
 	// shutdown request sent to server
@@ -212,7 +207,6 @@ func shutdownLsp(dc chan string) {
 	header = fmt.Sprintf("Content-Length: %d\r\n\r\n", len(s))
 	s = header + s
 	io.WriteString(stdin, s)
-	fmt.Printf("\n\n%s\n\n", s)
 
 	// exit notification semt to server
 	jsonNotification.Method = "exit"
@@ -224,10 +218,8 @@ func shutdownLsp(dc chan string) {
 	s = string(b)
 	header = fmt.Sprintf("Content-Length: %d\r\n\r\n", len(s))
 	s = header + s
-	fmt.Printf("\n\n%s\n\n", s)
 	io.WriteString(stdin, s)
-
-	time.Sleep(3 * time.Second)
+	quit <- struct{}{}
 }
 
 func sendDidChangeNotification(text string) {
@@ -235,7 +227,8 @@ func sendDidChangeNotification(text string) {
 	jsonNotification.Params = protocol.DidChangeTextDocumentParams{
 		TextDocument: protocol.VersionedTextDocumentIdentifier{
 			TextDocumentIdentifier: protocol.TextDocumentIdentifier{
-				URI: "file:///home/slzatz/go_fragments/main.go"},
+				//URI: "file:///home/slzatz/go_fragments/main.go"},
+				URI: lsp.fileUri},
 			Version: version()},
 		ContentChanges: []protocol.TextDocumentContentChangeEvent{{Text: text}},
 	}
@@ -247,30 +240,86 @@ func sendDidChangeNotification(text string) {
 	header := fmt.Sprintf("Content-Length: %d\r\n\r\n", len(s))
 	s = header + s
 	io.WriteString(stdin, s)
-
 }
 
+func readMessages() {
+	var length int64
+	for {
+		select {
+		default:
+			line, err := stdoutRdr.ReadString('\n')
+			if err == io.EOF {
+				fmt.Printf("\n\nGot EOF presumably from shutdown\n\n")
+				break
+			}
+			if err != nil {
+				log.Fatalf("\nRead -> %s\n%v", string(line), err)
+			}
+
+			if line == "" {
+				continue
+			}
+
+			colon := strings.IndexRune(line, ':')
+			if colon < 0 {
+				continue
+			}
+
+			value := strings.TrimSpace(line[colon+1:])
+
+			if length, err = strconv.ParseInt(value, 10, 32); err != nil {
+				continue
+			}
+
+			if length <= 0 {
+				continue
+			}
+
+			// to read the last two chars of '\r\n\r\n'
+			line, err = stdoutRdr.ReadString('\n')
+			if err != nil {
+				log.Fatalf("\nRead -> %s\n%v", string(line), err)
+			}
+
+			data := make([]byte, length)
+
+			if _, err = io.ReadFull(stdoutRdr, data); err != nil {
+				continue
+			}
+
+			var v JsonNotification
+			err = json.Unmarshal(data, &v)
+			if err != nil {
+				log.Fatalf("\nB -> %s\n%v", string(data[2:]), err)
+			}
+
+			if v.Method == "textDocument/publishDiagnostics" {
+				type JsonPubDiag struct {
+					Jsonrpc string                            `json:"jsonrpc"`
+					Method  string                            `json:"method"`
+					Params  protocol.PublishDiagnosticsParams `json:"params"`
+				}
+				var vv JsonPubDiag
+				err = json.Unmarshal(data, &vv)
+
+				diagnostics <- vv.Params.Diagnostics
+			}
+		case <-quit:
+			sess.showEdMessage("Shutdown LSP")
+			return
+		}
+	}
+}
+
+// note in use
 func readMessageAndDiscard() {
 	var length int64
-	line, err := stdoutRdr.ReadString('\n')
-	/*
-		if err == io.EOF {
-			fmt.Printf("\n\nGot EOF presumably from shutdown\n\n")
-			break
-		}
-	*/
 
+	line, err := stdoutRdr.ReadString('\n')
 	if err != nil {
 		sess.showOrgMessage("Error reading header: %s\n%v", string(line), err)
 		return
 	}
-
-	/*
-		if line == "" {
-			continue
-		}
-	*/
-
 	colon := strings.IndexRune(line, ':')
 	if colon < 0 {
 		return
@@ -298,68 +347,5 @@ func readMessageAndDiscard() {
 
 	if _, err = io.ReadFull(stdoutRdr, data); err != nil {
 		sess.showOrgMessage("In Discard, Error ReadFull %v", err)
-	}
-}
-
-func readMessages() {
-	var length int64
-	for {
-		line, err := stdoutRdr.ReadString('\n')
-		if err == io.EOF {
-			fmt.Printf("\n\nGot EOF presumably from shutdown\n\n")
-			break
-		}
-		if err != nil {
-			log.Fatalf("\nRead -> %s\n%v", string(line), err)
-		}
-
-		if line == "" {
-			continue
-		}
-
-		colon := strings.IndexRune(line, ':')
-		if colon < 0 {
-			continue
-		}
-
-		value := strings.TrimSpace(line[colon+1:])
-
-		if length, err = strconv.ParseInt(value, 10, 32); err != nil {
-			continue
-		}
-
-		if length <= 0 {
-			continue
-		}
-
-		// to read the last two chars of '\r\n\r\n'
-		line, err = stdoutRdr.ReadString('\n')
-		if err != nil {
-			log.Fatalf("\nRead -> %s\n%v", string(line), err)
-		}
-
-		data := make([]byte, length)
-
-		if _, err = io.ReadFull(stdoutRdr, data); err != nil {
-			continue
-		}
-
-		var v JsonNotification
-		err = json.Unmarshal(data, &v)
-		if err != nil {
-			log.Fatalf("\nB -> %s\n%v", string(data[2:]), err)
-		}
-
-		if v.Method == "textDocument/publishDiagnostics" {
-			type JsonPubDiag struct {
-				Jsonrpc string                            `json:"jsonrpc"`
-				Method  string                            `json:"method"`
-				Params  protocol.PublishDiagnosticsParams `json:"params"`
-			}
-			var vv JsonPubDiag
-			err = json.Unmarshal(data, &vv)
-
-			diagnostics <- vv.Params.Diagnostics
-		}
 	}
 }

@@ -1317,10 +1317,8 @@ func updateCodeFile(id int, text string) {
 	lang := Languages[taskContext(id)]
 	if lang == "cpp" {
 		filePath = "/home/slzatz/clangd_examples/test.cpp"
-		//lsp_name = "clangd";
 	} else if lang == "go" {
 		filePath = "/home/slzatz/go_fragments/main.go"
-		//lsp_name = "gopls";
 	} else if lang == "python" {
 		filePath = "/home/slzatz/python_fragments/main.py"
 	} else {

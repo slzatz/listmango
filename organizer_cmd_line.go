@@ -60,6 +60,7 @@ var cmd_lookup = map[string]func(*Organizer, int){
 	"image":          (*Organizer).setImage,
 	"images":         (*Organizer).setImage,
 	"lsp":            (*Organizer).launchLsp,
+	"shutdown":       (*Organizer).shutdownLsp,
 	//"showmarkdown":   (*Organizer).showMarkdown,
 	//"showm":          (*Organizer).showMarkdown,
 	/*
@@ -779,8 +780,27 @@ func (o *Organizer) setImage(pos int) {
 	o.command_line = ""
 }
 
-func (o *Organizer) launchLsp(unused int) {
-	go launchLsp() // could be race to write to screen
+func (o *Organizer) launchLsp(pos int) {
+	var lsp string
+	if pos == 0 {
+		lsp = "gopls"
+	} else {
+		opt := o.command_line[pos+1 : pos+2]
+		switch opt {
+		case "g":
+			lsp = "gopls"
+		case "c":
+			lsp = "clangd"
+		}
+		go launchLsp(lsp) // could be race to write to screen
+		o.mode = o.last_mode
+		o.command_line = ""
+		sess.showOrgMessage("Launching lsp %s", lsp)
+	}
+}
+
+func (o *Organizer) shutdownLsp(unused int) {
+	shutdownLsp()
 	o.mode = o.last_mode
 	o.command_line = ""
 }
