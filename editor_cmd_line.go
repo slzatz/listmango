@@ -87,8 +87,10 @@ func (e *Editor) writeNote() {
 	text := e.bufferToString()
 
 	if taskFolder(e.id) == "code" {
-		go sendDidChangeNotification(text)
-		go e.drawDiagnostics()
+		if lsp.name != "" {
+			go sendDidChangeNotification(text)
+			go e.drawDiagnostics()
+		}
 		go updateCodeFile(e.id, text)
 	}
 

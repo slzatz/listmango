@@ -468,6 +468,9 @@ func (s *Session) displayContainerInfo(c *Container) {
 }
 
 func (s *Session) quitApp() {
+	if lsp.name != "" {
+		shutdownLsp()
+	}
 	fmt.Print("\x1b[2J\x1b[H") //clears the screen and sends cursor home
 	//sqlite3_close(S.db); //something should probably be done here
 	//PQfinish(conn);

@@ -208,7 +208,7 @@ func shutdownLsp() {
 	s = header + s
 	io.WriteString(stdin, s)
 
-	// exit notification sent to server
+	// exit notification sent to server - hangs with clangd
 	jsonNotification.Method = "exit"
 	jsonNotification.Params = nil
 	b, err = json.Marshal(jsonNotification)
@@ -219,7 +219,11 @@ func shutdownLsp() {
 	header = fmt.Sprintf("Content-Length: %d\r\n\r\n", len(s))
 	s = header + s
 	io.WriteString(stdin, s)
-	quit <- struct{}{}
+
+	// this is blocking for clangd
+	if lsp.name != "clangd" {
+		quit <- struct{}{}
+	}
 }
 
 func sendDidChangeNotification(text string) {
