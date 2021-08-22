@@ -103,30 +103,15 @@ func launchLsp(lspName string) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	b, err := request.MarshalJSON()
-	if err != nil {
-		log.Fatal(err)
-	}
-	s := string(b)
-	header := fmt.Sprintf("Content-Length: %d\r\n\r\n", len(s))
-	s = header + s
-
-	io.WriteString(stdin, s)
+	send(request)
 
 	//Client sends notification method:initialized and
 	//server replies with notification (no id) method "window/showMessage"
-	n, err := jsonrpc2.NewNotification("initialized", struct{}{}) //has to struct{}{} not nil
+	notify, err := jsonrpc2.NewNotification("initialized", struct{}{}) //has to be struct{}{} not nil
 	if err != nil {
 		log.Fatal(err)
 	}
-	b, err = n.MarshalJSON()
-	if err != nil {
-		log.Fatal(err)
-	}
-	s = string(b)
-	header = fmt.Sprintf("Content-Length: %d\r\n\r\n", len(s))
-	s = header + s
-	io.WriteString(stdin, s)
+	send(notify)
 	// clangd doesn't send anything back here
 
 	// Client sends notification method:did/Open and
@@ -136,18 +121,11 @@ func launchLsp(lspName string) {
 	textParams.TextDocument.LanguageID = "go"
 	textParams.TextDocument.Text = " "
 	textParams.TextDocument.Version = 1
-	n, err = jsonrpc2.NewNotification("textDocument/didOpen", textParams)
+	notify, err = jsonrpc2.NewNotification("textDocument/didOpen", textParams)
 	if err != nil {
 		log.Fatal(err)
 	}
-	b, err = n.MarshalJSON()
-	if err != nil {
-		log.Fatal(err)
-	}
-	s = string(b)
-	header = fmt.Sprintf("Content-Length: %d\r\n\r\n", len(s))
-	s = header + s
-	io.WriteString(stdin, s)
+	send(notify)
 
 	// draining off any diagnostics before issuing didChange
 	timeout := time.After(2 * time.Second)
@@ -169,46 +147,25 @@ func shutdownLsp() {
 	// tell server the file is closed
 	var closeParams protocol.DidCloseTextDocumentParams
 	closeParams.TextDocument.URI = lsp.fileUri
-	n, err := jsonrpc2.NewNotification("textDocument/didClose", closeParams)
+	notify, err := jsonrpc2.NewNotification("textDocument/didClose", closeParams)
 	if err != nil {
 		log.Fatal(err)
 	}
-	b, err := n.MarshalJSON()
-	if err != nil {
-		log.Fatal(err)
-	}
-	s := string(b)
-	header := fmt.Sprintf("Content-Length: %d\r\n\r\n", len(s))
-	s = header + s
-	io.WriteString(stdin, s)
+	send(notify)
 
 	// shutdown request sent to server
 	request, err := jsonrpc2.NewCall(jsonrpc2.NewNumberID(2), "shutdown", nil)
 	if err != nil {
 		log.Fatal(err)
 	}
-	b, err = request.MarshalJSON()
-	if err != nil {
-		log.Fatal(err)
-	}
-	s = string(b)
-	header = fmt.Sprintf("Content-Length: %d\r\n\r\n", len(s))
-	s = header + s
-	io.WriteString(stdin, s)
+	send(request)
 
 	// exit notification sent to server - hangs with clangd
-	n, err = jsonrpc2.NewNotification("exit", nil)
+	notify, err = jsonrpc2.NewNotification("exit", nil)
 	if err != nil {
 		log.Fatal(err)
 	}
-	b, err = n.MarshalJSON()
-	if err != nil {
-		log.Fatal(err)
-	}
-	s = string(b)
-	header = fmt.Sprintf("Content-Length: %d\r\n\r\n", len(s))
-	s = header + s
-	io.WriteString(stdin, s)
+	send(notify)
 
 	// this is blocking for clangd
 	if lsp.name != "clangd" {
@@ -229,18 +186,11 @@ func sendDidChangeNotification(text string) {
 		ContentChanges: []protocol.TextDocumentContentChangeEvent{{Text: text}},
 	}
 
-	n, err := jsonrpc2.NewNotification("textDocument/didChange", params)
+	notify, err := jsonrpc2.NewNotification("textDocument/didChange", params)
 	if err != nil {
 		log.Fatal(err)
 	}
-	b, err := n.MarshalJSON()
-	if err != nil {
-		log.Fatal(err)
-	}
-	s := string(b)
-	header := fmt.Sprintf("Content-Length: %d\r\n\r\n", len(s))
-	s = header + s
-	io.WriteString(stdin, s)
+	send(notify)
 }
 
 func readMessages() {
@@ -316,6 +266,18 @@ func readMessages() {
 			return
 		}
 	}
+}
+
+func send(msg json.Marshaler) {
+	b, err := msg.MarshalJSON()
+	if err != nil {
+		log.Fatal(err)
+	}
+	s := string(b)
+	header := fmt.Sprintf("Content-Length: %d\r\n\r\n", len(s))
+	s = header + s
+
+	io.WriteString(stdin, s)
 }
 
 //from go.lsp.dev.pkg/fakeroot
