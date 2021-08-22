@@ -95,10 +95,11 @@ func launchLsp(lspName string) {
 	go readMessages() /**************************/
 
 	//Client sends initialize method and server replies with result (not method): Capabilities ...)
-	params := protocol.InitializeParams{}
-	params.ProcessID = 0
-	params.RootURI = lsp.rootUri
-	params.Capabilities = clientcapabilities
+	params := protocol.InitializeParams{
+		ProcessID:    0,
+		RootURI:      lsp.rootUri,
+		Capabilities: clientcapabilities,
+	}
 	request, err := jsonrpc2.NewCall(jsonrpc2.NewNumberID(1), "initialize", params)
 	if err != nil {
 		log.Fatal(err)
@@ -116,11 +117,14 @@ func launchLsp(lspName string) {
 
 	// Client sends notification method:did/Open and
 	//server sends some notification (no id) method "window/logMessage"
-	textParams := protocol.DidOpenTextDocumentParams{}
-	textParams.TextDocument.URI = lsp.fileUri
-	textParams.TextDocument.LanguageID = "go"
-	textParams.TextDocument.Text = " "
-	textParams.TextDocument.Version = 1
+	textParams := protocol.DidOpenTextDocumentParams{
+		TextDocument: protocol.TextDocumentItem{
+			URI:        lsp.fileUri,
+			LanguageID: "go",
+			Text:       " ",
+			Version:    1,
+		},
+	}
 	notify, err = jsonrpc2.NewNotification("textDocument/didOpen", textParams)
 	if err != nil {
 		log.Fatal(err)
@@ -145,8 +149,11 @@ L:
 func shutdownLsp() {
 
 	// tell server the file is closed
-	var closeParams protocol.DidCloseTextDocumentParams
-	closeParams.TextDocument.URI = lsp.fileUri
+	closeParams := protocol.DidCloseTextDocumentParams{
+		TextDocument: protocol.TextDocumentIdentifier{
+			URI: lsp.fileUri,
+		},
+	}
 	notify, err := jsonrpc2.NewNotification("textDocument/didClose", closeParams)
 	if err != nil {
 		log.Fatal(err)
