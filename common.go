@@ -39,6 +39,12 @@ var Languages = map[string]string{
 	"python": "python",
 }
 
+var Lsps = map[string]string{
+	"go":  "gopls",
+	"cpp": "clangd",
+	"py":  "python-language-server",
+}
+
 // these are p.nvimModes some of which overlap
 // with p.modes but some don't
 var modeMap = map[string]Mode{

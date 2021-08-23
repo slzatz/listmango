@@ -143,7 +143,7 @@ L:
 		}
 	}
 
-	sess.showEdMessage("LSP %s launched", lsp.name)
+	sess.showOrgMessage("LSP %s launched", lsp.name)
 }
 
 func shutdownLsp() {
@@ -174,10 +174,12 @@ func shutdownLsp() {
 	}
 	send(notify)
 
-	// this is blocking for clangd
 	if lsp.name != "clangd" {
+		// this blocks for clangd so readMessages go routine doesn't terminate
 		quit <- struct{}{}
 	}
+	sess.showOrgMessage("Shutdown LSP")
+
 	lsp.name = ""
 	lsp.rootUri = ""
 	lsp.fileUri = ""
@@ -207,11 +209,13 @@ func readMessages() {
 		default:
 			line, err := stdoutRdr.ReadString('\n')
 			if err == io.EOF {
-				fmt.Printf("\n\nGot EOF presumably from shutdown\n\n")
-				break
+				// clangd doesn't want to shut this routine
+				// but if you launch another lsp this is triggered
+				sess.showEdMessage("ReadMessages: Got EOF")
+				continue
 			}
 			if err != nil {
-				log.Fatalf("\nRead -> %s\n%v", string(line), err)
+				sess.showEdMessage("ReadMessages: %s-%v", string(line), err)
 			}
 
 			if line == "" {
@@ -236,7 +240,7 @@ func readMessages() {
 			// to read the last two chars of '\r\n\r\n'
 			line, err = stdoutRdr.ReadString('\n')
 			if err != nil {
-				log.Fatalf("\nRead -> %s\n%v", string(line), err)
+				sess.showEdMessage("ReadMessages: %s-%v", string(line), err)
 			}
 
 			data := make([]byte, length)
@@ -255,21 +259,18 @@ func readMessages() {
 					notification := msg.(*jsonrpc2.Notification)
 					notification.UnmarshalJSON(data)
 					if notification.Method() == "textDocument/publishDiagnostics" {
-						//sess.showEdMessage("%+v", notification.Params())
 						var params protocol.PublishDiagnosticsParams
 						err := json.Unmarshal(notification.Params(), &params)
 						if err != nil {
 							sess.showEdMessage("Error: %v", err)
 						}
 						diagnostics <- params.Diagnostics
-						sess.showEdMessage("params = %+v", params)
 					}
 				}
 			case *jsonrpc2.Response:
 				sess.showEdMessage("Response/Result received")
 			}
-		case <-quit:
-			sess.showEdMessage("Shutdown LSP")
+		case <-quit: //clangd never gets here; gopls does
 			return
 		}
 	}

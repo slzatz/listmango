@@ -61,40 +61,6 @@ var cmd_lookup = map[string]func(*Organizer, int){
 	"images":         (*Organizer).setImage,
 	"lsp":            (*Organizer).launchLsp,
 	"shutdown":       (*Organizer).shutdownLsp,
-	//"showmarkdown":   (*Organizer).showMarkdown,
-	//"showm":          (*Organizer).showMarkdown,
-	/*
-	  "x": F_x,
-	 // {"linked", F_linked,
-	 // {"l", F_linked,
-	 // {"related", F_linked,
-	  "save": F_savefile,
-	  "sort": F_sort,
-	  "set": F_set,
-	  "syntax": F_syntax,
-	  "vim": F_open_in_vim,
-	  "join": F_join,
-	  "saveoutline": F_saveoutline,
-	  //{"readfile": F_readfile,
-	  //{"read": F_readfile,
-	  "valgrind": F_valgrind,
-	  "quit": F_quit_app,
-	  "q": F_quit_app,
-	  "quit!": F_quit_app_ex,
-	  "q!": F_quit_app_ex,
-	  //{"merge", F_merge,
-	  "help": F_help,
-	  "h": F_help,
-	 //{"restart_lsp", F_restart_lsp,
-	 //{"shutdown_lsp", F_shutdown_lsp,
-	  "lsp": F_lsp_start,
-	  "browser": F_launch_lm_browser,
-	  "launch": F_launch_lm_browser,
-	  "quitb": F_quit_lm_browser,
-	  "quitbrowser": F_quit_lm_browser,
-	  "createlink": F_createLink,
-	  "getlinked": F_getLinked,
-	*/
 }
 
 func (o *Organizer) log(unused int) {
@@ -782,9 +748,20 @@ func (o *Organizer) setImage(pos int) {
 
 func (o *Organizer) launchLsp(pos int) {
 	var lsp string
-	if pos == 0 {
-		lsp = "gopls"
+	var cl string
+	if pos != 0 {
+		cl = o.command_line
+		for _, v := range Lsps {
+			if strings.HasPrefix(v, cl[pos+1:]) {
+				lsp = v
+				break
+			}
+		}
 	} else {
+		lsp = "gopls"
+	}
+
+	/*
 		opt := o.command_line[pos+1 : pos+2]
 		switch opt {
 		case "g":
@@ -792,11 +769,14 @@ func (o *Organizer) launchLsp(pos int) {
 		case "c":
 			lsp = "clangd"
 		}
+	*/
+	if lsp != "" {
 		go launchLsp(lsp) // could be race to write to screen
-		o.mode = o.last_mode
-		o.command_line = ""
-		sess.showOrgMessage("Launching lsp %s", lsp)
+	} else {
+		sess.showOrgMessage("%q does not match an lsp", cl[pos+1:])
 	}
+	o.mode = o.last_mode
+	o.command_line = ""
 }
 
 func (o *Organizer) shutdownLsp(unused int) {
