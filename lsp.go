@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"os"
 	"os/exec"
 	"strconv"
 	"strings"
@@ -21,9 +22,10 @@ var ctx context.Context
 var conn io.ReadWriteCloser
 
 type Lsp struct {
-	name    string
-	rootUri protocol.URI
-	fileUri protocol.URI
+	name       string
+	rootUri    protocol.URI
+	fileUri    protocol.URI
+	languageID protocol.LanguageIdentifier
 }
 
 var lsp Lsp
@@ -44,6 +46,8 @@ var stdoutRdr *bufio.Reader
 
 var diagnostics = make(chan []protocol.Diagnostic)
 var quit = make(chan struct{})
+
+var logFile *os.File
 
 func launchLsp(lspName string) {
 
@@ -68,12 +72,16 @@ func launchLsp(lspName string) {
 		lsp.name = "gopls"
 		lsp.rootUri = "file:///home/slzatz/go_fragments"
 		lsp.fileUri = "file:///home/slzatz/go_fragments/main.go"
+		lsp.languageID = "go"
 		cmd = exec.Command("gopls", "serve", "-rpc.trace", "-logfile", "/home/slzatz/gopls_log")
 	case "clangd":
 		lsp.name = "clangd"
 		lsp.rootUri = "file:///home/slzatz/clangd_examples"
 		lsp.fileUri = "file:///home/slzatz/clangd_examples/test.cpp"
+		lsp.languageID = "cpp"
 		cmd = exec.Command("clangd", "--log=verbose")
+		logFile, _ := os.Create("/home/slzatz/clangd_log")
+		cmd.Stderr = logFile
 	}
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
@@ -119,8 +127,9 @@ func launchLsp(lspName string) {
 	//server sends some notification (no id) method "window/logMessage"
 	textParams := protocol.DidOpenTextDocumentParams{
 		TextDocument: protocol.TextDocumentItem{
-			URI:        lsp.fileUri,
-			LanguageID: "go",
+			URI: lsp.fileUri,
+			//LanguageID: "go",
+			LanguageID: lsp.languageID,
 			Text:       " ",
 			Version:    1,
 		},
@@ -147,7 +156,6 @@ L:
 }
 
 func shutdownLsp() {
-
 	// tell server the file is closed
 	closeParams := protocol.DidCloseTextDocumentParams{
 		TextDocument: protocol.TextDocumentIdentifier{
@@ -174,7 +182,10 @@ func shutdownLsp() {
 	}
 	send(notify)
 
-	if lsp.name != "clangd" {
+	if lsp.name == "clangd" { //"clangd" {
+		logFile.Close()
+		//quit <- struct{}{}
+	} else {
 		// this blocks for clangd so readMessages go routine doesn't terminate
 		quit <- struct{}{}
 	}
@@ -204,15 +215,16 @@ func sendDidChangeNotification(text string) {
 
 func readMessages() {
 	var length int64
+	name := lsp.name
 	for {
 		select {
 		default:
 			line, err := stdoutRdr.ReadString('\n')
 			if err == io.EOF {
-				// clangd doesn't want to shut this routine
+				// clangd never gets <-quit
 				// but if you launch another lsp this is triggered
-				sess.showEdMessage("ReadMessages: Got EOF")
-				continue
+				sess.showEdMessage("ReadMessages(%s): Got EOF", name)
+				return
 			}
 			if err != nil {
 				sess.showEdMessage("ReadMessages: %s-%v", string(line), err)
@@ -268,7 +280,7 @@ func readMessages() {
 					}
 				}
 			case *jsonrpc2.Response:
-				sess.showEdMessage("Response/Result received")
+				//sess.showEdMessage("Response/Result received")
 			}
 		case <-quit: //clangd never gets here; gopls does
 			return
