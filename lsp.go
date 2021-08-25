@@ -45,6 +45,7 @@ var stdin io.WriteCloser
 var stdoutRdr *bufio.Reader
 
 var diagnostics = make(chan []protocol.Diagnostic)
+var completion = make(chan protocol.CompletionList)
 var quit = make(chan struct{})
 
 var logFile *os.File
@@ -213,6 +214,31 @@ func sendDidChangeNotification(text string) {
 	send(notify)
 }
 
+func sendCompletionRequest(line, character uint32) {
+
+	progressToken := protocol.NewProgressToken("test")
+
+	params := protocol.CompletionParams{
+		TextDocumentPositionParams: protocol.TextDocumentPositionParams{
+			TextDocument: protocol.TextDocumentIdentifier{
+				URI: lsp.fileUri},
+			Position: protocol.Position{
+				Line:      line,
+				Character: character}},
+		WorkDoneProgressParams: protocol.WorkDoneProgressParams{
+			WorkDoneToken: progressToken},
+		PartialResultParams: protocol.PartialResultParams{
+			PartialResultToken: progressToken},
+		Context: nil,
+	}
+
+	request, err := jsonrpc2.NewCall(jsonrpc2.NewNumberID(version()), "textDocument/completion", params)
+	if err != nil {
+		log.Fatal(err)
+	}
+	send(request)
+}
+
 func readMessages() {
 	var length int64
 	name := lsp.name
@@ -280,6 +306,8 @@ func readMessages() {
 					}
 				}
 			case *jsonrpc2.Response:
+				result := msg.UnmarshalJSON(data)
+				sess.showOrgMessage("%+v", result)
 				//sess.showEdMessage("Response/Result received")
 			}
 		case <-quit: //clangd never gets here; gopls does
