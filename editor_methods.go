@@ -8,6 +8,8 @@ import (
 	"os"
 	"strings"
 	"time"
+
+	"go.lsp.dev/protocol"
 )
 
 //'automatically' happens in NORMAL and INSERT mode
@@ -407,6 +409,20 @@ func (e *Editor) drawDiagnostics() {
 
 		s = "Did not receive any new diagnostics"
 	}
+	op.rows = strings.Split(s, "\n")
+	op.drawText()
+	sess.returnCursor()
+}
+func (e *Editor) drawCompletionItems(completion protocol.CompletionList) {
+
+	op := e.output
+	op.rowOffset = 0
+	var s string
+	var ab strings.Builder
+	for _, item := range completion.Items {
+		fmt.Fprintf(&ab, "%v: %v\n", item.Label, item.Documentation)
+	}
+	s = ab.String()
 	op.rows = strings.Split(s, "\n")
 	op.drawText()
 	sess.returnCursor()

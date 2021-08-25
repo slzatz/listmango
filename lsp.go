@@ -109,7 +109,8 @@ func launchLsp(lspName string) {
 		RootURI:      lsp.rootUri,
 		Capabilities: clientcapabilities,
 	}
-	request, err := jsonrpc2.NewCall(jsonrpc2.NewNumberID(1), "initialize", params)
+	//request, err := jsonrpc2.NewCall(jsonrpc2.NewNumberID(1), "initialize", params)
+	request, err := jsonrpc2.NewCall(jsonrpc2.NewStringID("initialize"), "initialize", params)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -170,7 +171,8 @@ func shutdownLsp() {
 	send(notify)
 
 	// shutdown request sent to server
-	request, err := jsonrpc2.NewCall(jsonrpc2.NewNumberID(2), "shutdown", nil)
+	//request, err := jsonrpc2.NewCall(jsonrpc2.NewNumberID(2), "shutdown", nil)
+	request, err := jsonrpc2.NewCall(jsonrpc2.NewStringID("shutdown"), "shutdown", nil)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -300,14 +302,36 @@ func readMessages() {
 						var params protocol.PublishDiagnosticsParams
 						err := json.Unmarshal(notification.Params(), &params)
 						if err != nil {
-							sess.showEdMessage("Error: %v", err)
+							sess.showEdMessage("Error unmarshaling diagnostics: %v", err)
+							return
 						}
 						diagnostics <- params.Diagnostics
 					}
 				}
 			case *jsonrpc2.Response:
-				result := msg.UnmarshalJSON(data)
-				sess.showOrgMessage("%+v", result)
+				//result := (*msg).UnmarshalJSON(data)
+				//sess.showOrgMessage("Response: %+v", *msg)
+				msg.UnmarshalJSON(data)
+				id := msg.ID()
+
+				if id == jsonrpc2.NewStringID("initialize") || id == jsonrpc2.NewStringID("shutdown") {
+					continue
+				}
+				/*
+					num := id.GetNumber()
+					if num < 2 {
+						continue
+					}
+				*/
+
+				result := msg.Result()
+				var completion protocol.CompletionList
+				err := json.Unmarshal(result, &completion)
+				if err != nil {
+					sess.showEdMessage("Error: %v", err)
+				}
+				//sess.showOrgMessage("Completion: %+v", completion.Items[0].Label)
+				p.drawCompletionItems(completion)
 				//sess.showEdMessage("Response/Result received")
 			}
 		case <-quit: //clangd never gets here; gopls does

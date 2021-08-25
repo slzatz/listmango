@@ -25,8 +25,9 @@ var e_lookup2 = map[string]interface{}{
 	leader + "m":         (*Editor).showMarkdownPreview,
 	leader + "s":         (*Editor).nextStyle,
 	leader + "w":         showWindows,
-	leader + "c":         (*Editor).showSpellingPreview,
+	leader + "p":         (*Editor).showSpellingPreview,
 	leader + "t":         (*Editor).readGoTemplate,
+	leader + "c":         (*Editor).completion,
 }
 
 // needs rewriting
@@ -441,4 +442,8 @@ func (e *Editor) suggest() {
 
 func (e *Editor) readGoTemplate() {
 	e.readFileIntoNote("go.template")
+}
+
+func (e *Editor) completion() {
+	sendCompletionRequest(uint32(e.fr), uint32(e.fc))
 }
