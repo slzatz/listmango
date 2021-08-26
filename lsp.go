@@ -32,7 +32,7 @@ var lsp Lsp
 
 func counter() func() int32 {
 	var n int32
-	n = 3
+	//n = 3
 	return func() int32 {
 		n++
 		return n
@@ -40,15 +40,18 @@ func counter() func() int32 {
 }
 
 var version = counter()
+var idNum = counter()
 
 var stdin io.WriteCloser
 var stdoutRdr *bufio.Reader
 
 var diagnostics = make(chan []protocol.Diagnostic)
-var completion = make(chan protocol.CompletionList)
+
+//var completion = make(chan protocol.CompletionList)
 var quit = make(chan struct{})
 
 var logFile *os.File
+var requestType = make(map[jsonrpc2.ID]string)
 
 func launchLsp(lspName string) {
 
@@ -109,8 +112,10 @@ func launchLsp(lspName string) {
 		RootURI:      lsp.rootUri,
 		Capabilities: clientcapabilities,
 	}
-	//request, err := jsonrpc2.NewCall(jsonrpc2.NewNumberID(1), "initialize", params)
-	request, err := jsonrpc2.NewCall(jsonrpc2.NewStringID("initialize"), "initialize", params)
+	//id := jsonrpc2.NewNumberID(1)
+	id := jsonrpc2.NewNumberID(idNum())
+	requestType[id] = "initialize"
+	request, err := jsonrpc2.NewCall(id, "initialize", params)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -171,8 +176,9 @@ func shutdownLsp() {
 	send(notify)
 
 	// shutdown request sent to server
-	//request, err := jsonrpc2.NewCall(jsonrpc2.NewNumberID(2), "shutdown", nil)
-	request, err := jsonrpc2.NewCall(jsonrpc2.NewStringID("shutdown"), "shutdown", nil)
+	id := jsonrpc2.NewNumberID(idNum())
+	requestType[id] = "shutdown"
+	request, err := jsonrpc2.NewCall(id, "shutdown", nil)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -185,7 +191,7 @@ func shutdownLsp() {
 	}
 	send(notify)
 
-	if lsp.name == "clangd" { //"clangd" {
+	if lsp.name == "clangd" {
 		logFile.Close()
 		//quit <- struct{}{}
 	} else {
@@ -220,6 +226,9 @@ func sendCompletionRequest(line, character uint32) {
 
 	progressToken := protocol.NewProgressToken("test")
 
+	// Since it doesn't appear possible to send the text of the file
+	// you would have to save a scratch file somewhere so that
+	// you could do autocomplete without specifically having user save ??
 	params := protocol.CompletionParams{
 		TextDocumentPositionParams: protocol.TextDocumentPositionParams{
 			TextDocument: protocol.TextDocumentIdentifier{
@@ -234,7 +243,9 @@ func sendCompletionRequest(line, character uint32) {
 		Context: nil,
 	}
 
-	request, err := jsonrpc2.NewCall(jsonrpc2.NewNumberID(version()), "textDocument/completion", params)
+	id := jsonrpc2.NewNumberID(idNum())
+	requestType[id] = "completion"
+	request, err := jsonrpc2.NewCall(id, "textDocument/completion", params)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -309,20 +320,12 @@ func readMessages() {
 					}
 				}
 			case *jsonrpc2.Response:
-				//result := (*msg).UnmarshalJSON(data)
-				//sess.showOrgMessage("Response: %+v", *msg)
 				msg.UnmarshalJSON(data)
 				id := msg.ID()
 
-				if id == jsonrpc2.NewStringID("initialize") || id == jsonrpc2.NewStringID("shutdown") {
+				if requestType[id] != "completion" {
 					continue
 				}
-				/*
-					num := id.GetNumber()
-					if num < 2 {
-						continue
-					}
-				*/
 
 				result := msg.Result()
 				var completion protocol.CompletionList
