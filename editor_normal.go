@@ -445,5 +445,8 @@ func (e *Editor) readGoTemplate() {
 }
 
 func (e *Editor) completion() {
-	sendCompletionRequest(uint32(e.fr), uint32(e.fc))
+	text := e.bufferToString()
+	sendDidChangeNotification(text)
+	e.drawDiagnostics()
+	sendCompletionRequest(uint32(e.fr), uint32(e.fc+1)) //+1 seems to work better
 }

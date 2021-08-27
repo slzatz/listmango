@@ -26,6 +26,7 @@ type Lsp struct {
 	rootUri    protocol.URI
 	fileUri    protocol.URI
 	languageID protocol.LanguageIdentifier
+	//completionUri protocol.URI
 }
 
 var lsp Lsp
@@ -69,6 +70,7 @@ func launchLsp(lspName string) {
 		sess.showOrgMessage("+%v", client)
 		sess.showOrgMessage("+%v", conn)
 	*/
+	//lsp.completionUri = "/home/slzatz/completion"
 
 	var cmd *exec.Cmd
 	switch lspName {
@@ -233,6 +235,7 @@ func sendCompletionRequest(line, character uint32) {
 		TextDocumentPositionParams: protocol.TextDocumentPositionParams{
 			TextDocument: protocol.TextDocumentIdentifier{
 				URI: lsp.fileUri},
+			//URI: lsp.completionUri},
 			Position: protocol.Position{
 				Line:      line,
 				Character: character}},

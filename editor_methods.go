@@ -420,7 +420,8 @@ func (e *Editor) drawCompletionItems(completion protocol.CompletionList) {
 	var s string
 	var ab strings.Builder
 	for _, item := range completion.Items {
-		fmt.Fprintf(&ab, "%v: %v\n", item.Label, item.Documentation)
+		//fmt.Fprintf(&ab, "%v: %v\n", item.Label, item.Documentation)
+		fmt.Fprintf(&ab, "%v\n", item.Label)
 	}
 	s = ab.String()
 	op.rows = strings.Split(s, "\n")
