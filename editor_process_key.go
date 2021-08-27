@@ -188,7 +188,7 @@ func editorProcessKey(c int) bool { //bool returned is whether to redraw
 		//don't send keys to nvim - don't want it processing them
 		//sess.showEdMessage("NOP or COMMAND_LINE or SEARCH - %q", p.mode)
 		if c == '\r' {
-			pos := strings.Index(p.command_line, " ")
+			pos := strings.LastIndex(p.command_line, " ")
 			var cmd string
 			if pos != -1 {
 				cmd = p.command_line[:pos]

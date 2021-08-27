@@ -66,11 +66,11 @@ func (e *Editor) findMatchForLeftBrace(leftBrace byte, back bool) bool {
 	x = e.getScreenXFromRowColWW(e.fr, e.fc-b) + e.left_margin + e.left_margin_offset + 1
 	y = e.getScreenYFromRowColWW(e.fr, e.fc-b) + e.top_margin - e.lineOffset // added line offset 12-25-2019
 	fmt.Printf("\x1b[%d;%dH\x1b[48;5;237m%s\x1b[0m", y, x, string(leftBrace))
-	sess.showEdMessage("r = %d   c = %d", r, c)
+	//sess.showEdMessage("r = %d   c = %d", r, c)
 	return true
 }
 
-//in use for testing as normal cmd - would be tricky to do in INSERT mode since would have to leave
+//not in use but shows alternative using neovim - would be tricky to do in INSERT mode since would have to leave
 //INSERT to use % - but interesting
 func (e *Editor) findMatchForBrace() bool {
 
@@ -80,27 +80,18 @@ func (e *Editor) findMatchForBrace() bool {
 	r := pos[0] - 1
 	c := pos[1]
 
-	//m := map[byte]byte{'{': '}', '(': ')', '[': ']'}
-	//right_brace := m[left_brace]
-
-	//e.showMessage("left brace: {}", left_brace);
 	y := e.getScreenYFromRowColWW(r, c) - e.lineOffset
 	if y >= e.screenlines {
 		return false
 	}
 
 	x := e.getScreenXFromRowColWW(r, c) + e.left_margin + e.left_margin_offset + 1
-	//fmt.Printf("\x1b[%d;%dH\x1b[48;5;244m%s", y+e.top_margin, x, string(right_brace))
 	fmt.Printf("\x1b[%d;%dH\x1b[48;5;237m%s", y+e.top_margin, x, "]")
 
-	//x = e.getScreenXFromRowColWW(e.fr, e.fc-b) + e.left_margin + e.left_margin_offset + 1
 	x = e.getScreenXFromRowColWW(e.fr, e.fc) + e.left_margin + e.left_margin_offset + 1
-	//y = e.getScreenYFromRowColWW(e.fr, e.fc-b) + e.top_margin - e.line_offset // added line offset 12-25-2019
 	y = e.getScreenYFromRowColWW(e.fr, e.fc) + e.top_margin - e.lineOffset // added line offset 12-25-2019
-	//fmt.Printf("\x1b[%d;%dH\x1b[48;5;244m%s\x1b[0m", y, x, string(left_brace))
 	fmt.Printf("\x1b[%d;%dH\x1b[48;5;237m%s\x1b[0m", y, x, "[")
 	v.SetWindowCursor(w, [2]int{e.fr + 1, e.fc}) //set screen cx and cy from pos
-	sess.showEdMessage("r = %d   c = %d; e.fr = %d e.fc = %d", r, c, e.fr, e.fc)
 	return true
 }
 

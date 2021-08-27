@@ -12,33 +12,36 @@ import (
 
 //var e_lookup_C = map[string]interface{}{
 var e_lookup_C = map[string]func(*Editor){
-	"write":    (*Editor).writeNote,
-	"w":        (*Editor).writeNote,
-	"wa":       (*Editor).writeAll,
-	"qa":       (*Editor).quitAll,
-	"read":     (*Editor).readFile,
-	"readfile": (*Editor).readFile,
-	"resize":   (*Editor).resize,
-	"compile":  (*Editor).compile,
-	"c":        (*Editor).compile,
-	"run":      (*Editor).run,
-	"r":        (*Editor).run,
-	"test":     (*Editor).sync,
-	"sync":     (*Editor).sync,
-	"save":     (*Editor).saveNoteToFile,
-	"savefile": (*Editor).saveNoteToFile,
-	"syntax":   (*Editor).syntax,
-	"spell":    (*Editor).spell,
-	"number":   (*Editor).number,
-	"num":      (*Editor).number,
-	"ha":       (*Editor).printNote,
-	"modified": (*Editor).modified, // debugging
-	"quit":     (*Editor).quitActions,
-	"q":        (*Editor).quitActions,
-	"quit!":    (*Editor).quitActions,
-	"q!":       (*Editor).quitActions,
-	"x":        (*Editor).quitActions,
-	"fmt":      (*Editor).goFormat,
+	"write":           (*Editor).writeNote,
+	"w":               (*Editor).writeNote,
+	"wa":              (*Editor).writeAll,
+	"qa":              (*Editor).quitAll,
+	"read":            (*Editor).readFile,
+	"readfile":        (*Editor).readFile,
+	"vertical resize": (*Editor).verticalResize,
+	"vert res":        (*Editor).verticalResize,
+	"resize":          (*Editor).resize,
+	"res":             (*Editor).resize,
+	"compile":         (*Editor).compile,
+	"c":               (*Editor).compile,
+	"run":             (*Editor).run,
+	"r":               (*Editor).run,
+	"test":            (*Editor).sync,
+	"sync":            (*Editor).sync,
+	"save":            (*Editor).saveNoteToFile,
+	"savefile":        (*Editor).saveNoteToFile,
+	"syntax":          (*Editor).syntax,
+	"spell":           (*Editor).spell,
+	"number":          (*Editor).number,
+	"num":             (*Editor).number,
+	"ha":              (*Editor).printNote,
+	"modified":        (*Editor).modified, // debugging
+	"quit":            (*Editor).quitActions,
+	"q":               (*Editor).quitActions,
+	"quit!":           (*Editor).quitActions,
+	"q!":              (*Editor).quitActions,
+	"x":               (*Editor).quitActions,
+	"fmt":             (*Editor).goFormat,
 }
 
 /* EDITOR cpp COMMAND_LINE mode lookup
@@ -122,8 +125,8 @@ func (e *Editor) readFile() {
 	sess.showEdMessage("Note generated from file: %s", filename)
 }
 
-func (e *Editor) resize() {
-	pos := strings.Index(e.command_line, " ")
+func (e *Editor) verticalResize() {
+	pos := strings.LastIndex(e.command_line, " ")
 	if pos == -1 {
 		sess.showEdMessage("You need to provide a filename")
 		return
@@ -134,6 +137,38 @@ func (e *Editor) resize() {
 		return
 	}
 	moveDivider(pct)
+}
+func (e *Editor) resize() {
+	pos := strings.LastIndex(e.command_line, " ")
+	opt := e.command_line[pos+1:]
+	if opt[0] == '+' || opt[0] == '-' {
+		num, err := strconv.Atoi(opt[1:])
+		if err != nil {
+			sess.showEdMessage("The format is [+/-]N")
+			return
+		}
+		for i := 0; i < num; i++ {
+			e.changeSplit(int(opt[0]))
+		}
+	} else {
+		num, err := strconv.Atoi(opt)
+		if err != nil {
+			sess.showEdMessage("The format is [+/-]N")
+			return
+		}
+
+		if sess.textLines-num < 3 || num < 2 {
+			return
+		}
+
+		e.screenlines = num
+		op := e.output
+		op.screenlines = sess.textLines - num - 1
+		op.top_margin = num + 3
+
+		sess.eraseRightScreen()
+		sess.drawRightScreen()
+	}
 }
 
 func (e *Editor) compile() {

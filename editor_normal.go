@@ -19,6 +19,8 @@ var e_lookup2 = map[string]interface{}{
 	string(ctrlKey('i')): (*Editor).decorateWord,
 	"\x17=":              (*Editor).changeSplit,
 	"\x17_":              (*Editor).changeSplit,
+	"\x17-":              (*Editor).changeSplit,
+	"\x17+":              (*Editor).changeSplit,
 	"\x06":               (*Editor).findMatchForBrace, // for testing
 	"z=":                 (*Editor).suggest,
 	leader + "l":         (*Editor).showVimMessageLog,
@@ -30,7 +32,6 @@ var e_lookup2 = map[string]interface{}{
 	leader + "c":         (*Editor).completion,
 }
 
-// needs rewriting
 func (e *Editor) changeSplit(flag int) {
 	if e.output == nil {
 		return
@@ -41,10 +42,21 @@ func (e *Editor) changeSplit(flag int) {
 	if flag == '=' {
 		outputHeight = sess.textLines / 2
 	} else if flag == '_' {
-		outputHeight = LINKED_NOTE_HEIGHT
+		outputHeight = 2
+	} else if flag == '+' {
+		outputHeight = op.screenlines - 1
+	} else if flag == '-' {
+		outputHeight = op.screenlines + 1
 	} else {
+		sess.showOrgMessage("flag = %v", flag)
 		return
 	}
+	sess.showOrgMessage("flag = %v", flag)
+
+	if outputHeight < 2 || outputHeight > sess.textLines-3 {
+		return
+	}
+
 	e.screenlines = sess.textLines - outputHeight - 1
 	op.screenlines = outputHeight
 	op.top_margin = sess.textLines - outputHeight + 2
