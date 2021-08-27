@@ -255,6 +255,27 @@ func sendCompletionRequest(line, character uint32) {
 	send(request)
 }
 
+func sendHoverRequest(line, character uint32) {
+	progressToken := protocol.NewProgressToken("test")
+	params := protocol.HoverParams{
+		TextDocumentPositionParams: protocol.TextDocumentPositionParams{
+			TextDocument: protocol.TextDocumentIdentifier{
+				URI: lsp.fileUri},
+			Position: protocol.Position{
+				Line:      line,
+				Character: character}},
+		WorkDoneProgressParams: protocol.WorkDoneProgressParams{
+			WorkDoneToken: progressToken},
+	}
+	id := jsonrpc2.NewNumberID(idNum())
+	requestType[id] = "hover"
+	request, err := jsonrpc2.NewCall(id, "textDocument/hover", params)
+	if err != nil {
+		log.Fatal(err)
+	}
+	send(request)
+}
+
 func readMessages() {
 	var length int64
 	name := lsp.name
@@ -306,7 +327,7 @@ func readMessages() {
 			msg, err := jsonrpc2.DecodeMessage(data)
 			switch msg := msg.(type) {
 			case jsonrpc2.Request:
-				//if call, ok := msg.(*jsonrpc2.Call); ok {
+				//if call, ok := msg.(*jsonrpc2.Call); ok
 				if _, ok := msg.(*jsonrpc2.Call); ok {
 					sess.showEdMessage("Request received")
 				} else {
@@ -325,20 +346,28 @@ func readMessages() {
 			case *jsonrpc2.Response:
 				msg.UnmarshalJSON(data)
 				id := msg.ID()
-
-				if requestType[id] != "completion" {
-					continue
-				}
-
 				result := msg.Result()
-				var completion protocol.CompletionList
-				err := json.Unmarshal(result, &completion)
-				if err != nil {
-					sess.showEdMessage("Error: %v", err)
+
+				switch requestType[id] {
+				case "initialize", "shutdown":
+					continue
+				case "completion":
+					var completion protocol.CompletionList
+					err := json.Unmarshal(result, &completion)
+					if err != nil {
+						sess.showEdMessage("Error: %v", err)
+					}
+					//sess.showOrgMessage("Completion: %+v", completion.Items[0].Label)
+					p.drawCompletionItems(completion)
+					//sess.showEdMessage("Response/Result received")
+				case "hover":
+					var hover protocol.Hover
+					err := json.Unmarshal(result, &hover)
+					if err != nil {
+						sess.showEdMessage("Error: %v", err)
+					}
+					p.drawHover(hover)
 				}
-				//sess.showOrgMessage("Completion: %+v", completion.Items[0].Label)
-				p.drawCompletionItems(completion)
-				//sess.showEdMessage("Response/Result received")
 			}
 		case <-quit: //clangd never gets here; gopls does
 			return

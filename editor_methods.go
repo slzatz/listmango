@@ -420,6 +420,26 @@ func (e *Editor) drawCompletionItems(completion protocol.CompletionList) {
 	sess.returnCursor()
 }
 
+func (e *Editor) drawHover(hover protocol.Hover) {
+
+	op := e.output
+	op.rowOffset = 0
+	var s string
+	var ab strings.Builder
+	kind := hover.Contents.Kind
+	value := hover.Contents.Value
+	startPosition := hover.Range.Start
+	endPosition := hover.Range.End
+	fmt.Fprintf(&ab, "contents.kind = %v\n", kind)
+	fmt.Fprintf(&ab, "contents.value = %v\n\n", value)
+	fmt.Fprintf(&ab, "range.start = %+v\n\n", startPosition)
+	fmt.Fprintf(&ab, "range.end = %+v\n\n", endPosition)
+	s = ab.String()
+	op.rows = strings.Split(s, "\n")
+	op.drawText()
+	sess.returnCursor()
+}
+
 func (e *Editor) drawVisual(pab *strings.Builder) {
 
 	lf_ret := fmt.Sprintf("\r\n\x1b[%dC", e.left_margin+e.left_margin_offset)

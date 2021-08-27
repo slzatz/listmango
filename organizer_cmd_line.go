@@ -281,7 +281,7 @@ func (o *Organizer) editNote(id int) {
 	}
 
 	//pos is zero if no space and command modifier
-	if id == 0 {
+	if id == -1 {
 		id = getId()
 	}
 	if id == -1 {

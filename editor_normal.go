@@ -30,6 +30,7 @@ var e_lookup2 = map[string]interface{}{
 	leader + "p":         (*Editor).showSpellingPreview,
 	leader + "t":         (*Editor).readGoTemplate,
 	leader + "c":         (*Editor).completion,
+	leader + "h":         (*Editor).hover,
 }
 
 func (e *Editor) changeSplit(flag int) {
@@ -461,4 +462,11 @@ func (e *Editor) completion() {
 	sendDidChangeNotification(text)
 	e.drawDiagnostics()
 	sendCompletionRequest(uint32(e.fr), uint32(e.fc+1)) //+1 seems to work better
+}
+
+func (e *Editor) hover() {
+	//text := e.bufferToString()
+	//sendDidChangeNotification(text)
+	//e.drawDiagnostics()
+	sendHoverRequest(uint32(e.fr), uint32(e.fc+1)) //+1 seems to work better
 }
