@@ -274,12 +274,11 @@ func organizerProcessKey(c int) {
 		}
 
 		if c == '\r' {
-			pos := strings.Index(org.command_line, " ")
+			pos := strings.LastIndex(org.command_line, " ")
 			var s string
 			if pos != -1 {
 				s = org.command_line[:pos]
 			} else {
-				pos = 0
 				s = org.command_line
 			}
 			if cmd, found := cmd_lookup[s]; found {

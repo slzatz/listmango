@@ -128,7 +128,7 @@ func (e *Editor) readFile() {
 func (e *Editor) verticalResize() {
 	pos := strings.LastIndex(e.command_line, " ")
 	if pos == -1 {
-		sess.showEdMessage("You need to provide a filename")
+		sess.showEdMessage("You need to provide a a number 0 - 100")
 		return
 	}
 	pct, err := strconv.Atoi(e.command_line[pos+1:])
@@ -138,6 +138,7 @@ func (e *Editor) verticalResize() {
 	}
 	moveDivider(pct)
 }
+
 func (e *Editor) resize() {
 	pos := strings.LastIndex(e.command_line, " ")
 	opt := e.command_line[pos+1:]

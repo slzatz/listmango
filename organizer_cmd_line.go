@@ -11,56 +11,57 @@ import (
 )
 
 var cmd_lookup = map[string]func(*Organizer, int){
-	"open":           (*Organizer).open,
-	"o":              (*Organizer).open,
-	"opencontext":    (*Organizer).openContext,
-	"oc":             (*Organizer).openContext,
-	"openfolder":     (*Organizer).openFolder,
-	"of":             (*Organizer).openFolder,
-	"openkeyword":    (*Organizer).openKeyword,
-	"ok":             (*Organizer).openKeyword,
-	"quit":           (*Organizer).quitApp,
-	"q":              (*Organizer).quitApp,
-	"e":              (*Organizer).editNote,
-	"resize":         (*Organizer).resize,
-	"test":           (*Organizer).sync,
-	"sync":           (*Organizer).sync,
-	"new":            (*Organizer).newEntry,
-	"n":              (*Organizer).newEntry,
-	"refresh":        (*Organizer).refresh,
-	"r":              (*Organizer).refresh,
-	"find":           (*Organizer).find,
-	"contexts":       (*Organizer).contexts,
-	"context":        (*Organizer).contexts,
-	"c":              (*Organizer).contexts,
-	"folders":        (*Organizer).folders,
-	"folder":         (*Organizer).folders,
-	"f":              (*Organizer).folders,
-	"keywords":       (*Organizer).keywords,
-	"keyword":        (*Organizer).keywords,
-	"k":              (*Organizer).keywords,
-	"recent":         (*Organizer).recent,
-	"log":            (*Organizer).log,
-	"deletekeywords": (*Organizer).deleteKeywords,
-	"delkw":          (*Organizer).deleteKeywords,
-	"delk":           (*Organizer).deleteKeywords,
-	"showall":        (*Organizer).showAll,
-	"show":           (*Organizer).showAll,
-	"cc":             (*Organizer).updateContainer,
-	"ff":             (*Organizer).updateContainer,
-	"kk":             (*Organizer).updateContainer,
-	"write":          (*Organizer).write,
-	"w":              (*Organizer).write,
-	"deletemarks":    (*Organizer).deleteMarks,
-	"delmarks":       (*Organizer).deleteMarks,
-	"delm":           (*Organizer).deleteMarks,
-	"copy":           (*Organizer).copyEntry,
-	"savelog":        (*Organizer).savelog,
-	"save":           (*Organizer).save,
-	"image":          (*Organizer).setImage,
-	"images":         (*Organizer).setImage,
-	"lsp":            (*Organizer).launchLsp,
-	"shutdown":       (*Organizer).shutdownLsp,
+	"open":            (*Organizer).open,
+	"o":               (*Organizer).open,
+	"opencontext":     (*Organizer).openContext,
+	"oc":              (*Organizer).openContext,
+	"openfolder":      (*Organizer).openFolder,
+	"of":              (*Organizer).openFolder,
+	"openkeyword":     (*Organizer).openKeyword,
+	"ok":              (*Organizer).openKeyword,
+	"quit":            (*Organizer).quitApp,
+	"q":               (*Organizer).quitApp,
+	"e":               (*Organizer).editNote,
+	"vertical resize": (*Organizer).verticalResize,
+	"vert res":        (*Organizer).verticalResize,
+	"test":            (*Organizer).sync,
+	"sync":            (*Organizer).sync,
+	"new":             (*Organizer).newEntry,
+	"n":               (*Organizer).newEntry,
+	"refresh":         (*Organizer).refresh,
+	"r":               (*Organizer).refresh,
+	"find":            (*Organizer).find,
+	"contexts":        (*Organizer).contexts,
+	"context":         (*Organizer).contexts,
+	"c":               (*Organizer).contexts,
+	"folders":         (*Organizer).folders,
+	"folder":          (*Organizer).folders,
+	"f":               (*Organizer).folders,
+	"keywords":        (*Organizer).keywords,
+	"keyword":         (*Organizer).keywords,
+	"k":               (*Organizer).keywords,
+	"recent":          (*Organizer).recent,
+	"log":             (*Organizer).log,
+	"deletekeywords":  (*Organizer).deleteKeywords,
+	"delkw":           (*Organizer).deleteKeywords,
+	"delk":            (*Organizer).deleteKeywords,
+	"showall":         (*Organizer).showAll,
+	"show":            (*Organizer).showAll,
+	"cc":              (*Organizer).updateContainer,
+	"ff":              (*Organizer).updateContainer,
+	"kk":              (*Organizer).updateContainer,
+	"write":           (*Organizer).write,
+	"w":               (*Organizer).write,
+	"deletemarks":     (*Organizer).deleteMarks,
+	"delmarks":        (*Organizer).deleteMarks,
+	"delm":            (*Organizer).deleteMarks,
+	"copy":            (*Organizer).copyEntry,
+	"savelog":         (*Organizer).savelog,
+	"save":            (*Organizer).save,
+	"image":           (*Organizer).setImage,
+	"images":          (*Organizer).setImage,
+	"lsp":             (*Organizer).launchLsp,
+	"shutdown":        (*Organizer).shutdownLsp,
 }
 
 func (o *Organizer) log(unused int) {
@@ -81,7 +82,7 @@ func (o *Organizer) log(unused int) {
 }
 
 func (o *Organizer) open(pos int) {
-	if pos == 0 {
+	if pos == -1 {
 		sess.showOrgMessage("You did not provide a context or folder!")
 		o.mode = NORMAL
 		return
@@ -131,7 +132,7 @@ func (o *Organizer) open(pos int) {
 }
 
 func (o *Organizer) openContext(pos int) {
-	if pos == 0 {
+	if pos == -1 {
 		sess.showOrgMessage("You did not provide a context!")
 		o.mode = NORMAL
 		return
@@ -174,7 +175,7 @@ func (o *Organizer) openContext(pos int) {
 }
 
 func (o *Organizer) openFolder(pos int) {
-	if pos == 0 {
+	if pos == -1 {
 		sess.showOrgMessage("You did not provide a folder!")
 		o.mode = NORMAL
 		return
@@ -215,7 +216,7 @@ func (o *Organizer) openFolder(pos int) {
 }
 
 func (o *Organizer) openKeyword(pos int) {
-	if pos == 0 {
+	if pos == -1 {
 		sess.showOrgMessage("You did not provide a keyword!")
 		o.mode = NORMAL
 		return
@@ -330,9 +331,9 @@ func (o *Organizer) editNote(id int) {
 	o.mode = NORMAL
 }
 
-func (o *Organizer) resize(pos int) {
-	if pos == 0 {
-		sess.showOrgMessage("You need to provide a number")
+func (o *Organizer) verticalResize(pos int) {
+	if pos == -1 {
+		sess.showOrgMessage("You need to provide a number 0 - 100")
 		return
 	}
 	pct, err := strconv.Atoi(o.command_line[pos+1:])
@@ -429,7 +430,7 @@ func (o *Organizer) refresh(unused int) {
 
 func (o *Organizer) find(pos int) {
 
-	if pos == 0 {
+	if pos == -1 {
 		sess.showOrgMessage("You did not enter something to find!")
 		o.mode = NORMAL
 		return
@@ -484,7 +485,7 @@ func (o *Organizer) sync(unused int) {
 func (o *Organizer) contexts(pos int) {
 	o.mode = NORMAL
 
-	if pos == 0 {
+	if pos == -1 {
 		sess.eraseRightScreen()
 		o.view = CONTEXT
 		getContainers()
@@ -533,7 +534,7 @@ func (o *Organizer) contexts(pos int) {
 func (o *Organizer) folders(pos int) {
 	o.mode = NORMAL
 
-	if pos == 0 {
+	if pos == -1 {
 		sess.eraseRightScreen()
 		o.view = FOLDER
 		getContainers()
@@ -584,7 +585,7 @@ func (o *Organizer) keywords(pos int) {
 
 	o.mode = NORMAL
 
-	if pos == 0 {
+	if pos == -1 {
 		sess.eraseRightScreen()
 		o.view = KEYWORD
 		getContainers()
@@ -707,7 +708,7 @@ func (o *Organizer) savelog(unused int) {
 }
 
 func (o *Organizer) save(pos int) {
-	if pos == 0 {
+	if pos == -1 {
 		sess.showOrgMessage("You need to provide a filename")
 		return
 	}
@@ -729,7 +730,7 @@ func (o *Organizer) save(pos int) {
 }
 
 func (o *Organizer) setImage(pos int) {
-	if pos == 0 {
+	if pos == -1 {
 		sess.showOrgMessage("You need to provide an option ('on' or 'off')")
 		return
 	}
