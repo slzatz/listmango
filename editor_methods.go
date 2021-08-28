@@ -440,6 +440,23 @@ func (e *Editor) drawHover(hover protocol.Hover) {
 	sess.returnCursor()
 }
 
+func (e *Editor) drawSignatureHelp(signatureHelp protocol.SignatureHelp) {
+
+	op := e.output
+	op.rowOffset = 0
+	var s string
+	var ab strings.Builder
+	signatures := signatureHelp.Signatures
+	activeParameter := signatureHelp.ActiveParameter
+	activeSignature := signatureHelp.ActiveSignature
+	fmt.Fprintf(&ab, "Signatures = %+v\n", signatures)
+	fmt.Fprintf(&ab, "ActiveParameter = %+v\n", activeParameter)
+	fmt.Fprintf(&ab, "ActiveSignature = %+v\n", activeSignature)
+	s = ab.String()
+	op.rows = strings.Split(s, "\n")
+	op.drawText()
+	sess.returnCursor()
+}
 func (e *Editor) drawVisual(pab *strings.Builder) {
 
 	lf_ret := fmt.Sprintf("\r\n\x1b[%dC", e.left_margin+e.left_margin_offset)

@@ -25,12 +25,13 @@ var e_lookup2 = map[string]interface{}{
 	"z=":                 (*Editor).suggest,
 	leader + "l":         (*Editor).showVimMessageLog,
 	leader + "m":         (*Editor).showMarkdownPreview,
-	leader + "s":         (*Editor).nextStyle,
+	leader + "y":         (*Editor).nextStyle,
 	leader + "w":         showWindows,
 	leader + "p":         (*Editor).showSpellingPreview,
 	leader + "t":         (*Editor).readGoTemplate,
 	leader + "c":         (*Editor).completion,
 	leader + "h":         (*Editor).hover,
+	leader + "s":         (*Editor).signatureHelp,
 }
 
 func (e *Editor) changeSplit(flag int) {
@@ -469,4 +470,11 @@ func (e *Editor) hover() {
 	//sendDidChangeNotification(text)
 	//e.drawDiagnostics()
 	sendHoverRequest(uint32(e.fr), uint32(e.fc+1)) //+1 seems to work better
+}
+
+func (e *Editor) signatureHelp() {
+	//text := e.bufferToString()
+	//sendDidChangeNotification(text)
+	//e.drawDiagnostics()
+	sendSignatureHelpRequest(uint32(e.fr), uint32(e.fc)) //+1 seems to work better
 }

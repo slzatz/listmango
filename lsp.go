@@ -227,15 +227,10 @@ func sendDidChangeNotification(text string) {
 func sendCompletionRequest(line, character uint32) {
 
 	progressToken := protocol.NewProgressToken("test")
-
-	// Since it doesn't appear possible to send the text of the file
-	// you would have to save a scratch file somewhere so that
-	// you could do autocomplete without specifically having user save ??
 	params := protocol.CompletionParams{
 		TextDocumentPositionParams: protocol.TextDocumentPositionParams{
 			TextDocument: protocol.TextDocumentIdentifier{
 				URI: lsp.fileUri},
-			//URI: lsp.completionUri},
 			Position: protocol.Position{
 				Line:      line,
 				Character: character}},
@@ -245,7 +240,6 @@ func sendCompletionRequest(line, character uint32) {
 			PartialResultToken: progressToken},
 		Context: nil,
 	}
-
 	id := jsonrpc2.NewNumberID(idNum())
 	requestType[id] = "completion"
 	request, err := jsonrpc2.NewCall(id, "textDocument/completion", params)
@@ -270,6 +264,28 @@ func sendHoverRequest(line, character uint32) {
 	id := jsonrpc2.NewNumberID(idNum())
 	requestType[id] = "hover"
 	request, err := jsonrpc2.NewCall(id, "textDocument/hover", params)
+	if err != nil {
+		log.Fatal(err)
+	}
+	send(request)
+}
+
+func sendSignatureHelpRequest(line, character uint32) {
+	progressToken := protocol.NewProgressToken("test")
+	params := protocol.SignatureHelpParams{
+		TextDocumentPositionParams: protocol.TextDocumentPositionParams{
+			TextDocument: protocol.TextDocumentIdentifier{
+				URI: lsp.fileUri},
+			Position: protocol.Position{
+				Line:      line,
+				Character: character}},
+		WorkDoneProgressParams: protocol.WorkDoneProgressParams{
+			WorkDoneToken: progressToken},
+		Context: nil,
+	}
+	id := jsonrpc2.NewNumberID(idNum())
+	requestType[id] = "signature"
+	request, err := jsonrpc2.NewCall(id, "textDocument/signatureHelp", params)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -347,6 +363,10 @@ func readMessages() {
 				msg.UnmarshalJSON(data)
 				id := msg.ID()
 				result := msg.Result()
+				if result == nil {
+					sess.showEdMessage("Got null/nil result for %s", requestType[id])
+					continue
+				}
 
 				switch requestType[id] {
 				case "initialize", "shutdown":
@@ -355,7 +375,7 @@ func readMessages() {
 					var completion protocol.CompletionList
 					err := json.Unmarshal(result, &completion)
 					if err != nil {
-						sess.showEdMessage("Error: %v", err)
+						sess.showEdMessage("Completion Error: %v", err)
 					}
 					//sess.showOrgMessage("Completion: %+v", completion.Items[0].Label)
 					p.drawCompletionItems(completion)
@@ -364,9 +384,16 @@ func readMessages() {
 					var hover protocol.Hover
 					err := json.Unmarshal(result, &hover)
 					if err != nil {
-						sess.showEdMessage("Error: %v", err)
+						sess.showEdMessage("Hover Error: %v", err)
 					}
 					p.drawHover(hover)
+				case "signature":
+					var signature protocol.SignatureHelp
+					err := json.Unmarshal(result, &signature)
+					if err != nil {
+						sess.showEdMessage("Signature Help Error: %v", err)
+					}
+					p.drawSignatureHelp(signature)
 				}
 			}
 		case <-quit: //clangd never gets here; gopls does
