@@ -441,17 +441,21 @@ func (e *Editor) drawHover(hover protocol.Hover) {
 }
 
 func (e *Editor) drawSignatureHelp(signatureHelp protocol.SignatureHelp) {
-
+	// commented out info doesn't add anything at least for go
 	op := e.output
 	op.rowOffset = 0
 	var s string
 	var ab strings.Builder
-	signatures := signatureHelp.Signatures
-	activeParameter := signatureHelp.ActiveParameter
-	activeSignature := signatureHelp.ActiveSignature
-	fmt.Fprintf(&ab, "Signatures = %+v\n", signatures)
-	fmt.Fprintf(&ab, "ActiveParameter = %+v\n", activeParameter)
-	fmt.Fprintf(&ab, "ActiveSignature = %+v\n", activeSignature)
+	for _, sig := range signatureHelp.Signatures {
+		fmt.Fprintf(&ab, "Label: %s\n\n", sig.Label)
+		fmt.Fprintf(&ab, "Documentation: %v\n", sig.Documentation)
+		//fmt.Fprintf(&ab, "Parameters: %v\n", sig.Parameters)
+		//fmt.Fprintf(&ab, "ActiveParameter: %v\n", sig.ActiveParameter)
+	}
+	//activeParameter := signatureHelp.ActiveParameter
+	//activeSignature := signatureHelp.ActiveSignature
+	//fmt.Fprintf(&ab, "ActiveParameter = %+v\n", activeParameter)
+	//fmt.Fprintf(&ab, "ActiveSignature = %+v\n", activeSignature)
 	s = ab.String()
 	op.rows = strings.Split(s, "\n")
 	op.drawText()
