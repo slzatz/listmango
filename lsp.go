@@ -2,7 +2,6 @@ package main
 
 import (
 	"bufio"
-	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -17,61 +16,34 @@ import (
 	"go.lsp.dev/protocol"
 )
 
-//var stream jsonrpc2.Stream
-var ctx context.Context
-var conn io.ReadWriteCloser
-
-type Lsp struct {
-	name       string
-	rootUri    protocol.URI
-	fileUri    protocol.URI
-	languageID protocol.LanguageIdentifier
-	//completionUri protocol.URI
-}
-
-var lsp Lsp
-
 func counter() func() int32 {
 	var n int32
-	//n = 3
 	return func() int32 {
 		n++
 		return n
 	}
 }
 
-var version = counter()
-var idNum = counter()
+type Lsp struct {
+	name       string
+	rootUri    protocol.URI
+	fileUri    protocol.URI
+	languageID protocol.LanguageIdentifier
+}
 
-var stdin io.WriteCloser
-var stdoutRdr *bufio.Reader
-
-var diagnostics = make(chan []protocol.Diagnostic)
-
-//var completion = make(chan protocol.CompletionList)
-var quit = make(chan struct{})
-
-var logFile *os.File
-var requestType = make(map[jsonrpc2.ID]string)
+var (
+	lsp         Lsp
+	version     = counter()
+	idNum       = counter()
+	stdin       io.WriteCloser
+	stdoutRdr   *bufio.Reader
+	diagnostics = make(chan []protocol.Diagnostic)
+	quit        = make(chan struct{})
+	logFile     *os.File
+	requestType = make(map[jsonrpc2.ID]string)
+)
 
 func launchLsp(lspName string) {
-
-	/*
-		//ctx = context.Background()
-		client, server := net.Pipe()
-		stream = jsonrpc2.NewStream(server)
-
-		// below available in the tools jsonrpc2 I believe
-		//headerStream := jsonrpc2.NewHeaderStream(fakenet.NewConn("stdio", os.Stdin, os.Stdout))
-
-		//sess.showOrgMessage("+%v", headerStream)
-		conn := jsonrpc2.NewConn(stream)
-		sess.showOrgMessage("+%v", stream)
-		sess.showOrgMessage("+%v", client)
-		sess.showOrgMessage("+%v", conn)
-	*/
-	//lsp.completionUri = "/home/slzatz/completion"
-
 	var cmd *exec.Cmd
 	switch lspName {
 	case "gopls":
@@ -106,51 +78,32 @@ func launchLsp(lspName string) {
 	}
 	stdoutRdr = bufio.NewReaderSize(stdout, 10000)
 
-	go readMessages() /**************************/
+	go readMessages()
 
-	//Client sends initialize method and server replies with result (not method): Capabilities ...)
+	//Client sends initialize method and server replies with result: Capabilities ...)
 	params := protocol.InitializeParams{
 		ProcessID:    0,
 		RootURI:      lsp.rootUri,
 		Capabilities: clientcapabilities,
 	}
-	//id := jsonrpc2.NewNumberID(1)
-	id := jsonrpc2.NewNumberID(idNum())
-	requestType[id] = "initialize"
-	request, err := jsonrpc2.NewCall(id, "initialize", params)
-	if err != nil {
-		log.Fatal(err)
-	}
-	send(request)
+	sendRequest("initialize", params)
 
-	//Client sends notification method:initialized and
-	//server replies with notification (no id) method "window/showMessage"
-	notify, err := jsonrpc2.NewNotification("initialized", struct{}{}) //has to be struct{}{} not nil
-	if err != nil {
-		log.Fatal(err)
-	}
-	send(notify)
-	// clangd doesn't send anything back here
+	sendNotification("initialized", struct{}{})
 
 	// Client sends notification method:did/Open and
-	//server sends some notification (no id) method "window/logMessage"
 	textParams := protocol.DidOpenTextDocumentParams{
 		TextDocument: protocol.TextDocumentItem{
-			URI: lsp.fileUri,
-			//LanguageID: "go",
+			URI:        lsp.fileUri,
 			LanguageID: lsp.languageID,
 			Text:       " ",
-			Version:    1,
+			Version:    version(),
+			//Version:    1,
 		},
 	}
-	notify, err = jsonrpc2.NewNotification("textDocument/didOpen", textParams)
-	if err != nil {
-		log.Fatal(err)
-	}
-	send(notify)
+	sendNotification("textDocument/didOpen", textParams)
 
 	// draining off any diagnostics before issuing didChange
-	timeout := time.After(2 * time.Second)
+	timeout := time.After(time.Second) //2
 L:
 	for {
 		select {
@@ -171,27 +124,13 @@ func shutdownLsp() {
 			URI: lsp.fileUri,
 		},
 	}
-	notify, err := jsonrpc2.NewNotification("textDocument/didClose", closeParams)
-	if err != nil {
-		log.Fatal(err)
-	}
-	send(notify)
+	sendNotification("textDocument/didClose", closeParams)
 
 	// shutdown request sent to server
-	id := jsonrpc2.NewNumberID(idNum())
-	requestType[id] = "shutdown"
-	request, err := jsonrpc2.NewCall(id, "shutdown", nil)
-	if err != nil {
-		log.Fatal(err)
-	}
-	send(request)
+	sendRequest("shutdown", nil)
 
-	// exit notification sent to server - hangs with clangd
-	notify, err = jsonrpc2.NewNotification("exit", nil)
-	if err != nil {
-		log.Fatal(err)
-	}
-	send(notify)
+	// exit notification sent to server
+	sendNotification("exit", nil)
 
 	if lsp.name == "clangd" {
 		logFile.Close()
@@ -216,12 +155,7 @@ func sendDidChangeNotification(text string) {
 			Version: version()},
 		ContentChanges: []protocol.TextDocumentContentChangeEvent{{Text: text}},
 	}
-
-	notify, err := jsonrpc2.NewNotification("textDocument/didChange", params)
-	if err != nil {
-		log.Fatal(err)
-	}
-	send(notify)
+	sendNotification("textDocument/didChange", params)
 }
 
 func sendCompletionRequest(line, character uint32) {
@@ -240,13 +174,7 @@ func sendCompletionRequest(line, character uint32) {
 			PartialResultToken: progressToken},
 		Context: nil,
 	}
-	id := jsonrpc2.NewNumberID(idNum())
-	requestType[id] = "completion"
-	request, err := jsonrpc2.NewCall(id, "textDocument/completion", params)
-	if err != nil {
-		log.Fatal(err)
-	}
-	send(request)
+	sendRequest("textDocument/completion", params)
 }
 
 func sendHoverRequest(line, character uint32) {
@@ -261,13 +189,7 @@ func sendHoverRequest(line, character uint32) {
 		WorkDoneProgressParams: protocol.WorkDoneProgressParams{
 			WorkDoneToken: progressToken},
 	}
-	id := jsonrpc2.NewNumberID(idNum())
-	requestType[id] = "hover"
-	request, err := jsonrpc2.NewCall(id, "textDocument/hover", params)
-	if err != nil {
-		log.Fatal(err)
-	}
-	send(request)
+	sendRequest("textDocument/hover", params)
 }
 
 func sendSignatureHelpRequest(line, character uint32) {
@@ -283,13 +205,7 @@ func sendSignatureHelpRequest(line, character uint32) {
 			WorkDoneToken: progressToken},
 		Context: nil,
 	}
-	id := jsonrpc2.NewNumberID(idNum())
-	requestType[id] = "signature"
-	request, err := jsonrpc2.NewCall(id, "textDocument/signatureHelp", params)
-	if err != nil {
-		log.Fatal(err)
-	}
-	send(request)
+	sendRequest("textDocument/signatureHelp", params)
 }
 
 func sendRenameRequest(line, character uint32, newName string) {
@@ -305,14 +221,7 @@ func sendRenameRequest(line, character uint32, newName string) {
 			PartialResultToken: progressToken},
 		NewName: newName,
 	}
-
-	id := jsonrpc2.NewNumberID(idNum())
-	requestType[id] = "rename"
-	request, err := jsonrpc2.NewCall(id, "textDocument/rename", params)
-	if err != nil {
-		log.Fatal(err)
-	}
-	send(request)
+	sendRequest("textDocument/rename", params)
 }
 
 func readMessages() {
@@ -365,22 +274,20 @@ func readMessages() {
 
 			msg, err := jsonrpc2.DecodeMessage(data)
 			switch msg := msg.(type) {
+
 			case jsonrpc2.Request:
+				// I don't think server can send a request to client??
 				//if call, ok := msg.(*jsonrpc2.Call); ok
-				if _, ok := msg.(*jsonrpc2.Call); ok {
-					sess.showEdMessage("Request received")
-				} else {
-					notification := msg.(*jsonrpc2.Notification)
-					notification.UnmarshalJSON(data)
-					if notification.Method() == "textDocument/publishDiagnostics" {
-						var params protocol.PublishDiagnosticsParams
-						err := json.Unmarshal(notification.Params(), &params)
-						if err != nil {
-							sess.showEdMessage("Error unmarshaling diagnostics: %v", err)
-							return
-						}
-						diagnostics <- params.Diagnostics
+				notification := msg.(*jsonrpc2.Notification)
+				notification.UnmarshalJSON(data)
+				if notification.Method() == "textDocument/publishDiagnostics" {
+					var params protocol.PublishDiagnosticsParams
+					err := json.Unmarshal(notification.Params(), &params)
+					if err != nil {
+						sess.showEdMessage("Error unmarshaling diagnostics: %v", err)
+						return
 					}
+					diagnostics <- params.Diagnostics
 				}
 			case *jsonrpc2.Response:
 				msg.UnmarshalJSON(data)
@@ -394,34 +301,32 @@ func readMessages() {
 				switch requestType[id] {
 				case "initialize", "shutdown":
 					continue
-				case "completion":
+				case "textDocument/completion":
 					var completion protocol.CompletionList
 					err := json.Unmarshal(result, &completion)
 					if err != nil {
 						sess.showEdMessage("Completion Error: %v", err)
 					}
-					//sess.showOrgMessage("Completion: %+v", completion.Items[0].Label)
 					p.drawCompletionItems(completion)
-					//sess.showEdMessage("Response/Result received")
-				case "hover":
+				case "textDocument/hover":
 					var hover protocol.Hover
 					err := json.Unmarshal(result, &hover)
 					if err != nil {
-						sess.showEdMessage("Hover Error: %v", err)
+						sess.showEdMessage("hover error: %v", err)
 					}
 					p.drawHover(hover)
-				case "signature":
+				case "textDocument/signatureHelp":
 					var signature protocol.SignatureHelp
 					err := json.Unmarshal(result, &signature)
 					if err != nil {
-						sess.showEdMessage("Signature Help Error: %v", err)
+						sess.showEdMessage("signatureHelp error: %v", err)
 					}
 					p.drawSignatureHelp(signature)
-				case "rename":
+				case "textDocument/rename":
 					var workspaceEdit protocol.WorkspaceEdit
 					err := json.Unmarshal(result, &workspaceEdit)
 					if err != nil {
-						sess.showEdMessage("Signature Help Error: %v", err)
+						sess.showEdMessage("rename error: %v", err)
 					}
 					p.applyWorkspaceEdit(workspaceEdit)
 				}
@@ -442,6 +347,24 @@ func send(msg json.Marshaler) {
 	s = header + s
 
 	io.WriteString(stdin, s)
+}
+
+func sendRequest(method string, params interface{}) {
+	id := jsonrpc2.NewNumberID(idNum())
+	requestType[id] = method
+	request, err := jsonrpc2.NewCall(id, method, params)
+	if err != nil {
+		log.Fatal(err)
+	}
+	send(request)
+}
+
+func sendNotification(method string, params interface{}) {
+	notify, err := jsonrpc2.NewNotification(method, params)
+	if err != nil {
+		log.Fatal(err)
+	}
+	send(notify)
 }
 
 //from go.lsp.dev.pkg/fakeroot
