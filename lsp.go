@@ -292,6 +292,29 @@ func sendSignatureHelpRequest(line, character uint32) {
 	send(request)
 }
 
+func sendRenameRequest(line, character uint32, newName string) {
+	progressToken := protocol.NewProgressToken("test")
+	params := protocol.RenameParams{
+		TextDocumentPositionParams: protocol.TextDocumentPositionParams{
+			TextDocument: protocol.TextDocumentIdentifier{
+				URI: lsp.fileUri},
+			Position: protocol.Position{
+				Line:      line,
+				Character: character}},
+		PartialResultParams: protocol.PartialResultParams{
+			PartialResultToken: progressToken},
+		NewName: newName,
+	}
+
+	id := jsonrpc2.NewNumberID(idNum())
+	requestType[id] = "rename"
+	request, err := jsonrpc2.NewCall(id, "textDocument/rename", params)
+	if err != nil {
+		log.Fatal(err)
+	}
+	send(request)
+}
+
 func readMessages() {
 	var length int64
 	name := lsp.name
@@ -394,6 +417,13 @@ func readMessages() {
 						sess.showEdMessage("Signature Help Error: %v", err)
 					}
 					p.drawSignatureHelp(signature)
+				case "rename":
+					var workspaceEdit protocol.WorkspaceEdit
+					err := json.Unmarshal(result, &workspaceEdit)
+					if err != nil {
+						sess.showEdMessage("Signature Help Error: %v", err)
+					}
+					p.applyWorkspaceEdit(workspaceEdit)
 				}
 			}
 		case <-quit: //clangd never gets here; gopls does

@@ -42,6 +42,7 @@ var e_lookup_C = map[string]func(*Editor){
 	"q!":              (*Editor).quitActions,
 	"x":               (*Editor).quitActions,
 	"fmt":             (*Editor).goFormat,
+	"rename":          (*Editor).rename, //lsp command
 }
 
 /* EDITOR cpp COMMAND_LINE mode lookup
@@ -637,4 +638,14 @@ func (e *Editor) goFormat() {
 		}
 	*/
 
+}
+
+func (e *Editor) rename() {
+	pos := strings.Index(e.command_line, " ")
+	if pos == -1 {
+		sess.showEdMessage("You need to provide a filename")
+		return
+	}
+	newName := e.command_line[pos+1:]
+	sendRenameRequest(uint32(e.fr), uint32(e.fc), newName) //+1 seems to work better
 }

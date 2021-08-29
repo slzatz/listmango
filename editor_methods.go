@@ -461,6 +461,39 @@ func (e *Editor) drawSignatureHelp(signatureHelp protocol.SignatureHelp) {
 	op.drawText()
 	sess.returnCursor()
 }
+
+func (e *Editor) applyWorkspaceEdit(wse protocol.WorkspaceEdit) {
+	op := e.output
+	op.rowOffset = 0
+	var s string
+	s = "Rename:\n\n"
+	changes := wse.DocumentChanges
+	for _, change := range changes {
+		s += "Change->\n"
+		s += fmt.Sprintf("TextDocument->%+v\n", change.TextDocument)
+		for i, edit := range change.Edits {
+			s += fmt.Sprintf("Edit Number: %d\n", i+1)
+			s += fmt.Sprintf("Range.Start.Line->%+v\n", edit.Range.Start.Line)
+			s += fmt.Sprintf("Range.Start.Character->%+v\n", edit.Range.Start.Character)
+			s += fmt.Sprintf("Range.End.Line->%+v\n", edit.Range.End.Line)
+			s += fmt.Sprintf("Range.End.Character->%+v\n", edit.Range.End.Character)
+			s += fmt.Sprintf("NewText->%+v\n\n", edit.NewText)
+			line := int(edit.Range.Start.Line)
+			startChar := int(edit.Range.Start.Character)
+			endChar := int(edit.Range.End.Character)
+			row := string(e.bb[line])
+			row = row[:startChar] + edit.NewText + row[endChar:]
+			v.SetBufferLines(e.vbuf, line, line+1, false, [][]byte{})          //true - out of bounds indexes are not clamped
+			v.SetBufferLines(e.vbuf, line, line, false, [][]byte{[]byte(row)}) //true - out of bounds indexes are not clamped
+			e.bb, _ = v.BufferLines(e.vbuf, 0, -1, true)                       //reading updated buffer
+			e.drawText()
+		}
+	}
+	op.rows = strings.Split(s, "\n")
+	op.drawText()
+	sess.returnCursor()
+}
+
 func (e *Editor) drawVisual(pab *strings.Builder) {
 
 	lf_ret := fmt.Sprintf("\r\n\x1b[%dC", e.left_margin+e.left_margin_offset)
