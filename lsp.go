@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"os"
 	"os/exec"
 	"strconv"
@@ -340,7 +339,8 @@ func readMessages() {
 func send(msg json.Marshaler) {
 	b, err := msg.MarshalJSON()
 	if err != nil {
-		log.Fatal(err)
+		sess.showEdMessage("Error sending to server: %v", err)
+		return
 	}
 	s := string(b)
 	header := fmt.Sprintf("Content-Length: %d\r\n\r\n", len(s))
@@ -354,7 +354,8 @@ func sendRequest(method string, params interface{}) {
 	requestType[id] = method
 	request, err := jsonrpc2.NewCall(id, method, params)
 	if err != nil {
-		log.Fatal(err)
+		sess.showEdMessage("Error creating new request: %v", err)
+		return
 	}
 	send(request)
 }
@@ -362,23 +363,8 @@ func sendRequest(method string, params interface{}) {
 func sendNotification(method string, params interface{}) {
 	notify, err := jsonrpc2.NewNotification(method, params)
 	if err != nil {
-		log.Fatal(err)
+		sess.showEdMessage("Error creating new notification: %v", err)
+		return
 	}
 	send(notify)
 }
-
-//from go.lsp.dev.pkg/fakeroot
-/*
-func NewConn(name string, in io.ReadCloser, out io.WriteCloser) net.Conn {
-	c := &fakeConn{
-		name:   name,
-		reader: newFeeder(in.Read),
-		writer: newFeeder(out.Write),
-		in:     in,
-		out:    out,
-	}
-	go c.reader.run()
-	go c.writer.run()
-	return c
-}
-*/
