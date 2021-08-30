@@ -5,6 +5,12 @@ import (
 	"strings"
 )
 
+type Position struct {
+	rowNum int
+	start  int
+	end    int
+}
+
 type dbConfig struct {
 	Server struct {
 		Host string `json:"host"`

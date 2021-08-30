@@ -498,6 +498,7 @@ func (e *Editor) drawDocumentHighlight(documentHighlights []protocol.DocumentHig
 	op := e.output
 	op.rowOffset = 0
 	var s string
+	e.highlightPositions = nil
 	s = "documentHighlights:\n\n"
 	for i, dh := range documentHighlights {
 		s += fmt.Sprintf("Highlight Number: %d\n", i+1)
@@ -506,20 +507,22 @@ func (e *Editor) drawDocumentHighlight(documentHighlights []protocol.DocumentHig
 		s += fmt.Sprintf("Range.End.Line->%+v\n", dh.Range.End.Line)
 		s += fmt.Sprintf("Range.End.Character->%+v\n", dh.Range.End.Character)
 		s += fmt.Sprintf("Kind->%+v\n\n", dh.Kind)
-	}
-	op.rows = strings.Split(s, "\n")
-	op.drawText()
 
-	for _, dh := range documentHighlights {
 		rowNum := int(dh.Range.Start.Line)
 		start := int(dh.Range.Start.Character)
 		end := int(dh.Range.End.Character)
+		e.highlightPositions = append(e.highlightPositions, Position{rowNum, start, end})
 		row := string(e.bb[rowNum])
 		chars := "\x1b[48;5;31m" + row[start:end] + "\x1b[0m"
 		y := e.getScreenYFromRowColWW(rowNum, start) + e.top_margin - e.lineOffset          // - 1
 		x := e.getScreenXFromRowColWW(rowNum, start) + e.left_margin + e.left_margin_offset // - 1
-		fmt.Printf("\x1b[%d;%dH", y, x+1)                                                   //not sure why the +1
-		fmt.Print(chars)
+		if y >= e.top_margin && y <= e.screenlines {
+			fmt.Printf("\x1b[%d;%dH", y, x+1) //not sure why the +1
+			fmt.Print(chars)
+		}
+		s += fmt.Sprintf("e.highlightPositions->%+v\n\n", e.highlightPositions)
+		op.rows = strings.Split(s, "\n")
+		op.drawText()
 
 		/*
 			row := string(e.bb[rowNum])
@@ -794,6 +797,23 @@ func (e *Editor) drawCodeRows(pab *strings.Builder) {
 			line := strings.Split(row, "\t")
 			for i := 0; i < len(line); i++ {
 				fmt.Fprintf(pab, s, line[i])
+			}
+		}
+	}
+	if e.highlightPositions != nil {
+		if e.isModified() {
+			e.highlightPositions = nil
+		} else {
+			sess.showOrgMessage("#1")
+			for _, p := range e.highlightPositions {
+				row := string(e.bb[p.rowNum])
+				chars := "\x1b[48;5;31m" + row[p.start:p.end] + "\x1b[0m"
+				y := e.getScreenYFromRowColWW(p.rowNum, p.start) + e.top_margin - e.lineOffset          // - 1
+				x := e.getScreenXFromRowColWW(p.rowNum, p.start) + e.left_margin + e.left_margin_offset // - 1
+				if y >= e.top_margin && y <= e.screenlines {
+					fmt.Fprintf(pab, "\x1b[%d;%dH", y, x+1) //not sure why the +1
+					fmt.Fprint(pab, chars)
+				}
 			}
 		}
 	}
