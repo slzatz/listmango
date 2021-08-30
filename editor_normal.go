@@ -32,6 +32,7 @@ var e_lookup2 = map[string]interface{}{
 	leader + "c":         (*Editor).completion,
 	leader + "h":         (*Editor).hover,
 	leader + "s":         (*Editor).signatureHelp,
+	leader + "d":         (*Editor).documentHighlight,
 }
 
 func (e *Editor) changeSplit(flag int) {
@@ -477,4 +478,8 @@ func (e *Editor) signatureHelp() {
 	//sendDidChangeNotification(text)
 	//e.drawDiagnostics()
 	sendSignatureHelpRequest(uint32(e.fr), uint32(e.fc)) //+1 seems to work better
+}
+
+func (e *Editor) documentHighlight() {
+	sendDocumentHighlightRequest(uint32(e.fr), uint32(e.fc)) //+1 seems to work better
 }

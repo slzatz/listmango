@@ -79,7 +79,7 @@ func highlightMispelledWords(rows []string) []string {
 	return highlighted_rows
 }
 
-// just operates on one row
+// just operates on one row for performance purposes (doesn't use channel like ...3 below
 func highlightMispelledWords2(row string) string {
 
 	cmd := exec.Command("nuspell", "-d", "en_US")
@@ -137,7 +137,7 @@ func highlightMispelledWords2(row string) string {
 	return row
 }
 
-// just operates on one row
+// just operates on the current row for performance purposes
 // uses channel
 func highlightMispelledWords3(row string, result chan string) {
 

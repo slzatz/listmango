@@ -494,6 +494,48 @@ func (e *Editor) applyWorkspaceEdit(wse protocol.WorkspaceEdit) {
 	sess.returnCursor()
 }
 
+func (e *Editor) drawDocumentHighlight(documentHighlights []protocol.DocumentHighlight) {
+	op := e.output
+	op.rowOffset = 0
+	var s string
+	s = "documentHighlights:\n\n"
+	for i, dh := range documentHighlights {
+		s += fmt.Sprintf("Highlight Number: %d\n", i+1)
+		s += fmt.Sprintf("Range.Start.Line->%+v\n", dh.Range.Start.Line)
+		s += fmt.Sprintf("Range.Start.Character->%+v\n", dh.Range.Start.Character)
+		s += fmt.Sprintf("Range.End.Line->%+v\n", dh.Range.End.Line)
+		s += fmt.Sprintf("Range.End.Character->%+v\n", dh.Range.End.Character)
+		s += fmt.Sprintf("Kind->%+v\n\n", dh.Kind)
+	}
+	op.rows = strings.Split(s, "\n")
+	op.drawText()
+
+	for _, dh := range documentHighlights {
+		rowNum := int(dh.Range.Start.Line)
+		start := int(dh.Range.Start.Character)
+		end := int(dh.Range.End.Character)
+		row := string(e.bb[rowNum])
+		chars := "\x1b[48;5;31m" + row[start:end] + "\x1b[0m"
+		y := e.getScreenYFromRowColWW(rowNum, start) + e.top_margin - e.lineOffset          // - 1
+		x := e.getScreenXFromRowColWW(rowNum, start) + e.left_margin + e.left_margin_offset // - 1
+		fmt.Printf("\x1b[%d;%dH", y, x+1)                                                   //not sure why the +1
+		fmt.Print(chars)
+
+		/*
+			row := string(e.bb[rowNum])
+			chars := "\x1b[48;5;31m" + row[start:end] + "\x1b[0m" +
+			row = row[:pos] + "\x1b[48;5;31m" + row[pos:pos+length] + "\x1b[0m" + row[pos+length:]
+				y := e.getScreenYFromRowColWW(rowNum, startChar) + e.top_margin - e.lineOffset // - 1
+				x := e.left_margin + 1
+				ab.WriteString("\x1b[48;5;244m")
+				fmt.Fprintf(&ab, "\x1b[%d;%dH", y, x)
+
+		*/
+	}
+
+	sess.returnCursor()
+}
+
 func (e *Editor) drawVisual(pab *strings.Builder) {
 
 	lf_ret := fmt.Sprintf("\r\n\x1b[%dC", e.left_margin+e.left_margin_offset)

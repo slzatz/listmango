@@ -223,6 +223,23 @@ func sendRenameRequest(line, character uint32, newName string) {
 	sendRequest("textDocument/rename", params)
 }
 
+func sendDocumentHighlightRequest(line, character uint32) {
+	progressToken := protocol.NewProgressToken("test")
+	params := protocol.DocumentHighlightParams{
+		TextDocumentPositionParams: protocol.TextDocumentPositionParams{
+			TextDocument: protocol.TextDocumentIdentifier{
+				URI: lsp.fileUri},
+			Position: protocol.Position{
+				Line:      line,
+				Character: character}},
+		WorkDoneProgressParams: protocol.WorkDoneProgressParams{
+			WorkDoneToken: progressToken},
+		PartialResultParams: protocol.PartialResultParams{
+			PartialResultToken: progressToken},
+	}
+	sendRequest("textDocument/documentHighlight", params)
+}
+
 func readMessages() {
 	var length int64
 	name := lsp.name
@@ -328,6 +345,13 @@ func readMessages() {
 						sess.showEdMessage("rename error: %v", err)
 					}
 					p.applyWorkspaceEdit(workspaceEdit)
+				case "textDocument/documentHighlight":
+					var documentHighlight []protocol.DocumentHighlight
+					err := json.Unmarshal(result, &documentHighlight)
+					if err != nil {
+						sess.showEdMessage("documentHighlight error: %v", err)
+					}
+					p.drawDocumentHighlight(documentHighlight)
 				}
 			}
 		case <-quit: //clangd never gets here; gopls does
