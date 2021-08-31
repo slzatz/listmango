@@ -33,6 +33,7 @@ var e_lookup2 = map[string]interface{}{
 	leader + "h":         (*Editor).hover,
 	leader + "s":         (*Editor).signatureHelp,
 	leader + "d":         (*Editor).documentHighlight,
+	leader + "x":         (*Editor).spellingCheck,
 }
 
 func (e *Editor) changeSplit(flag int) {
@@ -482,4 +483,8 @@ func (e *Editor) signatureHelp() {
 
 func (e *Editor) documentHighlight() {
 	sendDocumentHighlightRequest(uint32(e.fr), uint32(e.fc)) //+1 seems to work better
+}
+
+func (e *Editor) spellingCheck() {
+	e.highlightMispelledWords0()
 }

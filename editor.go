@@ -27,15 +27,16 @@ type Editor struct {
 	redraw             bool
 	//pos_mispelled_words [][2]int
 	//search_string       string //word under cursor works with *, n, N etc.
-	id                 int //db id of entry
-	output             *Output
-	vbuf               nvim.Buffer
-	bb                 [][]byte
-	searchPrefix       string
-	renderedNote       string
-	previewLineOffset  int
-	overlay            []string // for suggest, showVimMessageLog
-	highlightPositions []Position
+	id                         int //db id of entry
+	output                     *Output
+	vbuf                       nvim.Buffer
+	bb                         [][]byte
+	searchPrefix               string
+	renderedNote               string
+	previewLineOffset          int
+	overlay                    []string // for suggest, showVimMessageLog
+	highlightPositions         []Position
+	highlightSpellingPositions []Position
 	//coloff              int //first column based on user scroll (word wrap)
 }
 
