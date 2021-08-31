@@ -10,7 +10,7 @@ import (
 )
 
 func (e *Editor) highlightMispelledWords0() {
-	e.highlightSpellingPositions = nil
+	e.highlightPositions = nil
 
 	cmd := exec.Command("nuspell", "-d", "en_US")
 
@@ -65,21 +65,15 @@ func (e *Editor) highlightMispelledWords0() {
 				//length := len(data[1])
 				end := start + len(data[1])
 				//suggestions := strings.Split(strings.ReplaceAll(z[1], " ", ""), ",")
-				e.highlightSpellingPositions = append(e.highlightSpellingPositions, Position{rowNum, start, end})
+				e.highlightPositions = append(e.highlightPositions, Position{rowNum, start, end})
 			}
 		}
 	}
 
-	for _, h := range e.highlightSpellingPositions {
-		row := string(e.bb[h.rowNum])
-		chars := "\x1b[48;5;31m" + row[h.start:h.end] + "\x1b[0m"
-		y := e.getScreenYFromRowColWW(h.rowNum, h.start) + e.top_margin - e.lineOffset          // - 1
-		x := e.getScreenXFromRowColWW(h.rowNum, h.start) + e.left_margin + e.left_margin_offset // - 1
-		if y >= e.top_margin && y <= e.screenlines {
-			fmt.Printf("\x1b[%d;%dH", y, x+1) //not sure why the +1
-			fmt.Print(chars)
-		}
-	}
+	// done here because no need to redraw text
+	var ab strings.Builder
+	e.drawHighlights(&ab)
+	fmt.Print(ab.String())
 }
 
 func highlightMispelledWords(rows []string) []string {

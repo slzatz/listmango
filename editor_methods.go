@@ -512,29 +512,24 @@ func (e *Editor) drawDocumentHighlight(documentHighlights []protocol.DocumentHig
 		start := int(dh.Range.Start.Character)
 		end := int(dh.Range.End.Character)
 		e.highlightPositions = append(e.highlightPositions, Position{rowNum, start, end})
-		row := string(e.bb[rowNum])
-		chars := "\x1b[48;5;31m" + row[start:end] + "\x1b[0m"
-		y := e.getScreenYFromRowColWW(rowNum, start) + e.top_margin - e.lineOffset          // - 1
-		x := e.getScreenXFromRowColWW(rowNum, start) + e.left_margin + e.left_margin_offset // - 1
-		if y >= e.top_margin && y <= e.screenlines {
-			fmt.Printf("\x1b[%d;%dH", y, x+1) //not sure why the +1
-			fmt.Print(chars)
-		}
+		/*
+			row := string(e.bb[rowNum])
+			chars := "\x1b[48;5;31m" + row[start:end] + "\x1b[0m"
+			y := e.getScreenYFromRowColWW(rowNum, start) + e.top_margin - e.lineOffset          // - 1
+			x := e.getScreenXFromRowColWW(rowNum, start) + e.left_margin + e.left_margin_offset // - 1
+			if y >= e.top_margin && y <= e.screenlines {
+				fmt.Printf("\x1b[%d;%dH", y, x+1) //not sure why the +1
+				fmt.Print(chars)
+			}
+		*/
 		s += fmt.Sprintf("e.highlightPositions->%+v\n\n", e.highlightPositions)
 		op.rows = strings.Split(s, "\n")
 		op.drawText()
 
-		/*
-			row := string(e.bb[rowNum])
-			chars := "\x1b[48;5;31m" + row[start:end] + "\x1b[0m" +
-			row = row[:pos] + "\x1b[48;5;31m" + row[pos:pos+length] + "\x1b[0m" + row[pos+length:]
-				y := e.getScreenYFromRowColWW(rowNum, startChar) + e.top_margin - e.lineOffset // - 1
-				x := e.left_margin + 1
-				ab.WriteString("\x1b[48;5;244m")
-				fmt.Fprintf(&ab, "\x1b[%d;%dH", y, x)
-
-		*/
 	}
+	var ab strings.Builder
+	e.drawHighlights(&ab)
+	fmt.Print(ab.String())
 
 	sess.returnCursor()
 }
@@ -695,13 +690,6 @@ func (e *Editor) drawPlainRows(pab *strings.Builder) {
 	note := e.generateWWStringFromBuffer() // need the \t for line num to be correct
 	nnote := strings.Split(note, "\n")
 
-	// for speed only looking at current row
-	/*
-		result := make(chan string)
-			if e.checkSpelling {
-				go highlightMispelledWords3(nnote[e.fr], result)
-			}
-	*/
 	lf_ret := fmt.Sprintf("\r\n\x1b[%dC", e.left_margin)
 	fmt.Fprintf(pab, "\x1b[?25l\x1b[%d;%dH", e.top_margin, e.left_margin+1) //+1
 
@@ -738,36 +726,7 @@ func (e *Editor) drawPlainRows(pab *strings.Builder) {
 			}
 		}
 	}
-	/*
-		if e.checkSpelling {
-			y := e.getScreenYFromRowColWW(e.fr, 0) + e.top_margin - e.lineOffset // - 1
-			fmt.Fprintf(pab, "\x1b[%d;%dH\x1b[0m", y, e.left_margin+1)           //+1
-			row := <-result
-			line := strings.Split(row, "\t")
-			for i := 0; i < len(line); i++ {
-				fmt.Fprintf(pab, s, line[i])
-			}
-		}
-	*/
-	sess.showOrgMessage("#-1")
-	if e.highlightSpellingPositions != nil {
-		sess.showOrgMessage("#0")
-		if e.isModified() {
-			e.highlightSpellingPositions = nil
-		} else {
-			sess.showOrgMessage("#1")
-			for _, p := range e.highlightSpellingPositions {
-				row := string(e.bb[p.rowNum])
-				chars := "\x1b[48;5;31m" + row[p.start:p.end] + "\x1b[0m"
-				y := e.getScreenYFromRowColWW(p.rowNum, p.start) + e.top_margin - e.lineOffset          // - 1
-				x := e.getScreenXFromRowColWW(p.rowNum, p.start) + e.left_margin + e.left_margin_offset // - 1
-				if y >= e.top_margin && y <= e.screenlines {
-					fmt.Fprintf(pab, "\x1b[%d;%dH", y, x+1) //not sure why the +1
-					fmt.Fprint(pab, chars)
-				}
-			}
-		}
-	}
+	e.drawHighlights(pab)
 	e.drawVisual(pab)
 }
 
@@ -823,24 +782,29 @@ func (e *Editor) drawCodeRows(pab *strings.Builder) {
 			}
 		}
 	}
-	if e.highlightPositions != nil {
-		if e.isModified() {
-			e.highlightPositions = nil
-		} else {
-			sess.showOrgMessage("#1")
-			for _, p := range e.highlightPositions {
-				row := string(e.bb[p.rowNum])
-				chars := "\x1b[48;5;31m" + row[p.start:p.end] + "\x1b[0m"
-				y := e.getScreenYFromRowColWW(p.rowNum, p.start) + e.top_margin - e.lineOffset          // - 1
-				x := e.getScreenXFromRowColWW(p.rowNum, p.start) + e.left_margin + e.left_margin_offset // - 1
-				if y >= e.top_margin && y <= e.screenlines {
-					fmt.Fprintf(pab, "\x1b[%d;%dH", y, x+1) //not sure why the +1
-					fmt.Fprint(pab, chars)
-				}
-			}
+	e.drawHighlights(pab)
+	e.drawVisual(pab)
+}
+
+func (e *Editor) drawHighlights(pab *strings.Builder) {
+	if e.highlightPositions == nil {
+		return
+	}
+	if e.isModified() {
+		e.highlightPositions = nil
+		sess.showEdMessage("You need to write the note before highlighting text")
+		return
+	}
+	for _, p := range e.highlightPositions {
+		row := string(e.bb[p.rowNum])
+		chars := "\x1b[48;5;31m" + row[p.start:p.end] + "\x1b[0m"
+		y := e.getScreenYFromRowColWW(p.rowNum, p.start) + e.top_margin - e.lineOffset          // - 1
+		x := e.getScreenXFromRowColWW(p.rowNum, p.start) + e.left_margin + e.left_margin_offset // - 1
+		if y >= e.top_margin && y <= e.screenlines {
+			fmt.Fprintf(pab, "\x1b[%d;%dH\x1b[0m", y, x+1) //not sure why the +1
+			fmt.Fprint(pab, chars)
 		}
 	}
-	e.drawVisual(pab)
 }
 
 /*

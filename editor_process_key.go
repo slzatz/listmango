@@ -167,7 +167,8 @@ func editorProcessKey(c int) bool { //bool returned is whether to redraw
 					sess.showEdMessage("%v", err)
 				}
 				//}
-				if p.command == " m" || p.command == " l" || p.command == " c" || p.command == "z=" || p.command == " d" || p.command == " x" {
+				if strings.Index(" m l c d xz=", p.command) != -1 {
+					//if p.command == " m" || p.command == " l" || p.command == " c" || p.command == "z=" || p.command == " d" || p.command == " x" {
 					p.command = ""
 					return false
 				}
