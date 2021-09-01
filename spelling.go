@@ -9,7 +9,7 @@ import (
 	"strings"
 )
 
-func (e *Editor) highlightMispelledWords0() {
+func (e *Editor) highlightMispelledWords() {
 	e.highlightPositions = nil
 
 	cmd := exec.Command("nuspell", "-d", "en_US")
@@ -62,9 +62,7 @@ func (e *Editor) highlightMispelledWords0() {
 				z := strings.SplitN(np_row, ":", 2)
 				data := strings.Split(z[0], " ")
 				start, _ := strconv.Atoi(data[len(data)-1])
-				//length := len(data[1])
 				end := start + len(data[1])
-				//suggestions := strings.Split(strings.ReplaceAll(z[1], " ", ""), ",")
 				e.highlightPositions = append(e.highlightPositions, Position{rowNum, start, end})
 			}
 		}
@@ -76,6 +74,7 @@ func (e *Editor) highlightMispelledWords0() {
 	fmt.Print(ab.String())
 }
 
+/*
 func highlightMispelledWords(rows []string) []string {
 
 	cmd := exec.Command("nuspell", "-d", "en_US")
@@ -108,11 +107,11 @@ func highlightMispelledWords(rows []string) []string {
 			bytes, _, _ := buf_out.ReadLine()
 
 			// Don't think this is needed
-			/*
-				if err == io.EOF {
-					break
-				}
-			*/
+
+				//if err == io.EOF {
+				//	break
+				//}
+
 
 			if len(bytes) == 0 {
 				break
@@ -263,3 +262,4 @@ func highlightMispelledWords3(row string, result chan string) {
 	stdin.Close()
 	result <- row
 }
+*/

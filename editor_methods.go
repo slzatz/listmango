@@ -345,12 +345,16 @@ func (e *Editor) drawText() {
 	}
 	if e.highlightSyntax {
 		e.drawCodeRows(&ab)
+		e.drawHighlights(&ab)
+		e.drawVisual(&ab)
 		fmt.Print(ab.String())
 		//go e.drawHighlightedBraces() // this will produce data race
 		e.drawHighlightedBraces() //has to come after drawing rows
 		//e.drawDiagnostics() // if here would update with each text change
 	} else {
 		e.drawPlainRows(&ab)
+		e.drawHighlights(&ab)
+		e.drawVisual(&ab)
 		fmt.Print(ab.String())
 	}
 }
@@ -462,6 +466,7 @@ func (e *Editor) drawSignatureHelp(signatureHelp protocol.SignatureHelp) {
 	sess.returnCursor()
 }
 
+// rename
 func (e *Editor) applyWorkspaceEdit(wse protocol.WorkspaceEdit) {
 	op := e.output
 	op.rowOffset = 0
@@ -483,9 +488,10 @@ func (e *Editor) applyWorkspaceEdit(wse protocol.WorkspaceEdit) {
 			endChar := int(edit.Range.End.Character)
 			row := string(e.bb[line])
 			row = row[:startChar] + edit.NewText + row[endChar:]
-			v.SetBufferLines(e.vbuf, line, line+1, false, [][]byte{})          //true - out of bounds indexes are not clamped
-			v.SetBufferLines(e.vbuf, line, line, false, [][]byte{[]byte(row)}) //true - out of bounds indexes are not clamped
-			e.bb, _ = v.BufferLines(e.vbuf, 0, -1, true)                       //reading updated buffer
+			//v.SetBufferLines(e.vbuf, line, line+1, false, [][]byte{})          //true - out of bounds indexes are not clamped
+			//v.SetBufferLines(e.vbuf, line, line, false, [][]byte{[]byte(row)}) //true - out of bounds indexes are not clamped
+			v.SetBufferText(e.vbuf, line, startChar, line, endChar, [][]byte{[]byte(edit.NewText)})
+			e.bb, _ = v.BufferLines(e.vbuf, 0, -1, true) //reading updated buffer
 			e.drawText()
 		}
 	}
@@ -726,8 +732,6 @@ func (e *Editor) drawPlainRows(pab *strings.Builder) {
 			}
 		}
 	}
-	e.drawHighlights(pab)
-	e.drawVisual(pab)
 }
 
 func (e *Editor) drawCodeRows(pab *strings.Builder) {
@@ -782,8 +786,6 @@ func (e *Editor) drawCodeRows(pab *strings.Builder) {
 			}
 		}
 	}
-	e.drawHighlights(pab)
-	e.drawVisual(pab)
 }
 
 func (e *Editor) drawHighlights(pab *strings.Builder) {
