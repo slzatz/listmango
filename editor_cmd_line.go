@@ -45,26 +45,6 @@ var e_lookup_C = map[string]func(*Editor){
 	"rename":          (*Editor).rename, //lsp command
 }
 
-/* EDITOR cpp COMMAND_LINE mode lookup
-const std::unordered_map<std::string, efunc> E_lookup_C {
- // all below handled (right now) in editor command line switch statement
- // {"x", &Editor::E_write_close_C},
- // {"quit", &Editor::E_quit_C},
- // {"q",&Editor:: E_quit_C},
- // {"quit!", &Editor::E_quit0_C},
- // {"q!", &Editor::E_quit0_C},
-  {"vim", &Editor::E_open_in_vim_C},
-  {"spell",&Editor:: E_spellcheck_C},
-  {"spellcheck", &Editor::E_spellcheck_C},
-
-  {"createlink", &Editor::createLink},
-  //{"cl", &Editor::createLink},
-  {"getlinked", &Editor::getLinked},
-  {"gl", &Editor::getLinked},
-  {"hide", &Editor::hide},
-};
-*/
-
 func (e *Editor) saveNoteToFile() {
 	pos := strings.Index(e.command_line, " ")
 	if pos == -1 {

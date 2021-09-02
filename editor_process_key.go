@@ -7,8 +7,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	//"sync/atomic"
-
 	"github.com/neovim/go-client/nvim"
 )
 
@@ -24,25 +22,21 @@ var termcodes = map[int]string{
 	PAGE_DOWN:   "\x80kN",
 }
 
-var quit_cmds = map[string]struct{}{"quit": z0, "q": z0, "quit!": z0, "q!": z0, "x": z0, "qa": z0}
-
 func highlightInfo(v *nvim.Nvim) [2][4]int {
 	var bufnum, lnum, col, off int
 	var z [2][4]int
-	v.Input("\x1bgv") //I need to send this but may be a problem
+	v.Input("\x1bgv")
 
 	err := v.Eval("getpos(\"'<\")", []*int{&bufnum, &lnum, &col, &off})
 	if err != nil {
 		sess.showOrgMessage("getpos error: %v", err)
 	}
-	//fmt.Printf("beginning: bufnum = %v; lnum = %v; col = %v; off = %v\n", bufnum, lnum, col, off)
 	z[0] = [4]int{bufnum, lnum, col, off}
 
 	err = v.Eval("getpos(\"'>\")", []*int{&bufnum, &lnum, &col, &off})
 	if err != nil {
 		sess.showOrgMessage("getpos error: %v", err)
 	}
-	//fmt.Printf("end: bufnum = %v; lnum = %v; col = %v; off = %v\n", bufnum, lnum, col, off)
 	z[1] = [4]int{bufnum, lnum, col, off}
 
 	return z
