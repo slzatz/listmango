@@ -93,7 +93,7 @@ func editorProcessKey(c int) bool { //bool returned is whether to redraw
 
 	// the switch below deals with intercepting c before sending the char to nvim
 	switch p.mode {
-	//if p.mode == PREVIEW {
+
 	case PREVIEW:
 		switch c {
 		case PAGE_DOWN, ARROW_DOWN, 'j':
@@ -105,9 +105,7 @@ func editorProcessKey(c int) bool { //bool returned is whether to redraw
 		}
 		p.drawPreview()
 		return false
-		//}
 
-		//if p.mode == SPELLING || p.mode == VIEW_LOG {
 	case SPELLING, VIEW_LOG:
 		switch c {
 		case PAGE_DOWN, ARROW_DOWN, 'j':
@@ -142,9 +140,7 @@ func editorProcessKey(c int) bool { //bool returned is whether to redraw
 			p.command_line += string(c)
 		}
 		return false
-		//}
 
-		//if p.mode == NORMAL {
 	case NORMAL:
 		if len(p.command) == 0 {
 			if strings.IndexAny(string(c), "\x17\x08\x0c\x02\x05\x09\x06\x0a\x0b z") != -1 {
@@ -186,11 +182,12 @@ func editorProcessKey(c int) bool { //bool returned is whether to redraw
 				return false
 			}
 		}
-		//}
+
 	case VISUAL:
-		//sess.showOrgMessage("#1")
-		if strings.IndexAny(string(c), "\x02\x05\x09") != -1 {
+		if strings.IndexAny(string(c), "\x02\x05\x09") != -1 { //ctrl-b,e,i
 			p.decorateWordVisual(c)
+
+			// switch from VISUAl to NORMAL
 			_, err := v.Input("\x1b")
 			if err != nil {
 				sess.showEdMessage("%v", err)
@@ -204,10 +201,7 @@ func editorProcessKey(c int) bool { //bool returned is whether to redraw
 			return true
 		}
 
-		//if p.mode == EX_COMMAND {
 	case EX_COMMAND:
-		//don't send keys to nvim - don't want it processing them
-		//sess.showEdMessage("NOP or COMMAND_LINE or SEARCH - %q", p.mode)
 		if c == '\r' {
 			pos := strings.LastIndex(p.command_line, " ")
 			var cmd string
@@ -289,10 +283,9 @@ func editorProcessKey(c int) bool { //bool returned is whether to redraw
 
 		sess.showEdMessage(":%s", p.command_line)
 		return false //end EX_COMMAND
-		//}
 	} //end switch
 
-	/////////////////below everything besides EX_COMMAND and keycode sent to nvim///////////////////////////////////
+	/////////////////below keycode sent to nvim///////////////////////////////////
 
 	if z, found := termcodes[c]; found {
 		v.FeedKeys(z, "t", true)
@@ -380,7 +373,6 @@ func editorProcessKey(c int) bool { //bool returned is whether to redraw
 	//below is done for everything except SEARCH and EX_COMMAND
 	p.bb, _ = v.BufferLines(p.vbuf, 0, -1, true) //reading updated buffer
 	pos, _ := v.WindowCursor(w)                  //set screen cx and cy from pos
-
 	p.fr = pos[0] - 1
 	p.fc = pos[1]
 

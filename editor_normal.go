@@ -211,13 +211,12 @@ func controlL() {
 	return
 }
 
+// this is actually for VISUAL mode
 func (e *Editor) decorateWordVisual(c int) {
 	if len(e.bb) == 0 {
 		return
 	}
 
-	//p.vb_highlight = highlightInfo(v)
-	// here probably easier to convert to string
 	row := e.bb[e.fr]
 	beg, end := e.vb_highlight[0][2]-1, e.vb_highlight[1][2]
 
@@ -225,26 +224,23 @@ func (e *Editor) decorateWordVisual(c int) {
 	var word []byte
 	if bytes.HasPrefix(row[beg:], []byte("**")) {
 		word = row[beg+2 : end-2]
-		//e.fc = beg
-		if c == ctrlKey('b') || c == 'b' {
+		if c == ctrlKey('b') {
 			undo = true
 		}
 	} else if row[beg] == '*' {
 		word = row[beg+1 : end-1]
-		//e.fc = beg
-		if c == ctrlKey('i') || c == 'i' {
+		if c == ctrlKey('i') {
 			undo = true
 		}
 	} else if row[beg] == '`' {
 		word = row[beg+1 : end-1]
-		//e.fc = beg
-		if c == ctrlKey('e') || c == 'e' {
+		if c == ctrlKey('e') {
 			undo = true
 		}
 	}
 	if undo {
 		v.SetBufferText(e.vbuf, e.fr, beg, e.fr, end, [][]byte{word})
-		v.SetWindowCursor(w, [2]int{e.fr + 1, e.fc}) //set screen cx and cy from pos
+		v.SetWindowCursor(w, [2]int{e.fr + 1, beg}) //set screen cx and cy from pos
 		return
 	}
 
@@ -253,19 +249,16 @@ func (e *Editor) decorateWordVisual(c int) {
 	}
 	var newText string
 	switch c {
-	case ctrlKey('b'), 'b':
+	case ctrlKey('b'):
 		newText = fmt.Sprintf("**%s**", word)
-		//e.fc = beg
-	case ctrlKey('i'), 'i':
+	case ctrlKey('i'):
 		newText = fmt.Sprintf("*%s*", word)
-		//e.fc = beg
-	case ctrlKey('e'), 'e':
+	case ctrlKey('e'):
 		newText = fmt.Sprintf("`%s`", word)
-		//e.fc = beg
 	}
 
 	v.SetBufferText(e.vbuf, e.fr, beg, e.fr, end, [][]byte{[]byte(newText)})
-	v.SetWindowCursor(w, [2]int{e.fr + 1, e.fc}) //set screen cx and cy from pos
+	v.SetWindowCursor(w, [2]int{e.fr + 1, beg}) //set screen cx and cy from pos
 }
 
 func (e *Editor) decorateWord(c int) {
@@ -273,17 +266,16 @@ func (e *Editor) decorateWord(c int) {
 		return
 	}
 
-	// here probably easier to convert to string
 	row := e.bb[e.fr]
 	if row[e.fc] == ' ' {
 		return
 	}
 
-	punc := " .,;:#(){}[]!"
+	delim := " .,;:#(){}[]!"
 	//find beginning of word
 	var beg int
 	if e.fc != 0 {
-		beg = bytes.LastIndexAny(row[:e.fc], punc) //LastIndexAny and delimiters would be better
+		beg = bytes.LastIndexAny(row[:e.fc], delim)
 		if beg == -1 {
 			beg = 0
 		} else {
@@ -291,37 +283,34 @@ func (e *Editor) decorateWord(c int) {
 		}
 	}
 
-	end := bytes.IndexAny(row[e.fc:], punc)
+	end := bytes.IndexAny(row[e.fc:], delim)
 	if end == -1 {
-		end = len(row) // - 1
+		end = len(row)
 	} else {
-		end = end + e.fc // - 1
+		end = end + e.fc
 	}
 
 	var undo bool
 	var word []byte
 	if bytes.HasPrefix(row[beg:], []byte("**")) {
 		word = row[beg+2 : end-2]
-		e.fc -= 2
 		if c == ctrlKey('b') || c == 'b' {
 			undo = true
 		}
 	} else if row[beg] == '*' {
 		word = row[beg+1 : end-1]
-		e.fc -= 1
 		if c == ctrlKey('i') || c == 'i' {
 			undo = true
 		}
 	} else if row[beg] == '`' {
 		word = row[beg+1 : end-1]
-		e.fc -= 1
 		if c == ctrlKey('e') || c == 'e' {
 			undo = true
 		}
 	}
 	if undo {
 		v.SetBufferText(e.vbuf, e.fr, beg, e.fr, end, [][]byte{word})
-		v.SetWindowCursor(w, [2]int{e.fr + 1, e.fc}) //set screen cx and cy from pos
+		v.SetWindowCursor(w, [2]int{e.fr + 1, beg}) //set screen cx and cy from pos
 		return
 	}
 
@@ -332,17 +321,14 @@ func (e *Editor) decorateWord(c int) {
 	switch c {
 	case ctrlKey('b'), 'b':
 		newText = fmt.Sprintf("**%s**", word)
-		e.fc += 2
 	case ctrlKey('i'), 'i':
 		newText = fmt.Sprintf("*%s*", word)
-		e.fc++
 	case ctrlKey('e'), 'e':
 		newText = fmt.Sprintf("`%s`", word)
-		e.fc++
 	}
 
 	v.SetBufferText(e.vbuf, e.fr, beg, e.fr, end, [][]byte{[]byte(newText)})
-	v.SetWindowCursor(w, [2]int{e.fr + 1, e.fc}) //set screen cx and cy from pos
+	v.SetWindowCursor(w, [2]int{e.fr + 1, beg})
 }
 
 func showLastVimMessage() {
