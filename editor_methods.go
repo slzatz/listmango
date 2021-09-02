@@ -605,7 +605,8 @@ func (e *Editor) drawVisual(pab *strings.Builder) {
 				continue
 			}
 			if numrows == 1 {
-				pab.Write(row[startCol-1 : endcol-1])
+				//pab.Write(row[startCol-1 : endcol-1])
+				pab.Write(row[startCol-1 : endcol])
 			} else if n == 0 {
 				pab.Write(row[startCol-1:])
 			} else if n < numrows-1 {

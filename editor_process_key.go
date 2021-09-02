@@ -90,7 +90,11 @@ func editorProcessKey(c int) bool { //bool returned is whether to redraw
 		Also note that the if below falls through if p.command is "" and the character isn't
 		one of the one that starts a command
 	*/
-	if p.mode == PREVIEW {
+
+	// the switch below deals with intercepting c before sending the char to nvim
+	switch p.mode {
+	//if p.mode == PREVIEW {
+	case PREVIEW:
 		switch c {
 		case PAGE_DOWN, ARROW_DOWN, 'j':
 			p.previewLineOffset++
@@ -101,9 +105,10 @@ func editorProcessKey(c int) bool { //bool returned is whether to redraw
 		}
 		p.drawPreview()
 		return false
-	}
+		//}
 
-	if p.mode == SPELLING || p.mode == VIEW_LOG {
+		//if p.mode == SPELLING || p.mode == VIEW_LOG {
+	case SPELLING, VIEW_LOG:
 		switch c {
 		case PAGE_DOWN, ARROW_DOWN, 'j':
 			p.previewLineOffset++
@@ -137,9 +142,10 @@ func editorProcessKey(c int) bool { //bool returned is whether to redraw
 			p.command_line += string(c)
 		}
 		return false
-	}
+		//}
 
-	if p.mode == NORMAL {
+		//if p.mode == NORMAL {
+	case NORMAL:
 		if len(p.command) == 0 {
 			if strings.IndexAny(string(c), "\x17\x08\x0c\x02\x05\x09\x06\x0a\x0b z") != -1 {
 				p.command = string(c)
@@ -161,14 +167,11 @@ func editorProcessKey(c int) bool { //bool returned is whether to redraw
 					cmd(p)
 				}
 				// seems to be necessary at least for certain commands
-				//if p.command != "z=" {
 				_, err := v.Input("\x1b")
 				if err != nil {
 					sess.showEdMessage("%v", err)
 				}
-				//}
 				if strings.Index(" m l c d xz=", p.command) != -1 {
-					//if p.command == " m" || p.command == " l" || p.command == " c" || p.command == "z=" || p.command == " d" || p.command == " x" {
 					p.command = ""
 					return false
 				}
@@ -183,9 +186,26 @@ func editorProcessKey(c int) bool { //bool returned is whether to redraw
 				return false
 			}
 		}
-	}
+		//}
+	case VISUAL:
+		//sess.showOrgMessage("#1")
+		if strings.IndexAny(string(c), "\x02\x05\x09") != -1 {
+			p.decorateWordVisual(c)
+			_, err := v.Input("\x1b")
+			if err != nil {
+				sess.showEdMessage("%v", err)
+			}
+			p.mode = NORMAL
+			p.command = ""
+			p.bb, _ = v.BufferLines(p.vbuf, 0, -1, true) //reading updated buffer
+			pos, _ := v.WindowCursor(w)                  //screen cx and cy set from pos
+			p.fr = pos[0] - 1
+			p.fc = pos[1]
+			return true
+		}
 
-	if p.mode == EX_COMMAND {
+		//if p.mode == EX_COMMAND {
+	case EX_COMMAND:
 		//don't send keys to nvim - don't want it processing them
 		//sess.showEdMessage("NOP or COMMAND_LINE or SEARCH - %q", p.mode)
 		if c == '\r' {
@@ -269,9 +289,10 @@ func editorProcessKey(c int) bool { //bool returned is whether to redraw
 
 		sess.showEdMessage(":%s", p.command_line)
 		return false //end EX_COMMAND
-	}
+		//}
+	} //end switch
 
-	/////////////////below everything besides EX_COMMAND///////////////////////////////////
+	/////////////////below everything besides EX_COMMAND and keycode sent to nvim///////////////////////////////////
 
 	if z, found := termcodes[c]; found {
 		v.FeedKeys(z, "t", true)
@@ -310,7 +331,7 @@ func editorProcessKey(c int) bool { //bool returned is whether to redraw
 		return false // don't draw rows - which calls v.BufferLines
 	}
 	// the only way to get into EX_COMMAND or SEARCH
-	if mode.Mode == "c" && p.mode != SEARCH {
+	if mode.Mode == "c" && p.mode != SEARCH { //note that "c" => SEARCH
 		p.command_line = ""
 		p.command = ""
 		if c == ':' {
