@@ -8,6 +8,8 @@ import (
 	"os/exec"
 	"strconv"
 	"strings"
+
+	"github.com/mandolyte/mdtopdf"
 )
 
 //var e_lookup_C = map[string]interface{}{
@@ -43,6 +45,7 @@ var e_lookup_C = map[string]func(*Editor){
 	"x":               (*Editor).quitActions,
 	"fmt":             (*Editor).goFormat,
 	"rename":          (*Editor).rename, //lsp command
+	"pdf":             (*Editor).createPDF,
 }
 
 func (e *Editor) saveNoteToFile() {
@@ -628,4 +631,23 @@ func (e *Editor) rename() {
 	}
 	newName := e.command_line[pos+1:]
 	sendRenameRequest(uint32(e.fr), uint32(e.fc), newName) //+1 seems to work better
+}
+
+func (e *Editor) createPDF() {
+	content := bytes.Join(e.bb, []byte("\n"))
+	output := "test.pdf"
+	pf := mdtopdf.NewPdfRenderer("", "", output, "trace.log")
+	pf.Pdf.SetSubject("How to convert markdown to PDF", true)
+	pf.Pdf.SetTitle("Example PDF converted from Markdown", true)
+	pf.THeader = mdtopdf.Styler{Font: "Times", Style: "IUB", Size: 20, Spacing: 2,
+		TextColor: mdtopdf.Color{Red: 0, Green: 0, Blue: 0},
+		FillColor: mdtopdf.Color{Red: 179, Green: 179, Blue: 255}}
+	pf.TBody = mdtopdf.Styler{Font: "Arial", Style: "", Size: 12, Spacing: 2,
+		TextColor: mdtopdf.Color{Red: 0, Green: 0, Blue: 0},
+		FillColor: mdtopdf.Color{Red: 255, Green: 102, Blue: 129}}
+
+	err := pf.Process(content)
+	if err != nil {
+		sess.showEdMessage("pdf error:%v", err)
+	}
 }
