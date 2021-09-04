@@ -88,10 +88,10 @@ func (o *Organizer) open(pos int) {
 		return
 	}
 
-	cl := &o.command_line
+	cl := o.command_line
 	var success bool
 	for k, _ := range o.context_map {
-		if strings.HasPrefix(k, (*cl)[pos+1:]) {
+		if strings.HasPrefix(k, cl[pos+1:]) {
 			o.filter = k
 			success = true
 			o.taskview = BY_CONTEXT
@@ -101,7 +101,7 @@ func (o *Organizer) open(pos int) {
 
 	if !success {
 		for k, _ := range o.folder_map {
-			if strings.HasPrefix(k, (*cl)[pos+1:]) {
+			if strings.HasPrefix(k, cl[pos+1:]) {
 				o.filter = k
 				success = true
 				o.taskview = BY_FOLDER
@@ -111,7 +111,7 @@ func (o *Organizer) open(pos int) {
 	}
 
 	if !success {
-		sess.showOrgMessage("%s is not a valid context or folder!", (*cl)[:pos])
+		sess.showOrgMessage("%s is not a valid context or folder!", cl[pos+1:])
 		o.mode = NORMAL
 		return
 	}
@@ -150,7 +150,7 @@ func (o *Organizer) openContext(pos int) {
 	}
 
 	if !success {
-		sess.showOrgMessage("%s is not a valid  context!", cl[:pos])
+		sess.showOrgMessage("%s is not a valid  context!", cl[pos+1:])
 		o.mode = NORMAL
 		return
 	}
@@ -181,10 +181,10 @@ func (o *Organizer) openFolder(pos int) {
 		return
 	}
 
-	cl := &o.command_line
+	cl := o.command_line
 	var success bool
 	for k, _ := range o.folder_map {
-		if strings.HasPrefix(k, (*cl)[pos+1:]) {
+		if strings.HasPrefix(k, cl[pos+1:]) {
 			//o.folder = k
 			o.filter = k
 			success = true
@@ -193,7 +193,7 @@ func (o *Organizer) openFolder(pos int) {
 	}
 
 	if !success {
-		sess.showOrgMessage("%s is not a valid  folder!", (*cl)[:pos])
+		sess.showOrgMessage("%s is not a valid  folder!", cl[pos+1:])
 		o.mode = NORMAL
 		return
 	}

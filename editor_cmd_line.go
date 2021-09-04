@@ -46,6 +46,7 @@ var e_lookup_C = map[string]func(*Editor){
 	"fmt":             (*Editor).goFormat,
 	"rename":          (*Editor).rename, //lsp command
 	"pdf":             (*Editor).createPDF,
+	"print":           (*Editor).printPDF,
 }
 
 func (e *Editor) saveNoteToFile() {
@@ -634,9 +635,14 @@ func (e *Editor) rename() {
 }
 
 func (e *Editor) createPDF() {
+	pos := strings.Index(e.command_line, " ")
+	if pos == -1 {
+		sess.showEdMessage("You need to provide a filename")
+		return
+	}
+	filename := e.command_line[pos+1:]
 	content := bytes.Join(e.bb, []byte("\n"))
-	output := "test.pdf"
-	pf := mdtopdf.NewPdfRenderer("", "", output, "trace.log")
+	pf := mdtopdf.NewPdfRenderer("", "", filename, "trace.log")
 	pf.Pdf.SetSubject("How to convert markdown to PDF", true)
 	pf.Pdf.SetTitle("Example PDF converted from Markdown", true)
 	pf.THeader = mdtopdf.Styler{Font: "Times", Style: "IUB", Size: 20, Spacing: 2,
@@ -649,5 +655,33 @@ func (e *Editor) createPDF() {
 	err := pf.Process(content)
 	if err != nil {
 		sess.showEdMessage("pdf error:%v", err)
+	}
+}
+
+func (e *Editor) printPDF() {
+	if taskFolder(e.id) == "code" {
+		sess.showEdMessage("Currently can only print markdown")
+		return
+	}
+	content := bytes.Join(e.bb, []byte("\n"))
+	pf := mdtopdf.NewPdfRenderer("", "", "output.pdf", "trace.log")
+	pf.Pdf.SetSubject("How to convert markdown to PDF", true)
+	pf.Pdf.SetTitle("Example PDF converted from Markdown", true)
+	pf.THeader = mdtopdf.Styler{Font: "Times", Style: "IUB", Size: 20, Spacing: 2,
+		TextColor: mdtopdf.Color{Red: 0, Green: 0, Blue: 0},
+		FillColor: mdtopdf.Color{Red: 179, Green: 179, Blue: 255}}
+	pf.TBody = mdtopdf.Styler{Font: "Arial", Style: "", Size: 12, Spacing: 2,
+		TextColor: mdtopdf.Color{Red: 0, Green: 0, Blue: 0},
+		//FillColor: mdtopdf.Color{Red: 255, Green: 102, Blue: 129}}
+		FillColor: mdtopdf.Color{Red: 255, Green: 255, Blue: 255}}
+
+	err := pf.Process(content)
+	if err != nil {
+		sess.showEdMessage("pdf error:%v", err)
+	}
+	cmd := exec.Command("lpr", "output.pdf")
+	err = cmd.Run()
+	if err != nil {
+		sess.showEdMessage("Error printing pdf: %v", err)
 	}
 }
