@@ -1,13 +1,16 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"os"
+	"os/exec"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/charmbracelet/glamour"
+	"github.com/mandolyte/mdtopdf"
 )
 
 var cmd_lookup = map[string]func(*Organizer, int){
@@ -60,6 +63,7 @@ var cmd_lookup = map[string]func(*Organizer, int){
 	"save":            (*Organizer).save,
 	"image":           (*Organizer).setImage,
 	"images":          (*Organizer).setImage,
+	"print":           (*Organizer).printDocument,
 	"lsp":             (*Organizer).launchLsp,
 	"shutdown":        (*Organizer).shutdownLsp,
 }
@@ -346,32 +350,12 @@ func (o *Organizer) verticalResize(pos int) {
 	o.mode = NORMAL
 }
 func (o *Organizer) newEntry(unused int) {
-	//org.outlineInsertRow(0, "", true, false, false, now());
-
-	/*
-		type Row struct {
-			id        int
-			title     string
-			fts_title string
-			star      bool
-			deleted   bool
-			completed bool
-			modified  string
-
-			// below not in db
-			dirty  bool
-			marked bool
-		}
-	*/
-
 	row := Row{
 		id:       -1,
 		star:     true,
 		dirty:    true,
 		modified: time.Now().Format("3:04:05 pm"),
 	}
-
-	//fmt.Fprintf(&lg, "UTC time is %v\n", time.Now().UTC())
 
 	o.rows = append(o.rows, Row{})
 	copy(o.rows[1:], o.rows[0:])
@@ -424,7 +408,6 @@ func (o *Organizer) refresh(unused int) {
 		}
 		sess.showOrgMessage("view refreshed")
 	}
-	//o.mode = o.last_mode
 	o.clearMarkedEntries()
 }
 
@@ -747,6 +730,60 @@ func (o *Organizer) setImage(pos int) {
 	o.command_line = ""
 }
 
+func (o *Organizer) printDocument(unused int) {
+	id := o.rows[o.fr].id
+	note := readNoteIntoString(id)
+	if taskFolder(id) == "code" {
+		c := taskContext(id)
+		var ok bool
+		var lang string
+		if lang, ok = Languages[c]; !ok {
+			sess.showOrgMessage("I don't recognize the language")
+			return
+		}
+		//note := readNoteIntoString(id)
+		var buf bytes.Buffer
+		// github seems to work pretty well for printer output
+		_ = Highlight(&buf, note, lang, "html", "github")
+
+		f, err := os.Create("output.html")
+		if err != nil {
+			sess.showOrgMessage("Error creating output.html: %v", err)
+			return
+		}
+		defer f.Close()
+
+		_, err = f.WriteString(buf.String())
+		if err != nil {
+			sess.showOrgMessage("Error writing output.html: %s: %v", err)
+			return
+		}
+		cmd := exec.Command("wkhtmltopdf", "--enable-local-file-access",
+			"--no-background", "--minimum-font-size", "16", "output.html", "output.pdf")
+		err = cmd.Run()
+		if err != nil {
+			sess.showOrgMessage("Error creating pdf from code: %v", err)
+		}
+	} else {
+		pf := mdtopdf.NewPdfRenderer("", "", "output.pdf", "trace.log")
+		pf.TBody = mdtopdf.Styler{Font: "Arial", Style: "", Size: 12, Spacing: 2,
+			TextColor: mdtopdf.Color{Red: 0, Green: 0, Blue: 0},
+			FillColor: mdtopdf.Color{Red: 255, Green: 255, Blue: 255}}
+
+		err := pf.Process([]byte(note))
+		if err != nil {
+			sess.showEdMessage("pdf error:%v", err)
+		}
+	}
+	cmd := exec.Command("lpr", "output.pdf")
+	err := cmd.Run()
+	if err != nil {
+		sess.showEdMessage("Error printing document: %v", err)
+	}
+	o.mode = o.last_mode
+	o.command_line = ""
+}
+
 func (o *Organizer) launchLsp(pos int) {
 	var lsp string
 	var cl string
@@ -761,16 +798,6 @@ func (o *Organizer) launchLsp(pos int) {
 	} else {
 		lsp = "gopls"
 	}
-
-	/*
-		opt := o.command_line[pos+1 : pos+2]
-		switch opt {
-		case "g":
-			lsp = "gopls"
-		case "c":
-			lsp = "clangd"
-		}
-	*/
 	if lsp != "" {
 		go launchLsp(lsp) // could be race to write to screen
 	} else {

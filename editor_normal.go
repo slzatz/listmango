@@ -438,25 +438,6 @@ func (e *Editor) showMarkdownPreview() {
 
 }
 
-/*
-func (e *Editor) showSpellingPreview() { //preview
-	if len(e.bb) == 0 {
-		return
-	}
-
-	note := e.generateWWStringFromBuffer2()
-
-	e.renderedNote = strings.Join(highlightMispelledWords(strings.Split(note, "\n")), "\n")
-
-	e.mode = PREVIEW
-	e.previewLineOffset = 0
-	e.drawPreview()
-
-	//sd = spellingData(strings.Split(note, "\n"))
-
-}
-*/
-
 func (e *Editor) nextStyle() {
 	sess.styleIndex++
 	if sess.styleIndex > len(sess.style)-1 {

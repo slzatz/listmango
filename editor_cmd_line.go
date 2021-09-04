@@ -46,7 +46,7 @@ var e_lookup_C = map[string]func(*Editor){
 	"fmt":             (*Editor).goFormat,
 	"rename":          (*Editor).rename, //lsp command
 	"pdf":             (*Editor).createPDF,
-	"print":           (*Editor).printPDF,
+	"print":           (*Editor).printDocument,
 }
 
 func (e *Editor) saveNoteToFile() {
@@ -643,14 +643,16 @@ func (e *Editor) createPDF() {
 	filename := e.command_line[pos+1:]
 	content := bytes.Join(e.bb, []byte("\n"))
 	pf := mdtopdf.NewPdfRenderer("", "", filename, "trace.log")
-	pf.Pdf.SetSubject("How to convert markdown to PDF", true)
-	pf.Pdf.SetTitle("Example PDF converted from Markdown", true)
-	pf.THeader = mdtopdf.Styler{Font: "Times", Style: "IUB", Size: 20, Spacing: 2,
-		TextColor: mdtopdf.Color{Red: 0, Green: 0, Blue: 0},
-		FillColor: mdtopdf.Color{Red: 179, Green: 179, Blue: 255}}
+	/*
+		pf.Pdf.SetSubject("How to convert markdown to PDF", true)
+		pf.Pdf.SetTitle("Example PDF converted from Markdown", true)
+		pf.THeader = mdtopdf.Styler{Font: "Times", Style: "IUB", Size: 20, Spacing: 2,
+			TextColor: mdtopdf.Color{Red: 0, Green: 0, Blue: 0},
+			FillColor: mdtopdf.Color{Red: 179, Green: 179, Blue: 255}}
+	*/
 	pf.TBody = mdtopdf.Styler{Font: "Arial", Style: "", Size: 12, Spacing: 2,
 		TextColor: mdtopdf.Color{Red: 0, Green: 0, Blue: 0},
-		FillColor: mdtopdf.Color{Red: 255, Green: 102, Blue: 129}}
+		FillColor: mdtopdf.Color{Red: 255, Green: 255, Blue: 255}}
 
 	err := pf.Process(content)
 	if err != nil {
@@ -658,7 +660,7 @@ func (e *Editor) createPDF() {
 	}
 }
 
-func (e *Editor) printPDF() {
+func (e *Editor) printDocument() {
 	if taskFolder(e.id) == "code" {
 		c := taskContext(e.id)
 		var ok bool
@@ -684,38 +686,27 @@ func (e *Editor) printPDF() {
 			sess.showEdMessage("Error writing output.html: %s: %v", err)
 			return
 		}
-		cmd0 := exec.Command("wkhtmltopdf", "--enable-local-file-access",
+		cmd := exec.Command("wkhtmltopdf", "--enable-local-file-access",
 			"--no-background", "--minimum-font-size", "16", "output.html", "output.pdf")
-		err = cmd0.Run()
+		err = cmd.Run()
 		if err != nil {
 			sess.showEdMessage("Error creating pdf from code: %v", err)
 		}
-		cmd1 := exec.Command("lpr", "output.pdf")
-		err = cmd1.Run()
-		if err != nil {
-			sess.showEdMessage("Error printing pdf: %v", err)
-		}
-		return
-	}
-	content := bytes.Join(e.bb, []byte("\n"))
-	pf := mdtopdf.NewPdfRenderer("", "", "output.pdf", "trace.log")
-	pf.Pdf.SetSubject("How to convert markdown to PDF", true)
-	pf.Pdf.SetTitle("Example PDF converted from Markdown", true)
-	pf.THeader = mdtopdf.Styler{Font: "Times", Style: "IUB", Size: 20, Spacing: 2,
-		TextColor: mdtopdf.Color{Red: 0, Green: 0, Blue: 0},
-		FillColor: mdtopdf.Color{Red: 179, Green: 179, Blue: 255}}
-	pf.TBody = mdtopdf.Styler{Font: "Arial", Style: "", Size: 12, Spacing: 2,
-		TextColor: mdtopdf.Color{Red: 0, Green: 0, Blue: 0},
-		//FillColor: mdtopdf.Color{Red: 255, Green: 102, Blue: 129}}
-		FillColor: mdtopdf.Color{Red: 255, Green: 255, Blue: 255}}
+	} else {
+		content := bytes.Join(e.bb, []byte("\n"))
+		pf := mdtopdf.NewPdfRenderer("", "", "output.pdf", "trace.log")
+		pf.TBody = mdtopdf.Styler{Font: "Arial", Style: "", Size: 12, Spacing: 2,
+			TextColor: mdtopdf.Color{Red: 0, Green: 0, Blue: 0},
+			FillColor: mdtopdf.Color{Red: 255, Green: 255, Blue: 255}}
 
-	err := pf.Process(content)
-	if err != nil {
-		sess.showEdMessage("pdf error:%v", err)
+		err := pf.Process(content)
+		if err != nil {
+			sess.showEdMessage("pdf error:%v", err)
+		}
 	}
 	cmd := exec.Command("lpr", "output.pdf")
-	err = cmd.Run()
+	err := cmd.Run()
 	if err != nil {
-		sess.showEdMessage("Error printing pdf: %v", err)
+		sess.showEdMessage("Error printing document: %v", err)
 	}
 }
