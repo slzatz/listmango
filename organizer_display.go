@@ -245,8 +245,8 @@ func (o *Organizer) drawPreviewWithoutImages() {
 	if len(o.note) == 0 {
 		return
 	}
-	fmt.Fprintf(os.Stdout, "\x1b[%d;%dH", TOP_MARGIN+1, o.divider+1) // was +2
-	lf_ret := fmt.Sprintf("\r\n\x1b[%dC", o.divider+0)               // was + 1
+	fmt.Fprintf(os.Stdout, "\x1b[%d;%dH", TOP_MARGIN+1, o.divider+1)
+	lf_ret := fmt.Sprintf("\r\n\x1b[%dC", o.divider+0)
 
 	fr := o.altRowoff - 1
 	y := 0

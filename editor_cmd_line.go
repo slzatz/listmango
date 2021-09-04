@@ -660,7 +660,41 @@ func (e *Editor) createPDF() {
 
 func (e *Editor) printPDF() {
 	if taskFolder(e.id) == "code" {
-		sess.showEdMessage("Currently can only print markdown")
+		c := taskContext(e.id)
+		var ok bool
+		var lang string
+		if lang, ok = Languages[c]; !ok {
+			sess.showEdMessage("I don't recognize the language")
+			return
+		}
+		note := readNoteIntoString(e.id)
+		var buf bytes.Buffer
+		// github seems to work pretty well for printer output
+		_ = Highlight(&buf, note, lang, "html", "github")
+
+		f, err := os.Create("output.html")
+		if err != nil {
+			sess.showEdMessage("Error creating output.html: %v", err)
+			return
+		}
+		defer f.Close()
+
+		_, err = f.WriteString(buf.String())
+		if err != nil {
+			sess.showEdMessage("Error writing output.html: %s: %v", err)
+			return
+		}
+		cmd0 := exec.Command("wkhtmltopdf", "--enable-local-file-access",
+			"--no-background", "--minimum-font-size", "16", "output.html", "output.pdf")
+		err = cmd0.Run()
+		if err != nil {
+			sess.showEdMessage("Error creating pdf from code: %v", err)
+		}
+		cmd1 := exec.Command("lpr", "output.pdf")
+		err = cmd1.Run()
+		if err != nil {
+			sess.showEdMessage("Error printing pdf: %v", err)
+		}
 		return
 	}
 	content := bytes.Join(e.bb, []byte("\n"))
