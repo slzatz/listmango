@@ -128,13 +128,17 @@ func (e *Editor) verticalResize__() {
 func (e *Editor) verticalResize() {
 	pos := strings.LastIndex(e.command_line, " ")
 	opt := e.command_line[pos+1:]
-	num, err := strconv.Atoi(opt)
+	width, err := strconv.Atoi(opt)
+
+	if opt[0] == '+' || opt[0] == '-' {
+		width = sess.screenCols - sess.divider + width
+	}
+
 	if err != nil {
 		sess.showEdMessage("The format is :vert[ical] res[ize] N")
 		return
 	}
-	sess.showOrgMessage("divider = %d", num)
-	moveDividerAbs(num)
+	moveDividerAbs(width)
 }
 
 func (e *Editor) resize() {

@@ -23,6 +23,8 @@ var e_lookup2 = map[string]interface{}{
 	"\x17_":              (*Editor).changeSplit,
 	"\x17-":              (*Editor).changeSplit,
 	"\x17+":              (*Editor).changeSplit,
+	"\x17>":              (*Editor).changeHSplit,
+	"\x17<":              (*Editor).changeHSplit,
 	"\x06":               (*Editor).findMatchForBrace, // for testing
 	"z=":                 (*Editor).suggest,
 	leader + "l":         (*Editor).showVimMessageLog,
@@ -69,6 +71,20 @@ func (e *Editor) changeSplit(flag int) {
 
 	sess.eraseRightScreen()
 	sess.drawRightScreen()
+}
+
+func (e *Editor) changeHSplit(flag int) {
+	var width int
+	if flag == '>' {
+		width = sess.screenCols - sess.divider + 1
+		moveDividerAbs(width)
+	} else if flag == '<' {
+		width = sess.screenCols - sess.divider - 1
+		moveDividerAbs(width)
+	} else {
+		sess.showOrgMessage("flag = %v", flag)
+		return
+	}
 }
 
 func (e *Editor) moveOutputWindowRight() {

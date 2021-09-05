@@ -336,6 +336,23 @@ func (o *Organizer) editNote(id int) {
 }
 
 func (o *Organizer) verticalResize(pos int) {
+	//pos := strings.LastIndex(o.command_line, " ")
+	opt := o.command_line[pos+1:]
+	width, err := strconv.Atoi(opt)
+
+	if opt[0] == '+' || opt[0] == '-' {
+		width = sess.screenCols - sess.divider - width
+	}
+
+	if err != nil {
+		sess.showEdMessage("The format is :vert[ical] res[ize] N")
+		return
+	}
+	moveDividerAbs(width)
+	o.mode = NORMAL
+}
+
+func (o *Organizer) verticalResize__(pos int) {
 	if pos == -1 {
 		sess.showOrgMessage("You need to provide a number 0 - 100")
 		return
@@ -349,6 +366,7 @@ func (o *Organizer) verticalResize(pos int) {
 	moveDividerPct(pct)
 	o.mode = NORMAL
 }
+
 func (o *Organizer) newEntry(unused int) {
 	row := Row{
 		id:       -1,
