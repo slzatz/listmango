@@ -110,7 +110,8 @@ func (e *Editor) readFile() {
 	sess.showEdMessage("Note generated from file: %s", filename)
 }
 
-func (e *Editor) verticalResize() {
+// testing abs move but may revert to this one
+func (e *Editor) verticalResize__() {
 	pos := strings.LastIndex(e.command_line, " ")
 	if pos == -1 {
 		sess.showEdMessage("You need to provide a a number 0 - 100")
@@ -121,11 +122,23 @@ func (e *Editor) verticalResize() {
 		sess.showEdMessage("You need to provide a number 0 - 100")
 		return
 	}
-	moveDivider(pct)
+	moveDividerPct(pct)
+}
+
+func (e *Editor) verticalResize() {
+	pos := strings.LastIndex(e.command_line, " ")
+	opt := e.command_line[pos+1:]
+	num, err := strconv.Atoi(opt)
+	if err != nil {
+		sess.showEdMessage("The format is :vert[ical] res[ize] N")
+		return
+	}
+	sess.showOrgMessage("divider = %d", num)
+	moveDividerAbs(num)
 }
 
 func (e *Editor) resize() {
-	pos := strings.LastIndex(e.command_line, " ")
+	pos := strings.Index(e.command_line, " ")
 	opt := e.command_line[pos+1:]
 	if opt[0] == '+' || opt[0] == '-' {
 		num, err := strconv.Atoi(opt[1:])
@@ -428,7 +441,7 @@ func (e *Editor) quitActions() {
 
 		if sess.divider < 10 {
 			sess.cfg.ed_pct = 80
-			moveDivider(80)
+			moveDividerPct(80)
 		}
 
 		org.drawPreview()
@@ -523,7 +536,7 @@ func (e *Editor) quitAll() {
 
 		if sess.divider < 10 {
 			sess.cfg.ed_pct = 80
-			moveDivider(80)
+			moveDividerPct(80)
 		}
 
 		org.drawPreview()

@@ -346,7 +346,7 @@ func (o *Organizer) verticalResize(pos int) {
 		o.mode = NORMAL
 		return
 	}
-	moveDivider(pct)
+	moveDividerPct(pct)
 	o.mode = NORMAL
 }
 func (o *Organizer) newEntry(unused int) {

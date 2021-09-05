@@ -1334,31 +1334,11 @@ func updateCodeFile(id int, text string) {
 	defer f.Close()
 
 	f.Truncate(0)
-
-	//n, err := f.WriteString(sess.e.code)
 	f.WriteString(text)
-
 	f.Sync()
-
-	/*
-	  std::string lsp_name;
-
-	  if (tid == 18) {
-	    file_path  = "/home/slzatz/clangd_examples/test.cpp";
-	    lsp_name = "clangd";
-	  } else {
-	    file_path = "/home/slzatz/go/src/example/main.go";
-	    lsp_name = "gopls";
-	  }
-
-	  if (!sess.lsp_v.empty()) {
-	    auto it = std::ranges::find_if(sess.lsp_v, [&lsp_name](auto & lsp){return lsp->name == lsp_name;});
-	    if (it != sess.lsp_v.end()) (*it)->code_changed = true;
-	  }
-	*/
 }
 
-func moveDivider(pct int) {
+func moveDividerPct(pct int) {
 	// note below only necessary if window resized or font size changed
 	sess.textLines = sess.screenLines - 2 - TOP_MARGIN
 
@@ -1367,11 +1347,38 @@ func moveDivider(pct int) {
 	} else {
 		sess.divider = sess.screenCols - pct*sess.screenCols/100
 	}
-	sess.totaleditorcols = sess.screenCols - sess.divider - 2 //? OUTLINE MARGINS?
-
+	sess.totaleditorcols = sess.screenCols - sess.divider - 2
 	sess.eraseScreenRedrawLines()
 
-	if sess.divider > 10 { //////////////////////////////////////////////////////
+	if sess.divider > 10 {
+		org.refreshScreen()
+		org.drawStatusBar()
+	}
+
+	if sess.editorMode {
+		sess.positionWindows()
+		sess.eraseRightScreen() //erases editor area + statusbar + msg
+		sess.drawRightScreen()
+	} else if org.view == TASK && org.mode != NO_ROWS {
+		org.drawPreview()
+	}
+	sess.showOrgMessage("rows: %d  cols: %d  divider: %d", sess.screenLines, sess.screenCols, sess.divider)
+
+	sess.returnCursor()
+}
+
+func moveDividerAbs(num int) {
+	if num >= sess.screenCols {
+		sess.divider = 1
+	} else if num < 20 {
+		sess.divider = sess.screenCols - 20
+	} else {
+		sess.divider = sess.screenCols - num
+	}
+	sess.totaleditorcols = sess.screenCols - sess.divider - 2
+	sess.eraseScreenRedrawLines()
+
+	if sess.divider > 10 {
 		org.refreshScreen()
 		org.drawStatusBar()
 	}

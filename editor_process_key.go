@@ -197,12 +197,19 @@ func editorProcessKey(c int) bool { //bool returned is whether to redraw
 
 	case EX_COMMAND:
 		if c == '\r' {
-			pos := strings.LastIndex(p.command_line, " ")
+			// Index doesn't work for vert resize
+			// and LastIndex doesn't work for run
+			// so total kluge below
+			var pos int
 			var cmd string
+			if strings.HasPrefix(p.command_line, "vert") {
+				pos = strings.LastIndex(p.command_line, " ")
+			} else {
+				pos = strings.Index(p.command_line, " ")
+			}
 			if pos != -1 {
 				cmd = p.command_line[:pos]
 			} else {
-				pos = 0
 				cmd = p.command_line
 			}
 
@@ -244,7 +251,6 @@ func editorProcessKey(c int) bool { //bool returned is whether to redraw
 
 					for _, path := range paths {
 						if strings.HasPrefix(path.Name(), partial) {
-							//tabCompletion.list = append(tabCompletion.list, path.Name())
 							tabCompletion.list = append(tabCompletion.list, filepath.Join(dir, path.Name()))
 						}
 					}
@@ -260,7 +266,6 @@ func editorProcessKey(c int) bool { //bool returned is whether to redraw
 			}
 			p.command_line = p.command_line[:pos+1] + tabCompletion.list[tabCompletion.idx]
 			sess.showEdMessage(":%s", p.command_line)
-			//sess.showOrgMessage(":%s", tabCompletion.list[tabCompletion.idx])
 			return false
 		}
 

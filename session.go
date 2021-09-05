@@ -495,5 +495,5 @@ func (s *Session) signalHandler() {
 	//that percentage should be in session
 	// so right now this reverts back if it was changed during session
 	//s.moveDivider(s.cfg.ed_pct)
-	moveDivider(60)
+	moveDividerPct(60)
 }
