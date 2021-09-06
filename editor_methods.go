@@ -542,38 +542,55 @@ func (e *Editor) drawDocumentHighlight(documentHighlights []protocol.DocumentHig
 
 //func (e *Editor) drawDefinition(definition []protocol.LocationLink) {
 func (e *Editor) drawDefinition(definition []protocol.Location) {
-	op := e.output
-	op.rowOffset = 0
-	var s string
-	s = "definition:\n\n"
-	for i, d := range definition {
-		/*
-			s += fmt.Sprintf("OriginSelectionRange[%d]: %+v", i, d.OriginSelectionRange)
-			s += fmt.Sprintf("TargetURI: %+v", d.TargetURI)
-			s += fmt.Sprintf("TargetRange: %+v", d.TargetRange)
-			s += fmt.Sprintf("TargetSelectionRange: %+v", d.TargetSelectionRange)
-		*/
-		s += fmt.Sprintf("URI[%d]: %s\n", i, string(d.URI)[7:])
-		s += fmt.Sprintf("Range.Start.Line->%+v\n", d.Range.Start.Line)
-		s += fmt.Sprintf("Range.Start.Character->%+v\n", d.Range.Start.Character)
-		s += fmt.Sprintf("Range.End.Line->%+v\n", d.Range.End.Line)
-		s += fmt.Sprintf("Range.End.Character->%+v\n", d.Range.End.Character)
+	if len(definition) == 0 {
+		return
 	}
 	/*
-		r, err := os.Open(filename)
-		if err != nil {
-			return fmt.Errorf("Error opening file %s: %w", filename, err)
-		}
-		defer r.Close()
-
-		var ss []string
-		scanner := bufio.NewScanner(r)
-		for scanner.Scan() {
-			ss = append(ss, scanner.Text()) // not dealing with tabs for the moment
+		var s string
+		s = "definition:\n\n"
+		for i, d := range definition {
+			s += fmt.Sprintf("URI[%d]: %s\n", i, string(d.URI)[7:])
+			s += fmt.Sprintf("Range.Start.Line->%+v\n", d.Range.Start.Line)
+			s += fmt.Sprintf("Range.Start.Character->%+v\n", d.Range.Start.Character)
+			s += fmt.Sprintf("Range.End.Line->%+v\n", d.Range.End.Line)
+			s += fmt.Sprintf("Range.End.Character->%+v\n", d.Range.End.Character)
 		}
 	*/
+	d := definition[0]
+	filename := string(d.URI)[7:]
+	rowNum := int(d.Range.Start.Line)
+	//start := int(d.Range.Start.Character)
+	r, err := os.Open(filename)
+	if err != nil {
+		sess.showEdMessage("Error opening file %s: %w", filename, err)
+		return
+	}
+	defer r.Close()
 
-	op.rows = strings.Split(s, "\n")
+	//var ss []string
+	scanner := bufio.NewScanner(r)
+	op := e.output
+	op.rows = nil
+	i := 0
+	for scanner.Scan() {
+		/*
+				if i < rowNum {
+					continue
+				}
+				if i > rowNum+10 {
+					break
+				}
+			ss = append(ss, scanner.Text())
+		*/
+		op.rows = append(op.rows, scanner.Text())
+		i++
+	}
+	sess.showEdMessage("len(op.rows) = %d; i = %d, rowNum = %d", len(op.rows), i, rowNum)
+	op.rowOffset = rowNum
+	/*
+		op.rows = strings.Split(s, "\n")
+		op.rows = append(op.rows, ss...)
+	*/
 	op.drawText()
 }
 
