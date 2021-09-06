@@ -240,6 +240,23 @@ func sendDocumentHighlightRequest(line, character uint32) {
 	sendRequest("textDocument/documentHighlight", params)
 }
 
+func sendDefinitionRequest(line, character uint32) {
+	progressToken := protocol.NewProgressToken("test")
+	params := protocol.DefinitionParams{
+		TextDocumentPositionParams: protocol.TextDocumentPositionParams{
+			TextDocument: protocol.TextDocumentIdentifier{
+				URI: lsp.fileUri},
+			Position: protocol.Position{
+				Line:      line,
+				Character: character}},
+		WorkDoneProgressParams: protocol.WorkDoneProgressParams{
+			WorkDoneToken: progressToken},
+		PartialResultParams: protocol.PartialResultParams{
+			PartialResultToken: progressToken},
+	}
+	sendRequest("textDocument/definition", params)
+}
+
 func readMessages() {
 	var length int64
 	name := lsp.name
@@ -352,6 +369,14 @@ func readMessages() {
 						sess.showEdMessage("documentHighlight error: %v", err)
 					}
 					p.drawDocumentHighlight(documentHighlight)
+				case "textDocument/definition":
+					//var definition []protocol.LocationLink
+					var definition []protocol.Location
+					err := json.Unmarshal(result, &definition)
+					if err != nil {
+						sess.showEdMessage("definition error: %v", err)
+					}
+					p.drawDefinition(definition)
 				}
 			}
 		case <-quit: //clangd never gets here; gopls does

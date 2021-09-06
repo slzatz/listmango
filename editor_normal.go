@@ -38,6 +38,7 @@ var e_lookup2 = map[string]interface{}{
 	leader + "sh": (*Editor).signatureHelp,
 	leader + "dh": (*Editor).documentHighlight,
 	leader + "sp": (*Editor).spellingCheck,
+	leader + "df": (*Editor).definition,
 }
 
 func (e *Editor) changeSplit(flag int) {
@@ -520,6 +521,10 @@ func (e *Editor) signatureHelp() {
 
 func (e *Editor) documentHighlight() {
 	sendDocumentHighlightRequest(uint32(e.fr), uint32(e.fc)) //+1 seems to work better
+}
+
+func (e *Editor) definition() {
+	sendDefinitionRequest(uint32(e.fr), uint32(e.fc)) //+1 seems to work better
 }
 
 func (e *Editor) spellingCheck() {

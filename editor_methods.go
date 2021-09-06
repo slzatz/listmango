@@ -540,6 +540,43 @@ func (e *Editor) drawDocumentHighlight(documentHighlights []protocol.DocumentHig
 	sess.returnCursor()
 }
 
+//func (e *Editor) drawDefinition(definition []protocol.LocationLink) {
+func (e *Editor) drawDefinition(definition []protocol.Location) {
+	op := e.output
+	op.rowOffset = 0
+	var s string
+	s = "definition:\n\n"
+	for i, d := range definition {
+		/*
+			s += fmt.Sprintf("OriginSelectionRange[%d]: %+v", i, d.OriginSelectionRange)
+			s += fmt.Sprintf("TargetURI: %+v", d.TargetURI)
+			s += fmt.Sprintf("TargetRange: %+v", d.TargetRange)
+			s += fmt.Sprintf("TargetSelectionRange: %+v", d.TargetSelectionRange)
+		*/
+		s += fmt.Sprintf("URI[%d]: %s\n", i, string(d.URI)[7:])
+		s += fmt.Sprintf("Range.Start.Line->%+v\n", d.Range.Start.Line)
+		s += fmt.Sprintf("Range.Start.Character->%+v\n", d.Range.Start.Character)
+		s += fmt.Sprintf("Range.End.Line->%+v\n", d.Range.End.Line)
+		s += fmt.Sprintf("Range.End.Character->%+v\n", d.Range.End.Character)
+	}
+	/*
+		r, err := os.Open(filename)
+		if err != nil {
+			return fmt.Errorf("Error opening file %s: %w", filename, err)
+		}
+		defer r.Close()
+
+		var ss []string
+		scanner := bufio.NewScanner(r)
+		for scanner.Scan() {
+			ss = append(ss, scanner.Text()) // not dealing with tabs for the moment
+		}
+	*/
+
+	op.rows = strings.Split(s, "\n")
+	op.drawText()
+}
+
 func (e *Editor) drawVisual(pab *strings.Builder) {
 
 	lf_ret := fmt.Sprintf("\r\n\x1b[%dC", e.left_margin+e.left_margin_offset)
