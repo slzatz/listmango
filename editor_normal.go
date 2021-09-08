@@ -37,8 +37,9 @@ var e_lookup2 = map[string]interface{}{
 	leader + "ho": (*Editor).hover,
 	leader + "sh": (*Editor).signatureHelp,
 	leader + "dh": (*Editor).documentHighlight,
-	leader + "sp": (*Editor).spellingCheck,
 	leader + "df": (*Editor).definition,
+	leader + "rf": (*Editor).reference,
+	leader + "sp": (*Editor).spellingCheck,
 }
 
 func (e *Editor) changeSplit(flag int) {
@@ -506,16 +507,10 @@ func (e *Editor) completion() {
 }
 
 func (e *Editor) hover() {
-	//text := e.bufferToString()
-	//sendDidChangeNotification(text)
-	//e.drawDiagnostics()
 	sendHoverRequest(uint32(e.fr), uint32(e.fc+1)) //+1 seems to work better
 }
 
 func (e *Editor) signatureHelp() {
-	//text := e.bufferToString()
-	//sendDidChangeNotification(text)
-	//e.drawDiagnostics()
 	sendSignatureHelpRequest(uint32(e.fr), uint32(e.fc)) //+1 seems to work better
 }
 
@@ -525,6 +520,10 @@ func (e *Editor) documentHighlight() {
 
 func (e *Editor) definition() {
 	sendDefinitionRequest(uint32(e.fr), uint32(e.fc)) //+1 seems to work better
+}
+
+func (e *Editor) reference() {
+	sendReferenceRequest(uint32(e.fr), uint32(e.fc)) //+1 seems to work better
 }
 
 func (e *Editor) spellingCheck() {

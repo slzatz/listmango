@@ -501,41 +501,38 @@ func (e *Editor) applyWorkspaceEdit(wse protocol.WorkspaceEdit) {
 }
 
 func (e *Editor) drawDocumentHighlight(documentHighlights []protocol.DocumentHighlight) {
-	op := e.output
-	op.rowOffset = 0
-	var s string
+	/*
+		op := e.output
+		op.rowOffset = 0
+		var s string
+		s = "documentHighlights:\n\n"
+	*/
 	e.highlightPositions = nil
-	s = "documentHighlights:\n\n"
-	for i, dh := range documentHighlights {
-		s += fmt.Sprintf("Highlight Number: %d\n", i+1)
-		s += fmt.Sprintf("Range.Start.Line->%+v\n", dh.Range.Start.Line)
-		s += fmt.Sprintf("Range.Start.Character->%+v\n", dh.Range.Start.Character)
-		s += fmt.Sprintf("Range.End.Line->%+v\n", dh.Range.End.Line)
-		s += fmt.Sprintf("Range.End.Character->%+v\n", dh.Range.End.Character)
-		s += fmt.Sprintf("Kind->%+v\n\n", dh.Kind)
-
+	for _, dh := range documentHighlights {
+		/*
+			s += fmt.Sprintf("Highlight Number: %d\n", i+1)
+			s += fmt.Sprintf("Range.Start.Line->%+v\n", dh.Range.Start.Line)
+			s += fmt.Sprintf("Range.Start.Character->%+v\n", dh.Range.Start.Character)
+			//s += fmt.Sprintf("Range.End.Line->%+v\n", dh.Range.End.Line)
+			s += fmt.Sprintf("Range.End.Character->%+v\n", dh.Range.End.Character)
+			s += fmt.Sprintf("Kind->%+v\n\n", dh.Kind)
+		*/
 		rowNum := int(dh.Range.Start.Line)
 		start := int(dh.Range.Start.Character)
 		end := int(dh.Range.End.Character)
 		e.highlightPositions = append(e.highlightPositions, Position{rowNum, start, end})
-		/*
-			row := string(e.bb[rowNum])
-			chars := "\x1b[48;5;31m" + row[start:end] + "\x1b[0m"
-			y := e.getScreenYFromRowColWW(rowNum, start) + e.top_margin - e.lineOffset          // - 1
-			x := e.getScreenXFromRowColWW(rowNum, start) + e.left_margin + e.left_margin_offset // - 1
-			if y >= e.top_margin && y <= e.screenlines {
-				fmt.Printf("\x1b[%d;%dH", y, x+1) //not sure why the +1
-				fmt.Print(chars)
-			}
-		*/
+	}
+	/*
 		s += fmt.Sprintf("e.highlightPositions->%+v\n\n", e.highlightPositions)
 		op.rows = strings.Split(s, "\n")
 		op.drawText()
+	*/
 
-	}
 	var ab strings.Builder
 	e.drawHighlights(&ab)
 	fmt.Print(ab.String())
+
+	sess.showEdMessage("Document Highlight Results: %d found", len(e.highlightPositions))
 
 	sess.returnCursor()
 }
@@ -591,6 +588,47 @@ func (e *Editor) drawDefinition(definition []protocol.Location) {
 		op.rows = strings.Split(s, "\n")
 		op.rows = append(op.rows, ss...)
 	*/
+	op.drawText()
+}
+
+func (e *Editor) drawReference(references []protocol.Location) {
+	if len(references) == 0 {
+		return
+	}
+	var s string
+	s = "references:\n\n"
+	for i, d := range references {
+		s += fmt.Sprintf("URI[%d]: %s\n", i, string(d.URI)[7:])
+		s += fmt.Sprintf("Range.Start.Line->%d\n", int(d.Range.Start.Line)+1)
+		s += fmt.Sprintf("Range.Start.Character->%d\n", int(d.Range.Start.Character))
+		//s += fmt.Sprintf("Range.End.Line->%+v\n", d.Range.End.Line)
+		s += fmt.Sprintf("Range.End.Character->%d\n\n", int(d.Range.End.Character))
+	}
+	/*
+		d := references[0]
+		filename := string(d.URI)[7:]
+		rowNum := int(d.Range.Start.Line)
+		r, err := os.Open(filename)
+		if err != nil {
+			sess.showEdMessage("Error opening file %s: %w", filename, err)
+			return
+		}
+		defer r.Close()
+
+		scanner := bufio.NewScanner(r)
+		op := e.output
+		op.rows = nil
+		i := 0
+		for scanner.Scan() {
+			op.rows = append(op.rows, scanner.Text())
+			i++
+		}
+		sess.showEdMessage("len(op.rows) = %d; i = %d, rowNum = %d", len(op.rows), i, rowNum)
+		op.rowOffset = rowNum
+	*/
+	op := e.output
+	op.rows = strings.Split(s, "\n")
+	op.rowOffset = 0
 	op.drawText()
 }
 

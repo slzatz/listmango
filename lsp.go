@@ -257,6 +257,22 @@ func sendDefinitionRequest(line, character uint32) {
 	sendRequest("textDocument/definition", params)
 }
 
+func sendReferenceRequest(line, character uint32) {
+	progressToken := protocol.NewProgressToken("test")
+	params := protocol.ReferenceParams{
+		TextDocumentPositionParams: protocol.TextDocumentPositionParams{
+			TextDocument: protocol.TextDocumentIdentifier{
+				URI: lsp.fileUri},
+			Position: protocol.Position{
+				Line:      line,
+				Character: character}},
+		WorkDoneProgressParams: protocol.WorkDoneProgressParams{
+			WorkDoneToken: progressToken},
+		PartialResultParams: protocol.PartialResultParams{
+			PartialResultToken: progressToken},
+	}
+	sendRequest("textDocument/references", params)
+}
 func readMessages() {
 	var length int64
 	name := lsp.name
@@ -377,6 +393,14 @@ func readMessages() {
 						sess.showEdMessage("definition error: %v", err)
 					}
 					p.drawDefinition(definition)
+				case "textDocument/references":
+					//var definition []protocol.LocationLink
+					var references []protocol.Location
+					err := json.Unmarshal(result, &references)
+					if err != nil {
+						sess.showEdMessage("references error: %v", err)
+					}
+					p.drawReference(references)
 				}
 			}
 		case <-quit: //clangd never gets here; gopls does
