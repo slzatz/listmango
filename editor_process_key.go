@@ -203,6 +203,25 @@ func editorProcessKey(c int) bool { //bool returned is whether to redraw
 			// Index doesn't work for vert resize
 			// and LastIndex doesn't work for run
 			// so total kluge below
+			//if p.command_line[0] == '%' {
+			if strings.Index(p.command_line, "s/") != -1 {
+				if strings.LastIndex(p.command_line, "/") < strings.LastIndex(p.command_line, "c") {
+					sess.showEdMessage("We don't support [c]onfirm")
+					p.mode = NORMAL
+					return false
+				}
+
+				v.Input(":" + p.command_line + "\r")
+				p.mode = NORMAL
+				p.command = ""
+				p.bb, _ = v.BufferLines(p.vbuf, 0, -1, true) //reading updated buffer
+				pos, _ := v.WindowCursor(w)                  //screen cx and cy set from pos
+				p.fr = pos[0] - 1
+				//p.fc = pos[1]
+				p.fc = utf8.RuneCount(p.bb[p.fr][:pos[1]])
+				sess.showOrgMessage("search and replace: %s", p.command_line)
+				return true
+			}
 			var pos int
 			var cmd string
 			if strings.HasPrefix(p.command_line, "vert") {
