@@ -6,6 +6,7 @@ import (
 	"os/user"
 	"path/filepath"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/neovim/go-client/nvim"
 )
@@ -74,7 +75,8 @@ func editorProcessKey(c int) bool { //bool returned is whether to redraw
 
 		pos, _ := v.WindowCursor(w) //set screen cx and cy from pos
 		p.fr = pos[0] - 1
-		p.fc = pos[1]
+		//p.fc = pos[1]
+		p.fc = utf8.RuneCount(p.bb[p.fr][:pos[1]])
 		sess.showEdMessage("")
 		return true
 	}
@@ -115,13 +117,12 @@ func editorProcessKey(c int) bool { //bool returned is whether to redraw
 		}
 		// enter a number and that's the selected replacement for a mispelling
 		if c == '\r' && p.mode == SPELLING {
-			v.Input("z=" + p.command_line + "\r") //don't need a check nvim is handling
-			//
+			v.Input("z=" + p.command_line + "\r")        //don't need a check nvim is handling
 			p.bb, _ = v.BufferLines(p.vbuf, 0, -1, true) //reading updated buffer
 			pos, _ := v.WindowCursor(w)                  //screen cx and cy set from pos
 			p.fr = pos[0] - 1
-			p.fc = pos[1]
-			//
+			//p.fc = pos[1]
+			p.fc = utf8.RuneCount(p.bb[p.fr][:pos[1]])
 			p.mode = NORMAL
 			sess.showOrgMessage(p.command_line)
 			return true
@@ -170,7 +171,8 @@ func editorProcessKey(c int) bool { //bool returned is whether to redraw
 				p.bb, _ = v.BufferLines(p.vbuf, 0, -1, true) //reading updated buffer
 				pos, _ := v.WindowCursor(w)                  //screen cx and cy set from pos
 				p.fr = pos[0] - 1
-				p.fc = pos[1]
+				//p.fc = pos[1]
+				p.fc = utf8.RuneCount(p.bb[p.fr][:pos[1]])
 				return true
 			} else {
 				return false
@@ -191,7 +193,8 @@ func editorProcessKey(c int) bool { //bool returned is whether to redraw
 			p.bb, _ = v.BufferLines(p.vbuf, 0, -1, true) //reading updated buffer
 			pos, _ := v.WindowCursor(w)                  //screen cx and cy set from pos
 			p.fr = pos[0] - 1
-			p.fc = pos[1]
+			//p.fc = pos[1]
+			p.fc = utf8.RuneCount(p.bb[p.fr][:pos[1]])
 			return true
 		}
 
@@ -373,7 +376,8 @@ func editorProcessKey(c int) bool { //bool returned is whether to redraw
 	p.bb, _ = v.BufferLines(p.vbuf, 0, -1, true) //reading updated buffer
 	pos, _ := v.WindowCursor(w)                  //set screen cx and cy from pos
 	p.fr = pos[0] - 1
-	p.fc = pos[1]
+	//p.fc = pos[1]
+	p.fc = utf8.RuneCount(p.bb[p.fr][:pos[1]])
 
 	if (c == 'u' || c == '\x12') && p.mode == NORMAL {
 		showLastVimMessage()

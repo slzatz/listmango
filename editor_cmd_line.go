@@ -8,6 +8,7 @@ import (
 	"os/exec"
 	"strconv"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/mandolyte/mdtopdf"
 )
@@ -627,9 +628,10 @@ func (e *Editor) goFormat() {
 	}
 	//v.Input("gg0")
 	pos, _ := v.WindowCursor(w) //screen cx and cy set from pos
-	p.fr = pos[0] - 1
-	p.fc = pos[1]
-	p.scroll()
+	e.fr = pos[0] - 1
+	//p.fc = pos[1]
+	e.fc = utf8.RuneCount(e.bb[e.fr][:pos[1]])
+	e.scroll()
 	e.drawText()
 	sess.returnCursor()
 	/*
