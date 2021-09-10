@@ -468,10 +468,17 @@ func (e *Editor) suggest() {
 	// clear messageBuf
 	_ = v.SetBufferLines(messageBuf, 0, -1, true, [][]byte{}) // in test case bytes.Fields(nil)
 
+	_ = v.FeedKeys("qaq", "t", false) /*****/
+
 	_, err := v.Input("z=\r") // need to remove \r when ready
+	//_, err := v.Input("z=") // can't make it work right now
 	if err != nil {
 		sess.showEdMessage("z= err: %v", err)
 	}
+	/*
+		cb, _ := v.CurrentBuffer()
+		sess.showOrgMessage("cb = %v", cb)
+	*/
 
 	// 1) set current buffer to messageBuf
 	// 2) paste register a into messageBuf
@@ -489,7 +496,7 @@ func (e *Editor) suggest() {
 	for _, b := range bb {
 		rows = append(rows, string(b))
 	}
-	e.overlay = rows
+	e.overlay = rows[1:] // first row is blank
 	e.mode = SPELLING
 	e.previewLineOffset = 0
 	e.drawOverlay()
