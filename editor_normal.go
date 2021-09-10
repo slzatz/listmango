@@ -465,24 +465,24 @@ func (e *Editor) nextStyle() {
 }
 
 func (e *Editor) suggest() {
-	// clear messageBuf
+	// clear messageBuf before redirecting z= output
 	_ = v.SetBufferLines(messageBuf, 0, -1, true, [][]byte{}) // in test case bytes.Fields(nil)
 
 	_ = v.FeedKeys("qaq", "t", false) /*****/
 
-	_, err := v.Input("z=\r") // need to remove \r when ready
-	//_, err := v.Input("z=") // can't make it work right now
+	// so below you get suggestions but with the return
+	// you're telling vim you didn't select one
+	// gets selected when you type a number
+	// in SPELLING mode
+	_, err := v.Input("z=\r")
 	if err != nil {
 		sess.showEdMessage("z= err: %v", err)
 	}
-	/*
-		cb, _ := v.CurrentBuffer()
-		sess.showOrgMessage("cb = %v", cb)
-	*/
 
 	// 1) set current buffer to messageBuf
-	// 2) paste register a into messageBuf
-	// 3) clear register a
+	// 2) paste register a into messageBuf -> "ap
+	// 3) clear register a -> qaq
+	// ? step 3 necessary if always clear before using
 	_ = v.SetCurrentBuffer(messageBuf)
 	_ = v.FeedKeys("\x1bgg\"apqaq", "t", false)
 
