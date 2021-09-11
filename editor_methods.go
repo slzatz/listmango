@@ -12,6 +12,20 @@ import (
 	"go.lsp.dev/protocol"
 )
 
+func (e *Editor) highlightInfo() { // [2][4]int {
+	v.Input("\x1bgv") //this is still necessary
+	start, err := v.BufferMark(p.vbuf, "<")
+	if err != nil {
+		sess.showEdMessage("Error in BufferMark: %v", err)
+	}
+	end, err := v.BufferMark(p.vbuf, ">")
+	if err != nil {
+		sess.showEdMessage("Error in BufferMark: %v", err)
+	}
+	e.vb_highlight[0] = [4]int{0, start[0], start[1] + 1, 0}
+	e.vb_highlight[1] = [4]int{0, end[0], end[1] + 1, 0}
+}
+
 //'automatically' happens in NORMAL and INSERT mode
 //return true -> redraw; false -> don't redraw
 func (e *Editor) findMatchForLeftBrace(leftBrace byte, back bool) bool {

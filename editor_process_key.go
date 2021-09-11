@@ -8,8 +8,6 @@ import (
 	"strconv"
 	"strings"
 	"unicode/utf8"
-
-	"github.com/neovim/go-client/nvim"
 )
 
 var termcodes = map[int]string{
@@ -22,26 +20,6 @@ var termcodes = map[int]string{
 	DEL_KEY:     "\x80kD",
 	PAGE_UP:     "\x80kP",
 	PAGE_DOWN:   "\x80kN",
-}
-
-func highlightInfo(v *nvim.Nvim) [2][4]int {
-	var bufnum, lnum, col, off int
-	var z [2][4]int
-	v.Input("\x1bgv")
-
-	err := v.Eval("getpos(\"'<\")", []*int{&bufnum, &lnum, &col, &off})
-	if err != nil {
-		sess.showOrgMessage("getpos error: %v", err)
-	}
-	z[0] = [4]int{bufnum, lnum, col, off}
-
-	err = v.Eval("getpos(\"'>\")", []*int{&bufnum, &lnum, &col, &off})
-	if err != nil {
-		sess.showOrgMessage("getpos error: %v", err)
-	}
-	z[1] = [4]int{bufnum, lnum, col, off}
-
-	return z
 }
 
 //note that bool returned is whether to redraw which will freeze program
@@ -392,7 +370,7 @@ func editorProcessKey(c int) bool { //bool returned is whether to redraw
 	switch p.mode {
 	//case INSERT, REPLACE, NORMAL:
 	case VISUAL, VISUAL_LINE, VISUAL_BLOCK:
-		p.vb_highlight = highlightInfo(v)
+		p.highlightInfo()
 	case SEARCH:
 		// return puts nvim into normal mode so don't need to catch return
 		if c == DEL_KEY || c == BACKSPACE {

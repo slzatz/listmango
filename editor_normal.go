@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"fmt"
 	"strings"
 
@@ -41,6 +40,7 @@ var e_lookup2 = map[string]interface{}{
 	leader + "rf": (*Editor).reference,
 	leader + "sp": (*Editor).spellingCheck,
 	leader + "su": (*Editor).spellSuggest,
+	leader + "xx": (*Editor).test,
 	"z=":          (*Editor).spellSuggest,
 }
 
@@ -231,54 +231,60 @@ func controlL() {
 	return
 }
 
-// this is actually for VISUAL mode
+// for VISUAL mode
 func (e *Editor) decorateWordVisual(c int) {
 	if len(e.bb) == 0 {
 		return
 	}
 
-	row := e.bb[e.fr]
+	if e.vb_highlight[0][1] != e.vb_highlight[1][1] {
+		sess.showEdMessage("The text must all be in the same row")
+		return
+	}
+
+	//row := e.bb[e.fr]
+	row := e.bb[e.vb_highlight[0][1]-1]
 	beg, end := e.vb_highlight[0][2]-1, e.vb_highlight[1][2]
 
 	var undo bool
-	var word []byte
-	if bytes.HasPrefix(row[beg:], []byte("**")) {
-		word = row[beg+2 : end-2]
+	s := string(row[beg:end])
+	if strings.HasPrefix(s, "**") {
 		if c == ctrlKey('b') {
 			undo = true
 		}
-	} else if row[beg] == '*' {
-		word = row[beg+1 : end-1]
+	} else if s[0] == '*' {
 		if c == ctrlKey('i') {
 			undo = true
 		}
-	} else if row[beg] == '`' {
-		word = row[beg+1 : end-1]
+	} else if s[0] == '`' {
 		if c == ctrlKey('e') {
 			undo = true
 		}
 	}
+	s = strings.Trim(s, "*`")
 	if undo {
-		v.SetBufferText(e.vbuf, e.fr, beg, e.fr, end, [][]byte{word})
-		v.SetWindowCursor(w, [2]int{e.fr + 1, beg}) //set screen cx and cy from pos
+		/*
+			v.SetBufferText(e.vbuf, e.fr, beg, e.fr, end, [][]byte{word})
+			v.SetWindowCursor(w, [2]int{e.fr + 1, beg}) //set screen cx and cy from pos
+		*/
+		v.Input("xi" + s + "\x1b")
 		return
 	}
 
-	if len(word) == 0 { // meaning that the word was not already decorated
-		word = row[beg:end]
-	}
-	var newText string
 	switch c {
 	case ctrlKey('b'):
-		newText = fmt.Sprintf("**%s**", word)
+		s = fmt.Sprintf("**%s**", s)
 	case ctrlKey('i'):
-		newText = fmt.Sprintf("*%s*", word)
+		s = fmt.Sprintf("*%s*", s)
 	case ctrlKey('e'):
-		newText = fmt.Sprintf("`%s`", word)
+		s = fmt.Sprintf("`%s`", s)
 	}
 
-	v.SetBufferText(e.vbuf, e.fr, beg, e.fr, end, [][]byte{[]byte(newText)})
-	v.SetWindowCursor(w, [2]int{e.fr + 1, beg}) //set screen cx and cy from pos
+	v.Input("xi" + s + "\x1b")
+	/*
+		v.SetBufferText(e.vbuf, e.fr, beg, e.fr, end, [][]byte{[]byte(newText)})
+		v.SetWindowCursor(w, [2]int{e.fr + 1, beg}) //set screen cx and cy from pos
+	*/
 }
 
 func (e *Editor) decorateWord(c int) {
@@ -286,69 +292,52 @@ func (e *Editor) decorateWord(c int) {
 		return
 	}
 
-	row := e.bb[e.fr]
-	if row[e.fc] == ' ' {
+	if e.bb[e.fr][e.fc] == ' ' {
 		return
 	}
 
-	delim := " .,;:#(){}[]!"
-	//find beginning of word
-	var beg int
-	if e.fc != 0 {
-		beg = bytes.LastIndexAny(row[:e.fc], delim)
-		if beg == -1 {
-			beg = 0
-		} else {
-			beg++
-		}
+	err := v.Command("let cword = expand('<cword>')")
+	if err != nil {
+		sess.showEdMessage("Error in test/cword =: %v", err)
 	}
+	var cw interface{}
+	v.Var("cword", &cw)
 
-	end := bytes.IndexAny(row[e.fc:], delim)
-	if end == -1 {
-		end = len(row)
-	} else {
-		end = end + e.fc
+	w := cw.(string)
+
+	if w == "" {
+		return
 	}
 
 	var undo bool
-	var word []byte
-	if bytes.HasPrefix(row[beg:], []byte("**")) {
-		word = row[beg+2 : end-2]
+	if strings.HasPrefix(w, "**") {
 		if c == ctrlKey('b') || c == 'b' {
 			undo = true
 		}
-	} else if row[beg] == '*' {
-		word = row[beg+1 : end-1]
+	} else if w[0] == '*' {
 		if c == ctrlKey('i') || c == 'i' {
 			undo = true
 		}
-	} else if row[beg] == '`' {
-		word = row[beg+1 : end-1]
+	} else if w[0] == '`' {
 		if c == ctrlKey('e') || c == 'e' {
 			undo = true
 		}
 	}
+	w = strings.Trim(w, "*`")
 	if undo {
-		v.SetBufferText(e.vbuf, e.fr, beg, e.fr, end, [][]byte{word})
-		v.SetWindowCursor(w, [2]int{e.fr + 1, beg}) //set screen cx and cy from pos
+		v.Input("ciw" + w + "\x1b")
 		return
 	}
 
-	if len(word) == 0 { // meaning that the word was not already decorated
-		word = row[beg:end]
-	}
-	var newText string
 	switch c {
 	case ctrlKey('b'), 'b':
-		newText = fmt.Sprintf("**%s**", word)
+		w = fmt.Sprintf("**%s**", w)
 	case ctrlKey('i'), 'i':
-		newText = fmt.Sprintf("*%s*", word)
+		w = fmt.Sprintf("*%s*", w)
 	case ctrlKey('e'), 'e':
-		newText = fmt.Sprintf("`%s`", word)
+		w = fmt.Sprintf("`%s`", w)
 	}
-
-	v.SetBufferText(e.vbuf, e.fr, beg, e.fr, end, [][]byte{[]byte(newText)})
-	v.SetWindowCursor(w, [2]int{e.fr + 1, beg})
+	v.Input("ciw" + w + "\x1b")
 }
 
 func showLastVimMessage() {
@@ -542,18 +531,10 @@ func (e *Editor) spellingCheck() {
 }
 
 func (e *Editor) spellSuggest() {
-	//err := v.Command("let sug = spellsuggest(\"norm\")")
 	err := v.Command("let sug = spellsuggest(expand('<cword>'))")
-	//s, err := v.Exec("let sug = spellsuggest(\"norm\")", true)
 	if err != nil {
 		sess.showEdMessage("Error in spellsuggest: %v", err)
 	}
-	//var suggestions []string
-	/*
-		var s interface{}
-		v.Var("sug", &s)
-		zz := s.([]interface{})
-	*/
 	var ss []interface{}
 	v.Var("sug", &ss)
 	e.suggestions, e.overlay = nil, nil
@@ -561,11 +542,35 @@ func (e *Editor) spellSuggest() {
 		e.suggestions = append(e.suggestions, s.(string))
 		e.overlay = append(e.overlay, fmt.Sprintf("%2d. %v", i, s))
 	}
-	//e.overlay = suggestions // first row is blank
 	e.mode = SPELLING
 	e.previewLineOffset = 0
 	e.drawOverlay()
-	//`ss := zz[0].(string)
+
 	//.VVar("statusmsg", &s)
 	//sess.showOrgMessage("ss = %+v", suggestions)
+}
+
+func (e *Editor) test() {
+	/*
+		err := v.Command("set iskeyword+=*")
+		if err != nil {
+			sess.showEdMessage("Error in test/set iskeyword: %v", err)
+		}
+		err = v.Command("let cword = expand('<cword>')")
+		if err != nil {
+			sess.showEdMessage("Error in test/cword =: %v", err)
+		}
+		var cw interface{}
+		v.Var("cword", &cw)
+	*/
+
+	start, err := v.BufferMark(e.vbuf, "<")
+	if err != nil {
+		sess.showEdMessage("Error in test/set iskeyword: %v", err)
+	}
+	end, err := v.BufferMark(e.vbuf, ">")
+	if err != nil {
+		sess.showEdMessage("Error in test/set iskeyword: %v", err)
+	}
+	sess.showEdMessage("mark = %+v -> %+v", start, end)
 }

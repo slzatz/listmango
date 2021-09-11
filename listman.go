@@ -126,6 +126,18 @@ func main() {
 		os.Exit(1)
 	}
 
+	err = v.Command("set iskeyword+=*")
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error in set iskeyword: %v", err)
+		os.Exit(1)
+	}
+
+	err = v.Command("set iskeyword+=`")
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error in set iskeyword: %v", err)
+		os.Exit(1)
+	}
+
 	redirectMessages(v)
 	messageBuf, _ = v.CreateBuffer(true, true)
 

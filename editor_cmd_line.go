@@ -48,6 +48,7 @@ var e_lookup_C = map[string]func(*Editor){
 	"rename":          (*Editor).rename, //lsp command
 	"pdf":             (*Editor).createPDF,
 	"print":           (*Editor).printDocument,
+	"xx":              (*Editor).test,
 }
 
 func (e *Editor) saveNoteToFile() {
