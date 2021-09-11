@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"os/user"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"unicode/utf8"
 
@@ -117,16 +118,27 @@ func editorProcessKey(c int) bool { //bool returned is whether to redraw
 		}
 		// enter a number and that's the selected replacement for a mispelling
 		if c == '\r' && p.mode == SPELLING {
-			// both of the below work
-			v.Input(p.command_line + "z=") //don't need a check nvim is handling
-			//v.Input("z=" + p.command_line + "\r") //don't need a check nvim is handling
+			num, err := strconv.Atoi(p.command_line)
+			if err != nil {
+				sess.showEdMessage("That wasn't a number!")
+				p.mode = NORMAL
+				p.command_line = ""
+				return true
+			}
+			if num < 0 || num > len(p.suggestions)-1 {
+				sess.showEdMessage("%d not in appropriate range", num)
+				p.mode = NORMAL
+				p.command_line = ""
+				return true
+			}
+			v.Input("ciw" + p.suggestions[num] + "\x1b")
 			p.bb, _ = v.BufferLines(p.vbuf, 0, -1, true) //reading updated buffer
 			pos, _ := v.WindowCursor(w)                  //screen cx and cy set from pos
 			p.fr = pos[0] - 1
-			//p.fc = pos[1]
 			p.fc = utf8.RuneCount(p.bb[p.fr][:pos[1]])
 			p.mode = NORMAL
 			sess.showOrgMessage(p.command_line)
+			p.command_line = "" // necessary
 			return true
 		}
 		if c == DEL_KEY || c == BACKSPACE {
@@ -164,7 +176,9 @@ func editorProcessKey(c int) bool { //bool returned is whether to redraw
 				if err != nil {
 					sess.showEdMessage("%v", err)
 				}
-				if strings.Index(" m l c d xz=", p.command) != -1 {
+				//keep tripping over this
+				//command should return a redraw bool
+				if strings.Index(" m l c d xz= su", p.command) != -1 {
 					p.command = ""
 					return false
 				}

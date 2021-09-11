@@ -26,11 +26,11 @@ var e_lookup2 = map[string]interface{}{
 	"\x17>":              (*Editor).changeHSplit,
 	"\x17<":              (*Editor).changeHSplit,
 	"\x06":               (*Editor).findMatchForBrace, // for testing
-	"z=":                 (*Editor).suggest,
-	leader + "l":         (*Editor).showVimMessageLog,
-	leader + "m":         (*Editor).showMarkdownPreview,
-	leader + "y":         (*Editor).nextStyle,
-	leader + "w":         showWindows,
+	//"z=":                 (*Editor).suggest,
+	leader + "l": (*Editor).showVimMessageLog,
+	leader + "m": (*Editor).showMarkdownPreview,
+	leader + "y": (*Editor).nextStyle,
+	leader + "w": showWindows,
 	//leader + "p":         (*Editor).showSpellingPreview,
 	leader + "t":  (*Editor).readGoTemplate,
 	leader + "co": (*Editor).completion,
@@ -40,6 +40,8 @@ var e_lookup2 = map[string]interface{}{
 	leader + "df": (*Editor).definition,
 	leader + "rf": (*Editor).reference,
 	leader + "sp": (*Editor).spellingCheck,
+	leader + "su": (*Editor).spellSuggest,
+	"z=":          (*Editor).spellSuggest,
 }
 
 func (e *Editor) changeSplit(flag int) {
@@ -464,11 +466,12 @@ func (e *Editor) nextStyle() {
 	sess.showEdMessage("New style is %q", sess.style[sess.styleIndex])
 }
 
+/*
 func (e *Editor) suggest() {
 	// clear messageBuf before redirecting z= output
 	_ = v.SetBufferLines(messageBuf, 0, -1, true, [][]byte{}) // in test case bytes.Fields(nil)
 
-	_ = v.FeedKeys("qaq", "t", false) /*****/
+	_ = v.FeedKeys("qaq", "t", false)
 
 	// so below you get suggestions but with the return
 	// you're telling vim you didn't select one
@@ -501,6 +504,7 @@ func (e *Editor) suggest() {
 	e.previewLineOffset = 0
 	e.drawOverlay()
 }
+*/
 
 func (e *Editor) readGoTemplate() {
 	e.readFileIntoNote("go.template")
@@ -535,4 +539,33 @@ func (e *Editor) reference() {
 
 func (e *Editor) spellingCheck() {
 	e.highlightMispelledWords()
+}
+
+func (e *Editor) spellSuggest() {
+	//err := v.Command("let sug = spellsuggest(\"norm\")")
+	err := v.Command("let sug = spellsuggest(expand('<cword>'))")
+	//s, err := v.Exec("let sug = spellsuggest(\"norm\")", true)
+	if err != nil {
+		sess.showEdMessage("Error in spellsuggest: %v", err)
+	}
+	//var suggestions []string
+	/*
+		var s interface{}
+		v.Var("sug", &s)
+		zz := s.([]interface{})
+	*/
+	var ss []interface{}
+	v.Var("sug", &ss)
+	e.suggestions, e.overlay = nil, nil
+	for i, s := range ss { //zz
+		e.suggestions = append(e.suggestions, s.(string))
+		e.overlay = append(e.overlay, fmt.Sprintf("%2d. %v", i, s))
+	}
+	//e.overlay = suggestions // first row is blank
+	e.mode = SPELLING
+	e.previewLineOffset = 0
+	e.drawOverlay()
+	//`ss := zz[0].(string)
+	//.VVar("statusmsg", &s)
+	//sess.showOrgMessage("ss = %+v", suggestions)
 }

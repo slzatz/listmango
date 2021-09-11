@@ -35,6 +35,7 @@ type Editor struct {
 	previewLineOffset  int
 	overlay            []string // for suggest, showVimMessageLog
 	highlightPositions []Position
+	suggestions        []string //spelling suggestions
 	//coloff              int //first column based on user scroll (but not needed b/o word wrap)
 }
 
