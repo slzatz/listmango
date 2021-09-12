@@ -11,6 +11,55 @@ import (
 
 func (e *Editor) highlightMispelledWords() {
 	e.highlightPositions = nil
+	var rowNum int
+	var start int
+	var end int
+	var ln interface{}
+	v.Command("set spell")
+	v.Input("gg")
+	v.Input("]s")
+	first, _ := v.WindowCursor(w) //set screen cx and cy from pos
+	rowNum = first[0] - 1
+	start = first[1]
+	err := v.Command("let length = strlen(expand('<cword>'))")
+	if err != nil {
+		sess.showEdMessage("Error in test/cword =: %v", err)
+	}
+	v.Var("length", &ln)
+	end = start + int(ln.(int64))
+	e.highlightPositions = append(e.highlightPositions, Position{rowNum, start, end})
+	var pos [2]int
+	for {
+		v.Input("]s")
+		pos, _ = v.WindowCursor(w) //set screen cx and cy from pos
+		if pos == first {
+			break
+		}
+		rowNum = pos[0] - 1
+		//start = utf8.RuneCount(p.bb[rowNum][:pos[1]])
+		start = pos[1]
+		err := v.Command("let length = strlen(expand('<cword>'))")
+		if err != nil {
+			sess.showEdMessage("Error in test/cword =: %v", err)
+		}
+		var ln interface{}
+		v.Var("length", &ln)
+		end = start + int(ln.(int64))
+
+		e.highlightPositions = append(e.highlightPositions, Position{rowNum, start, end})
+	}
+
+	// done here because no need to redraw text
+	/*
+		var ab strings.Builder
+		e.drawHighlights(&ab)
+		fmt.Print(ab.String())
+	*/
+	sess.showEdMessage("e.highlightPositions = %=v", e.highlightPositions)
+}
+
+func (e *Editor) highlightMispelledWordsold() {
+	e.highlightPositions = nil
 
 	cmd := exec.Command("nuspell", "-d", "en_US")
 
