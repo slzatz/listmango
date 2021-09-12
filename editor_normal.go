@@ -500,33 +500,69 @@ func (e *Editor) readGoTemplate() {
 }
 
 func (e *Editor) completion() {
-	text := e.bufferToString()
-	sendDidChangeNotification(text)
-	e.drawDiagnostics()
+	if e.isModified() {
+		sess.showEdMessage("%sNeed to write note first%s", RED_BG, RESET)
+		return
+		//sendDidChangeNotification(e.bufferToString())
+		//e.drawDiagnostics()
+	}
+	//e.drawDiagnostics()
 	sendCompletionRequest(uint32(e.fr), uint32(e.fc+1)) //+1 seems to work better
 }
 
 func (e *Editor) hover() {
+	if e.isModified() {
+		sess.showEdMessage("%sNeed to write note first%s", RED_BG, RESET)
+		return
+		//sendDidChangeNotification(e.bufferToString())
+		//e.drawDiagnostics()
+	}
 	sendHoverRequest(uint32(e.fr), uint32(e.fc+1)) //+1 seems to work better
 }
 
 func (e *Editor) signatureHelp() {
+	if e.isModified() {
+		sess.showEdMessage("%sNeed to write note first%s", RED_BG, RESET)
+		return
+		//sendDidChangeNotification(e.bufferToString())
+		//e.drawDiagnostics()
+	}
 	sendSignatureHelpRequest(uint32(e.fr), uint32(e.fc)) //+1 seems to work better
 }
 
 func (e *Editor) documentHighlight() {
+	if e.isModified() {
+		sess.showEdMessage("%sNeed to write note first%s", RED_BG, RESET)
+		return
+		//sendDidChangeNotification(e.bufferToString())
+		//e.drawDiagnostics()
+	}
 	sendDocumentHighlightRequest(uint32(e.fr), uint32(e.fc)) //+1 seems to work better
 }
 
 func (e *Editor) definition() {
+	if e.isModified() {
+		sess.showEdMessage("%sNeed to write note first%s", RED_BG, RESET)
+		return
+		//sendDidChangeNotification(e.bufferToString())
+		//e.drawDiagnostics()
+	}
 	sendDefinitionRequest(uint32(e.fr), uint32(e.fc)) //+1 seems to work better
 }
 
 func (e *Editor) reference() {
+	if e.isModified() {
+		sendDidChangeNotification(e.bufferToString())
+		e.drawDiagnostics()
+	}
 	sendReferenceRequest(uint32(e.fr), uint32(e.fc)) //+1 seems to work better
 }
 
 func (e *Editor) spellingCheck() {
+	if e.isModified() {
+		sess.showEdMessage("%sYou need to write the note before highlighting text%s", RED_BG, RESET)
+		return
+	}
 	e.highlightMispelledWords()
 }
 

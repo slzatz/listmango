@@ -15,10 +15,11 @@ func (e *Editor) highlightMispelledWords() {
 	var start int
 	var end int
 	var ln interface{}
+	curPos, _ := v.WindowCursor(w)
 	v.Command("set spell")
 	v.Input("gg")
 	v.Input("]s")
-	first, _ := v.WindowCursor(w) //set screen cx and cy from pos
+	first, _ := v.WindowCursor(w)
 	rowNum = first[0] - 1
 	start = first[1]
 	err := v.Command("let length = strlen(expand('<cword>'))")
@@ -31,7 +32,7 @@ func (e *Editor) highlightMispelledWords() {
 	var pos [2]int
 	for {
 		v.Input("]s")
-		pos, _ = v.WindowCursor(w) //set screen cx and cy from pos
+		pos, _ = v.WindowCursor(w)
 		if pos == first {
 			break
 		}
@@ -48,14 +49,15 @@ func (e *Editor) highlightMispelledWords() {
 
 		e.highlightPositions = append(e.highlightPositions, Position{rowNum, start, end})
 	}
+	v.SetWindowCursor(w, curPos) //return cursor to where it was
 
 	// done here because no need to redraw text
 	/*
 		var ab strings.Builder
 		e.drawHighlights(&ab)
 		fmt.Print(ab.String())
+		sess.showEdMessage("e.highlightPositions = %=v", e.highlightPositions)
 	*/
-	sess.showEdMessage("e.highlightPositions = %=v", e.highlightPositions)
 }
 
 func (e *Editor) highlightMispelledWordsold() {

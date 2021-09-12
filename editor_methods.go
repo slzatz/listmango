@@ -901,7 +901,6 @@ func (e *Editor) drawHighlights(pab *strings.Builder) {
 	}
 	if e.isModified() {
 		e.highlightPositions = nil
-		sess.showEdMessage("You need to write the note before highlighting text")
 		return
 	}
 	for _, p := range e.highlightPositions {

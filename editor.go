@@ -20,11 +20,11 @@ type Editor struct {
 	command            string // right now includes normal mode commands and command line commands
 	last_command       string
 	firstVisibleRow    int
-	spellcheck         bool
-	highlightSyntax    bool
-	numberLines        bool
-	checkSpelling      bool
-	redraw             bool
+	//spellcheck         bool
+	highlightSyntax bool
+	numberLines     bool
+	//checkSpelling      bool
+	redraw bool
 	//search_string       string //word under cursor works with *, n, N etc.
 	id                 int //db id of entry
 	output             *Output
@@ -41,19 +41,19 @@ type Editor struct {
 
 func NewEditor() *Editor {
 	return &Editor{
-		cx:                 0, //actual cursor x position (takes into account any scroll/offset)
-		cy:                 0, //actual cursor y position ""
-		fc:                 0, //'file' x position as defined by reading sqlite text into rows vector
-		fr:                 0, //'file' y position ""
-		lineOffset:         0, //the number of lines of text at the top scrolled off the screen
-		mode:               NORMAL,
-		command:            "",
-		command_line:       "",
-		firstVisibleRow:    0,
-		spellcheck:         false,
-		highlightSyntax:    true, // applies to golang, c++ etc. and markdown
-		numberLines:        true,
-		checkSpelling:      false,
+		cx:              0, //actual cursor x position (takes into account any scroll/offset)
+		cy:              0, //actual cursor y position ""
+		fc:              0, //'file' x position as defined by reading sqlite text into rows vector
+		fr:              0, //'file' y position ""
+		lineOffset:      0, //the number of lines of text at the top scrolled off the screen
+		mode:            NORMAL,
+		command:         "",
+		command_line:    "",
+		firstVisibleRow: 0,
+		//spellcheck:         false,
+		highlightSyntax: true, // applies to golang, c++ etc. and markdown
+		numberLines:     true,
+		//checkSpelling:      false,
 		redraw:             false,
 		output:             nil,
 		left_margin_offset: LEFT_MARGIN_OFFSET, // 0 if not syntax highlighting b/o synt high =>line numbers

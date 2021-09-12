@@ -34,7 +34,6 @@ var e_lookup_C = map[string]func(*Editor){
 	"save":            (*Editor).saveNoteToFile,
 	"savefile":        (*Editor).saveNoteToFile,
 	"syntax":          (*Editor).syntax,
-	"spell":           (*Editor).spell,
 	"number":          (*Editor).number,
 	"num":             (*Editor).number,
 	"ha":              (*Editor).printNote,
@@ -49,6 +48,7 @@ var e_lookup_C = map[string]func(*Editor){
 	"pdf":             (*Editor).createPDF,
 	"print":           (*Editor).printDocument,
 	"xx":              (*Editor).test,
+	//"spell":           (*Editor).spell,
 }
 
 func (e *Editor) saveNoteToFile() {
@@ -346,7 +346,7 @@ func (e *Editor) syntax() {
 	e.highlightSyntax = !e.highlightSyntax
 	if e.highlightSyntax {
 		e.left_margin_offset = LEFT_MARGIN_OFFSET
-		e.checkSpelling = false // can't syntax highlight(including markdown) and check spelling
+		//e.checkSpelling = false // can't syntax highlight(including markdown) and check spelling
 	}
 	e.drawText()
 	// no need to call drawFrame or drawStatusBar
@@ -550,6 +550,7 @@ func (e *Editor) quitAll() {
 	}
 }
 
+/*
 func (e *Editor) spell() {
 	e.checkSpelling = !e.checkSpelling
 	if e.checkSpelling {
@@ -567,6 +568,7 @@ func (e *Editor) spell() {
 	e.drawText()
 	sess.showEdMessage("Spelling is %t", e.checkSpelling)
 }
+*/
 
 func (e *Editor) number() {
 	e.numberLines = !e.numberLines
