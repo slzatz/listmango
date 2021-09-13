@@ -16,7 +16,7 @@ require (
 	github.com/charmbracelet/glamour v0.3.0
 	github.com/disintegration/imaging v1.6.2
 	github.com/lib/pq v1.10.2
-	github.com/mandolyte/mdtopdf v0.0.0-20201204141826-8d22b5d4e7e3 // indirect
+	github.com/mandolyte/mdtopdf v0.0.0-20201204141826-8d22b5d4e7e3
 	github.com/mattn/go-sqlite3 v1.14.8
 	github.com/microcosm-cc/bluemonday v1.0.15 // indirect
 	github.com/muesli/reflow v0.3.0 // indirect
