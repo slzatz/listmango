@@ -20,12 +20,9 @@ type Editor struct {
 	command            string // right now includes normal mode commands and command line commands
 	last_command       string
 	firstVisibleRow    int
-	//spellcheck         bool
-	highlightSyntax bool
-	numberLines     bool
-	//checkSpelling      bool
-	redraw bool
-	//search_string       string //word under cursor works with *, n, N etc.
+	highlightSyntax    bool
+	numberLines        bool
+	redraw             bool
 	id                 int //db id of entry
 	output             *Output
 	vbuf               nvim.Buffer
@@ -36,24 +33,21 @@ type Editor struct {
 	overlay            []string // for suggest, showVimMessageLog
 	highlightPositions []Position
 	suggestions        []string //spelling suggestions
-	//coloff              int //first column based on user scroll (but not needed b/o word wrap)
 }
 
 func NewEditor() *Editor {
 	return &Editor{
-		cx:              0, //actual cursor x position (takes into account any scroll/offset)
-		cy:              0, //actual cursor y position ""
-		fc:              0, //'file' x position as defined by reading sqlite text into rows vector
-		fr:              0, //'file' y position ""
-		lineOffset:      0, //the number of lines of text at the top scrolled off the screen
-		mode:            NORMAL,
-		command:         "",
-		command_line:    "",
-		firstVisibleRow: 0,
-		//spellcheck:         false,
-		highlightSyntax: true, // applies to golang, c++ etc. and markdown
-		numberLines:     true,
-		//checkSpelling:      false,
+		cx:                 0, //actual cursor x position (takes into account any scroll/offset)
+		cy:                 0, //actual cursor y position ""
+		fc:                 0, //'file' x position as defined by reading sqlite text into rows vector
+		fr:                 0, //'file' y position ""
+		lineOffset:         0, //the number of lines of text at the top scrolled off the screen
+		mode:               NORMAL,
+		command:            "",
+		command_line:       "",
+		firstVisibleRow:    0,
+		highlightSyntax:    true, // applies to golang, c++ etc. and markdown
+		numberLines:        true,
 		redraw:             false,
 		output:             nil,
 		left_margin_offset: LEFT_MARGIN_OFFSET, // 0 if not syntax highlighting b/o synt high =>line numbers

@@ -8,6 +8,7 @@ import (
 	"os"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"go.lsp.dev/protocol"
 )
@@ -904,10 +905,11 @@ func (e *Editor) drawHighlights(pab *strings.Builder) {
 		return
 	}
 	for _, p := range e.highlightPositions {
-		row := string(e.bb[p.rowNum])
-		chars := "\x1b[48;5;31m" + row[p.start:p.end] + "\x1b[0m"
-		y := e.getScreenYFromRowColWW(p.rowNum, p.start) + e.top_margin - e.lineOffset          // - 1
-		x := e.getScreenXFromRowColWW(p.rowNum, p.start) + e.left_margin + e.left_margin_offset // - 1
+		row := e.bb[p.rowNum]
+		chars := "\x1b[48;5;31m" + string(row[p.start:p.end]) + "\x1b[0m"
+		start := utf8.RuneCount(row[:p.start])
+		y := e.getScreenYFromRowColWW(p.rowNum, start) + e.top_margin - e.lineOffset          // - 1
+		x := e.getScreenXFromRowColWW(p.rowNum, start) + e.left_margin + e.left_margin_offset // - 1
 		if y >= e.top_margin && y <= e.screenlines {
 			fmt.Fprintf(pab, "\x1b[%d;%dH\x1b[0m", y, x+1) //not sure why the +1
 			fmt.Fprint(pab, chars)
