@@ -15,6 +15,7 @@ require (
 	github.com/alecthomas/chroma v0.9.2
 	github.com/charmbracelet/glamour v0.3.0
 	github.com/disintegration/imaging v1.6.2
+	github.com/jung-kurt/gofpdf v1.16.2 // indirect
 	github.com/lib/pq v1.10.2
 	github.com/mandolyte/mdtopdf v0.0.0-20201204141826-8d22b5d4e7e3
 	github.com/mattn/go-sqlite3 v1.14.8

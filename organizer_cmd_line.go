@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/charmbracelet/glamour"
+	"github.com/jung-kurt/gofpdf"
 	"github.com/mandolyte/mdtopdf"
 )
 
@@ -65,6 +66,9 @@ var cmd_lookup = map[string]func(*Organizer, int){
 	"images":          (*Organizer).setImage,
 	"print":           (*Organizer).printDocument,
 	"ha":              (*Organizer).printList,
+	"ha2":             (*Organizer).printList2,
+	"printlist":       (*Organizer).printList2,
+	"pl":              (*Organizer).printList2,
 	"lsp":             (*Organizer).launchLsp,
 	"shutdown":        (*Organizer).shutdownLsp,
 }
@@ -828,6 +832,42 @@ func (o *Organizer) printList(unused int) {
 
 	if p != nil {
 		v.SetCurrentBuffer(p.vbuf)
+	}
+	o.mode = o.last_mode
+	o.command_line = ""
+}
+
+func (o *Organizer) printList2(unused int) {
+	pdf := gofpdf.New("P", "mm", "Letter", "")
+	pdf.AddPage()
+	pdf.SetFont("Arial", "B", 12)
+	curDate := time.Now().Format("January 02, 2006")
+	title := fmt.Sprintf("To Do List %s", curDate)
+	pdf.CellFormat(190, 1, title, "0", 0, "CM", false, 0, "") //190,7
+	var n int
+	pageCount := 1
+	for i, row := range o.rows {
+		line := fmt.Sprintf("%2d. %s", i+1, row.title)
+		if row.star {
+			pdf.SetFont("Arial", "B", 10)
+		} else {
+			pdf.SetFont("Arial", "", 10)
+		}
+		//if i%25 == 0 {
+		if pdf.PageCount() != pageCount {
+			pageCount += 1
+			n = 0
+		}
+		pdf.SetXY(5, float64(20+n*5))
+		pdf.CellFormat(1, 1, line, "0", 0, "L", false, 0, "") // cell format doesn't matter if no border? 7
+		n++
+	}
+
+	pdf.OutputFileAndClose("output.pdf")
+	cmd := exec.Command("lpr", "output.pdf")
+	err := cmd.Run()
+	if err != nil {
+		sess.showEdMessage("Error printing document: %v", err)
 	}
 	o.mode = o.last_mode
 	o.command_line = ""
