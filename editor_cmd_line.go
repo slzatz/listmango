@@ -13,7 +13,6 @@ import (
 	"github.com/mandolyte/mdtopdf"
 )
 
-//var e_lookup_C = map[string]interface{}{
 var e_lookup_C = map[string]func(*Editor){
 	"write":           (*Editor).writeNote,
 	"w":               (*Editor).writeNote,
@@ -47,8 +46,7 @@ var e_lookup_C = map[string]func(*Editor){
 	"rename":          (*Editor).rename, //lsp command
 	"pdf":             (*Editor).createPDF,
 	"print":           (*Editor).printDocument,
-	"xx":              (*Editor).test,
-	//"spell":           (*Editor).spell,
+	"xx":              (*Editor).test, /*****/
 }
 
 func (e *Editor) saveNoteToFile() {
@@ -360,7 +358,7 @@ func (e *Editor) printNote() {
 	}
 }
 
-// was for debugging
+// debugging
 func (e *Editor) modified() {
 	var result bool
 	err := v.BufferOption(0, "modified", &result) //or e.vbuf

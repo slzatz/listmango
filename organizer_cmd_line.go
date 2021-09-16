@@ -64,6 +64,7 @@ var cmd_lookup = map[string]func(*Organizer, int){
 	"image":           (*Organizer).setImage,
 	"images":          (*Organizer).setImage,
 	"print":           (*Organizer).printDocument,
+	"ha":              (*Organizer).printList,
 	"lsp":             (*Organizer).launchLsp,
 	"shutdown":        (*Organizer).shutdownLsp,
 }
@@ -797,6 +798,36 @@ func (o *Organizer) printDocument(unused int) {
 	err := cmd.Run()
 	if err != nil {
 		sess.showEdMessage("Error printing document: %v", err)
+	}
+	o.mode = o.last_mode
+	o.command_line = ""
+}
+
+func (o *Organizer) printList(unused int) {
+	var bb [][]byte
+	for i, row := range o.rows {
+		bb = append(bb, []byte(fmt.Sprintf("%2d. %s", i+1, row.title)))
+	}
+	tempBuf, _ := v.CreateBuffer(true, true)
+	v.SetBufferLines(tempBuf, 0, -1, true, bb)
+	v.SetCurrentBuffer(tempBuf)
+	err := v.Command("ha")
+	if err != nil {
+		sess.showEdMessage("Error printing: %v", err)
+	}
+	deleteBufferOpts := map[string]bool{
+		"force":  true,
+		"unload": false,
+	}
+	err = v.DeleteBuffer(tempBuf, deleteBufferOpts)
+	if err != nil {
+		sess.showOrgMessage("DeleteBuffer error %v", err)
+	} else {
+		sess.showOrgMessage("DeleteBuffer successful")
+	}
+
+	if p != nil {
+		v.SetCurrentBuffer(p.vbuf)
 	}
 	o.mode = o.last_mode
 	o.command_line = ""
