@@ -45,6 +45,8 @@ var n_lookup = map[string]func(){
 	string(ctrlKey('j')):       controlJ,
 	string(ctrlKey('k')):       controlK,
 	string(ctrlKey('z')):       controlZ,
+	string(ctrlKey('n')):       drawPreviewWithImages,
+	" m":                       drawPreviewWithImages,
 }
 
 func _i() {
@@ -257,17 +259,14 @@ func switchToEditorMode() {
 		sess.showOrgMessage("There are no active editors")
 		return
 	}
-
 	sess.eraseRightScreen()
 	sess.drawRightScreen()
-
 	sess.editorMode = true
 }
 
 func controlJ() {
 	if len(org.note) > org.altRowoff+org.textLines {
 		org.altRowoff++
-		//sess.eraseRightScreen()
 		org.drawPreview()
 	}
 }
@@ -275,7 +274,6 @@ func controlJ() {
 func controlK() {
 	if org.altRowoff > 0 {
 		org.altRowoff--
-		//sess.eraseRightScreen()
 		org.drawPreview()
 	}
 }
@@ -301,4 +299,8 @@ func controlZ() {
 	}
 	org.mode = LINKS
 	sess.showOrgMessage("\x1b[1mType a number to choose a link\x1b[0m")
+}
+func drawPreviewWithImages() {
+	sess.eraseRightScreen()
+	org.drawPreviewWithImages()
 }
