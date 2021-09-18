@@ -49,6 +49,7 @@ func keywordExists(name string) int {
 }
 
 func generateContextMap() {
+	// if new client context hasn't been synched - tid =0
 	rows, err := db.Query("SELECT tid, title FROM context;")
 	if err != nil {
 		log.Fatal(err)
@@ -65,6 +66,7 @@ func generateContextMap() {
 }
 
 func generateFolderMap() {
+	// if new client folder hasn't been synched - tid =0
 	rows, err := db.Query("SELECT tid, title FROM folder;")
 	if err != nil {
 		log.Fatal(err)
@@ -148,6 +150,10 @@ func toggleCompleted() {
 
 func updateTaskContext(new_context string, id int) {
 	context_tid := org.context_map[new_context]
+	if context_tid == 0 {
+		sess.showOrgMessage("%q has not been synched yet - must do that before adding tasks", new_context)
+		return
+	}
 
 	_, err := db.Exec("UPDATE task SET context_tid=?, modified=datetime('now') WHERE id=?;",
 		context_tid, id)
@@ -160,6 +166,10 @@ func updateTaskContext(new_context string, id int) {
 
 func updateTaskFolder(new_folder string, id int) {
 	folder_tid := org.folder_map[new_folder]
+	if folder_tid == 0 {
+		sess.showOrgMessage("%q has not been synched yet - must do that before adding tasks", new_folder)
+		return
+	}
 
 	_, err := db.Exec("UPDATE task SET folder_tid=?, modified=datetime('now') WHERE id=?;",
 		folder_tid, id)
@@ -1019,6 +1029,14 @@ func updateContainerTitle() {
 	_, err := db.Exec(stmt, row.title, row.id)
 	if err != nil {
 		sess.showOrgMessage("Error updating %s title for %d", table, row.id)
+	}
+	switch org.view {
+	case CONTEXT:
+		generateContextMap()
+	case FOLDER:
+		generateFolderMap()
+	case KEYWORD:
+		generateKeywordMap()
 	}
 }
 
