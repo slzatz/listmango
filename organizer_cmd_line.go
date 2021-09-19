@@ -470,6 +470,9 @@ func (o *Organizer) sync(unused int) {
 		log = synchronize(true)
 	} else {
 		log = synchronize(false)
+		generateContextMap()
+		generateFolderMap()
+		generateKeywordMap()
 	}
 	o.command_line = ""
 	o.eraseRightScreen()
@@ -485,6 +488,7 @@ func (o *Organizer) sync(unused int) {
 	}
 	o.note = strings.Split(note, "\n")
 	o.drawPreviewWithoutImages()
+	o.last_mode = o.mode
 	o.mode = PREVIEW_SYNC_LOG
 }
 
