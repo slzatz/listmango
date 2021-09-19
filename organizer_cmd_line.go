@@ -390,7 +390,6 @@ func (o *Organizer) newEntry(unused int) {
 	sess.showOrgMessage("\x1b[1m-- INSERT --\x1b[0m")
 	sess.eraseRightScreen() //erases the note area
 	o.mode = INSERT
-
 }
 
 func (o *Organizer) refresh(unused int) {

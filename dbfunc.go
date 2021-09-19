@@ -994,19 +994,15 @@ func getNoteSearchPositions__(id int) [][]int {
 }
 
 func updateContainerTitle() {
-
 	row := &org.rows[org.fr]
-
 	if !row.dirty {
 		sess.showOrgMessage("Row has not been changed")
 		return
 	}
-
 	if row.id == -1 {
 		insertContainer(row)
 		return
 	}
-
 	var table string
 	var column string
 	switch org.view {
@@ -1030,18 +1026,9 @@ func updateContainerTitle() {
 	if err != nil {
 		sess.showOrgMessage("Error updating %s title for %d", table, row.id)
 	}
-	switch org.view {
-	case CONTEXT:
-		generateContextMap()
-	case FOLDER:
-		generateFolderMap()
-	case KEYWORD:
-		generateKeywordMap()
-	}
 }
 
 func insertContainer(row *Row) int {
-
 	var stmt string
 	if org.view != KEYWORD {
 		var table string
@@ -1070,7 +1057,14 @@ func insertContainer(row *Row) int {
 		sess.showOrgMessage("Error in insertContainer: %v", err)
 		return -1
 	}
-
+	switch org.view {
+	case CONTEXT:
+		generateContextMap()
+	case FOLDER:
+		generateFolderMap()
+	case KEYWORD:
+		generateKeywordMap()
+	}
 	id, _ := res.LastInsertId()
 	row.id = int(id)
 	row.dirty = false
