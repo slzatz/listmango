@@ -1026,6 +1026,14 @@ func updateContainerTitle() {
 	if err != nil {
 		sess.showOrgMessage("Error updating %s title for %d", table, row.id)
 	}
+	switch org.view {
+	case CONTEXT:
+		generateContextMap()
+	case FOLDER:
+		generateFolderMap()
+	case KEYWORD:
+		generateKeywordMap()
+	}
 }
 
 func insertContainer(row *Row) int {
