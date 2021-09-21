@@ -424,6 +424,7 @@ func organizerProcessKey(c int) {
 		switch c {
 		case '\x1b':
 			org.mode = org.last_mode // pickup NO_ROWS
+			org.command_line = ""
 			org.drawPreview()
 		case ':':
 			sess.showOrgMessage(":")
