@@ -196,7 +196,7 @@ func _G() {
 func exCmd() {
 	sess.showOrgMessage(":")
 	org.command_line = ""
-	org.last_mode = org.mode
+	org.last_mode = org.mode //at the least picks up NORMAL and NO_ROWS
 	org.mode = COMMAND_LINE
 }
 
