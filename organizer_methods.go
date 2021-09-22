@@ -5,10 +5,13 @@ import (
 	"unicode"
 )
 
-/*
-var folder_map map[string]int = map[string]int{}
-var context_map map[string]int = map[string]int{}
-*/
+func (o *Organizer) getMode() Mode {
+	if len(o.rows) > 0 {
+		return NORMAL
+	} else {
+		return NO_ROWS
+	}
+}
 
 func (o *Organizer) delWord() {
 	// still needs to deal with possibility of utf8 multi-byte characters (see finding word under cursor)

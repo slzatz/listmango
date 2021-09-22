@@ -219,6 +219,10 @@ func _asterisk() {
 }
 
 func mark() {
+	if org.view != TASK {
+		sess.showOrgMessage("You can only mark tasks")
+		return
+	}
 
 	if _, found := org.marked_entries[org.rows[org.fr].id]; found {
 		delete(org.marked_entries, org.rows[org.fr].id)

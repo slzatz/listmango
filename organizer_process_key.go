@@ -44,6 +44,8 @@ func organizerProcessKey(c int) {
 
 	case FIND:
 		switch c {
+		case ':':
+			exCmd()
 		case ARROW_UP, ARROW_DOWN, PAGE_UP, PAGE_DOWN:
 			org.moveCursor(c)
 		default:
@@ -266,7 +268,8 @@ func organizerProcessKey(c int) {
 
 	case COMMAND_LINE:
 		if c == '\x1b' {
-			org.mode = NORMAL
+			//org.mode = NORMAL
+			org.mode = org.last_mode
 			sess.showOrgMessage("")
 			tabCompletion.idx = 0
 			tabCompletion.list = nil
@@ -423,14 +426,19 @@ func organizerProcessKey(c int) {
 	case PREVIEW_SYNC_LOG:
 		switch c {
 		case '\x1b':
-			org.mode = org.last_mode // pickup NO_ROWS
+			//org.mode = org.last_mode // pickup NO_ROWS
+			org.mode = org.getMode()
 			org.command_line = ""
+			org.repeat = 0
 			org.drawPreview()
 		case ':':
-			sess.showOrgMessage(":")
-			org.command_line = ""
-			org.last_mode = org.mode
-			org.mode = COMMAND_LINE
+			exCmd()
+			/*
+				sess.showOrgMessage(":")
+				org.command_line = ""
+				org.last_mode = org.mode
+				org.mode = COMMAND_LINE
+			*/
 
 		//case ARROW_DOWN, 'j':
 		case ctrlKey('j'):

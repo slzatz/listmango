@@ -93,7 +93,8 @@ func (o *Organizer) log(unused int) {
 func (o *Organizer) open(pos int) {
 	if pos == -1 {
 		sess.showOrgMessage("You did not provide a context or folder!")
-		o.mode = NORMAL
+		//o.mode = NORMAL
+		o.mode = o.last_mode
 		return
 	}
 
@@ -121,7 +122,8 @@ func (o *Organizer) open(pos int) {
 
 	if !success {
 		sess.showOrgMessage("%s is not a valid context or folder!", cl[pos+1:])
-		o.mode = NORMAL
+		o.mode = o.last_mode
+		//o.mode = NORMAL
 		return
 	}
 
@@ -143,7 +145,8 @@ func (o *Organizer) open(pos int) {
 func (o *Organizer) openContext(pos int) {
 	if pos == -1 {
 		sess.showOrgMessage("You did not provide a context!")
-		o.mode = NORMAL
+		o.mode = o.last_mode
+		//o.mode = NORMAL
 		return
 	}
 
@@ -160,7 +163,8 @@ func (o *Organizer) openContext(pos int) {
 
 	if !success {
 		sess.showOrgMessage("%s is not a valid  context!", cl[pos+1:])
-		o.mode = NORMAL
+		//o.mode = NORMAL
+		o.mode = o.last_mode
 		return
 	}
 
@@ -186,7 +190,8 @@ func (o *Organizer) openContext(pos int) {
 func (o *Organizer) openFolder(pos int) {
 	if pos == -1 {
 		sess.showOrgMessage("You did not provide a folder!")
-		o.mode = NORMAL
+		//o.mode = NORMAL
+		o.mode = o.last_mode
 		return
 	}
 
@@ -203,7 +208,8 @@ func (o *Organizer) openFolder(pos int) {
 
 	if !success {
 		sess.showOrgMessage("%s is not a valid  folder!", cl[pos+1:])
-		o.mode = NORMAL
+		//o.mode = NORMAL
+		o.mode = o.last_mode
 		return
 	}
 
@@ -227,7 +233,8 @@ func (o *Organizer) openFolder(pos int) {
 func (o *Organizer) openKeyword(pos int) {
 	if pos == -1 {
 		sess.showOrgMessage("You did not provide a keyword!")
-		o.mode = NORMAL
+		//o.mode = NORMAL
+		o.mode = o.last_mode
 		return
 	}
 	keyword := o.command_line[pos+1:]
@@ -251,7 +258,6 @@ func (o *Organizer) openKeyword(pos int) {
 		sess.showOrgMessage("No results were returned")
 		o.mode = NO_ROWS
 	}
-	//o.drawPreviewWindow()
 	o.drawPreview()
 	return
 }
@@ -282,9 +288,16 @@ func (o *Organizer) quitApp(_ int) {
 
 func (o *Organizer) editNote(id int) {
 
+	if o.last_mode == NO_ROWS {
+		o.mode = o.last_mode
+		sess.showOrgMessage("There is nothing to edit")
+		return
+	}
+
 	if o.view != TASK {
 		o.command = ""
-		o.mode = NORMAL
+		//o.mode = NORMAL //should prob be o.mode = o.last_mode; not tested
+		o.mode = o.last_mode
 		sess.showOrgMessage("Only entries have notes to edit!")
 		return
 	}
@@ -296,7 +309,8 @@ func (o *Organizer) editNote(id int) {
 	if id == -1 {
 		sess.showOrgMessage("You need to save item before you can create a note")
 		o.command = ""
-		o.mode = NORMAL
+		//o.mode = NORMAL //should prob be o.mode = o.last_mode; not tested
+		o.mode = o.last_mode
 		return
 	}
 
@@ -354,7 +368,8 @@ func (o *Organizer) verticalResize(pos int) {
 		return
 	}
 	moveDividerAbs(width)
-	o.mode = NORMAL
+	//o.mode = NORMAL
+	o.mode = o.last_mode
 }
 
 func (o *Organizer) verticalResize__(pos int) {
@@ -365,11 +380,13 @@ func (o *Organizer) verticalResize__(pos int) {
 	pct, err := strconv.Atoi(o.command_line[pos+1:])
 	if err != nil {
 		sess.showOrgMessage("You need to provide a number 0 - 100")
-		o.mode = NORMAL
+		//o.mode = NORMAL
+		o.mode = o.last_mode
 		return
 	}
 	moveDividerPct(pct)
-	o.mode = NORMAL
+	//o.mode = NORMAL
+	o.mode = o.last_mode
 }
 
 func (o *Organizer) newEntry(unused int) {
@@ -437,7 +454,8 @@ func (o *Organizer) find(pos int) {
 
 	if pos == -1 {
 		sess.showOrgMessage("You did not enter something to find!")
-		o.mode = NORMAL
+		//o.mode = NORMAL
+		o.mode = o.last_mode
 		return
 	}
 
@@ -691,6 +709,10 @@ func (o *Organizer) updateContainer(unused int) {
 }
 
 func (o *Organizer) deleteMarks(unused int) {
+	if o.last_mode == NO_ROWS {
+		o.mode = NO_ROWS
+		return
+	}
 	o.clearMarkedEntries()
 	o.mode = NORMAL
 	o.command_line = ""
@@ -698,6 +720,10 @@ func (o *Organizer) deleteMarks(unused int) {
 }
 
 func (o *Organizer) copyEntry(unused int) {
+	if o.last_mode == NO_ROWS {
+		o.mode = NO_ROWS
+		return
+	}
 	copyEntry()
 	o.mode = NORMAL
 	o.command_line = ""
@@ -711,8 +737,12 @@ func (o *Organizer) savelog(unused int) {
 		insertSyncEntry(title, strings.Join(o.note, "\n"))
 		sess.showOrgMessage("Sync log save to database")
 		o.command_line = ""
+		o.mode = PREVIEW_SYNC_LOG
+	} else {
+		sess.showOrgMessage("There is no sync log to save")
+		o.command_line = ""
 		o.mode = o.last_mode
-	} // otherwise should save to file
+	}
 }
 
 func (o *Organizer) save(pos int) {
