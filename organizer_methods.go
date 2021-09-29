@@ -129,15 +129,11 @@ func (o *Organizer) moveAltCursor(key int) {
 
 func (o *Organizer) backspace() {
 	t := &o.rows[o.fr].title
-	if len(o.rows) == 0 || *t == "" || o.fc == 0 {
+	//if len(o.rows) == 0 || *t == "" || o.fc == 0 {
+	if *t == "" || o.fc == 0 {
 		return
 	}
-	// below handles when INSERT is one char beyond end of line
-	fc := o.fc
-	if o.fc == len(*t) {
-		fc--
-	}
-	*t = (*t)[:fc] + (*t)[fc+1:] // should do with runes
+	*t = (*t)[:o.fc-1] + (*t)[o.fc:] // should do with runes
 	o.fc--
 	o.rows[o.fr].dirty = true
 }
