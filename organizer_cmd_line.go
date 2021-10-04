@@ -432,11 +432,14 @@ func (o *Organizer) refresh(unused int) {
 				sess.showOrgMessage("No results were returned")
 				o.mode = NO_ROWS
 			}
+			/* not sure why this was here
 			if unused != -1 { //complete kluge has to do with refreshing when syncing
 				o.drawPreview()
 			}
+			*/
+			o.drawPreview()
 		}
-		sess.showOrgMessage("Entries will be refreshed")
+		//sess.showOrgMessage("Entries will be refreshed")
 	} else {
 		o.mode = o.last_mode
 		getContainers()
