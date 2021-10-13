@@ -507,6 +507,7 @@ func (o *Organizer) sync(unused int) {
 		note = note[1:]
 	}
 	o.note = strings.Split(note, "\n")
+	o.altRowoff = 0
 	o.drawPreviewWithoutImages()
 	o.mode = PREVIEW_SYNC_LOG
 }
