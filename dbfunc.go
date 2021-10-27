@@ -415,7 +415,8 @@ func insertRow(row *Row) int {
 
 	/***************fts virtual table update*********************/
 
-	_, err = fts_db.Exec("INSERT INTO fts (title, lm_id) VALUES (?, ?);", row.title, row.id)
+	//_, err = fts_db.Exec("INSERT INTO fts (title, lm_id) VALUES (?, ?);", row.title, row.id)
+	_, err = fts_db.Exec("INSERT INTO fts (title, note, tag, lm_id) VALUES (?, ?, ?, ?);", row.title, "", "", row.id)
 	if err != nil {
 		sess.showOrgMessage("Error in insertRow inserting into fts for %s: %v", row.title, err)
 		return row.id
