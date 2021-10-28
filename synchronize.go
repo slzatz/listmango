@@ -65,8 +65,18 @@ func synchronize(reportOnly bool) (log string) {
 	)
 
 	var lg strings.Builder
+	var success bool
 	defer func() {
 		log = lg.String()
+		if reportOnly {
+			return
+		}
+		if success {
+			log = "### Synchronization succeeded\n\n" + log
+		} else {
+			log = "### Synchronization failed\n\n" + log
+		}
+
 	}()
 
 	pdb, err := sql.Open("postgres", connect)
@@ -1150,7 +1160,8 @@ func synchronize(reportOnly bool) (log string) {
 	}
 	fmt.Fprintf(&lg, "\nClient UTC timestamp: %s\n", client_ts)
 	fmt.Fprintf(&lg, "Server UTC timestamp: %s", strings.Replace(tc(server_ts, 19, false), "T", " ", 1))
-	fmt.Fprintf(&lg, "\n### Synchronization succeeded")
+	//fmt.Fprintf(&lg, "\n### Synchronization succeeded")
+	success = true
 
 	return
 }
