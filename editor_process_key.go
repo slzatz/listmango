@@ -71,9 +71,11 @@ func editorProcessKey(c int) bool { //bool returned is whether to redraw
 
 	case PREVIEW:
 		switch c {
-		case PAGE_DOWN, ARROW_DOWN, 'j':
+		//case PAGE_DOWN, ARROW_DOWN, 'j':
+		case ARROW_DOWN, ctrlKey('j'):
 			p.previewLineOffset++
-		case PAGE_UP, ARROW_UP, 'k':
+		//case PAGE_UP, ARROW_UP, 'k':
+		case ARROW_UP, ctrlKey('k'):
 			if p.previewLineOffset > 0 {
 				p.previewLineOffset--
 			}

@@ -169,6 +169,8 @@ func _gg() {
 	org.rowoff = 0
 	org.fr = org.repeat - 1 //this needs to take into account O.rowoff
 	if org.view == TASK {
+		org.altRowoff = 0         ///////////////////////
+		sess.imagePreview = false /////////////////////////////////
 		org.drawPreview()
 	} else {
 		c := getContainerInfo(org.rows[org.fr].id)
@@ -183,6 +185,8 @@ func _G() {
 	org.fc = 0
 	org.fr = len(org.rows) - 1
 	if org.view == TASK {
+		org.altRowoff = 0         ///////////////////////
+		sess.imagePreview = false /////////////////////////////////
 		org.drawPreview()
 	} else {
 		c := getContainerInfo(org.rows[org.fr].id)
@@ -269,10 +273,10 @@ func switchToEditorMode() {
 }
 
 func controlJ() {
-	if len(org.note) > org.altRowoff+org.textLines {
-		org.altRowoff++
-		org.drawPreview()
-	}
+	//if len(org.note) > org.altRowoff+org.textLines {
+	org.altRowoff++
+	org.drawPreview()
+	//}
 }
 
 func controlK() {
@@ -307,4 +311,5 @@ func controlZ() {
 func drawPreviewWithImages() {
 	sess.eraseRightScreen()
 	org.drawPreviewWithImages()
+	sess.imagePreview = true
 }

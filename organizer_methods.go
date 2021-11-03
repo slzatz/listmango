@@ -63,6 +63,7 @@ func (o *Organizer) moveCursor(key int) {
 		o.fc, o.coloff = 0, 0
 
 		if o.view == TASK {
+			sess.imagePreview = false /////////////////////////////////
 			o.altRowoff = 0
 			o.drawPreview()
 		} else {
@@ -79,6 +80,7 @@ func (o *Organizer) moveCursor(key int) {
 		}
 		o.fc, o.coloff = 0, 0
 		if o.view == TASK {
+			sess.imagePreview = false /////////////////////////////////
 			o.altRowoff = 0
 			o.drawPreview()
 		} else {
