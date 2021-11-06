@@ -345,8 +345,9 @@ func (o *Organizer) editNote(id int) {
 	}
 
 	sess.positionWindows()
-	sess.eraseRightScreen()      //erases editor area + statusbar + msg
-	fmt.Print("\x1b_Ga=d\x1b\\") //delete any images
+	sess.eraseRightScreen() //erases editor area + statusbar + msg
+	//delete any images
+	//fmt.Print("\x1b_Ga=d\x1b\\") //now in sess.eraseRightScreen
 	sess.drawRightScreen()
 	p.mode = NORMAL
 

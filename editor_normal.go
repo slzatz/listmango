@@ -389,27 +389,6 @@ func (e *Editor) showVimMessageLog() {
 	e.drawOverlay()
 }
 
-/*
-func showSpellingSuggestions() {
-
-	_ = v.SetCurrentBuffer(messageBuf)
-
-	_ = v.FeedKeys("\x1bgg\"apqaq", "t", false)
-	v.SetCurrentBuffer(p.vbuf)
-
-	// z needs some dimensions like screenCols - takes from current editor
-	z := *p // this makes z a copy of the editor p points to
-	z.vbuf = messageBuf
-	z.bb, _ = v.BufferLines(messageBuf, 0, -1, true)
-
-	p.renderedNote = z.generateWWStringFromBuffer2()
-	p.mode = SPELLING
-	p.previewLineOffset = 0
-	p.drawPreview()
-	p.drawOverlay()
-}
-*/
-
 // appears to be no way to actually create new standard windows
 // can create floating windows but not sure we want them
 // prints [Window:1000]

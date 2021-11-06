@@ -1250,6 +1250,7 @@ func (e *Editor) readFileIntoNote(filename string) error {
 }
 
 func (e *Editor) drawPreview() {
+	//delete any images
 	fmt.Print("\x1b_Ga=d\x1b\\") //delete any images
 
 	rows := strings.Split(e.renderedNote, "\n")

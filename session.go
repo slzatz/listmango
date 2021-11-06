@@ -103,7 +103,8 @@ func (s *Session) eraseScreenRedrawLines() {
 func (s *Session) eraseRightScreen() {
 	var ab strings.Builder
 
-	ab.WriteString("\x1b[?25l") //hides the cursor
+	fmt.Print("\x1b_Ga=d\x1b\\") //delete any images
+	ab.WriteString("\x1b[?25l")  //hides the cursor
 
 	//below positions cursor such that top line is erased the first time through
 	//for loop although ? could really start on second line since need to redraw

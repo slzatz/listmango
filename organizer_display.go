@@ -177,7 +177,7 @@ func (o *Organizer) drawAltRows() {
 func (o *Organizer) drawPreviewWithImages() {
 
 	//delete any images
-	fmt.Print("\x1b_Ga=d\x1b\\")
+	//fmt.Print("\x1b_Ga=d\x1b\\") //now in sess.eraseRightScreen
 
 	if len(o.note) == 0 {
 		return
@@ -240,8 +240,8 @@ func (o *Organizer) drawPreviewWithImages() {
 }
 
 func (o *Organizer) drawPreviewWithoutImages() {
-
-	fmt.Print("\x1b_Ga=d\x1b\\") //delete any images
+	//delete any images
+	//fmt.Print("\x1b_Ga=d\x1b\\") //now in sess.eraseRightScreen
 	if len(o.note) == 0 {
 		return
 	}
@@ -435,7 +435,7 @@ func (o *Organizer) drawPreview() {
 		note = highlightTerms2(id)
 	}
 	note = generateWWString(note, o.totaleditorcols)
-	sess.eraseRightScreen()
+	sess.eraseRightScreen() //includes erasing images 11062021
 
 	/* below old way - a lot of extra processing
 	   so that word wrap doesn't have extra letters

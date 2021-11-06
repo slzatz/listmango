@@ -38,7 +38,8 @@ func editorProcessKey(c int) bool { //bool returned is whether to redraw
 
 		if p.mode == PREVIEW {
 			// don't need to check WindowCursor - no change in pos
-			fmt.Print("\x1b_Ga=d\x1b\\") //delete any images
+			//delete any images
+			fmt.Print("\x1b_Ga=d\x1b\\")
 			sess.showEdMessage("")
 			p.mode = NORMAL
 			return true
