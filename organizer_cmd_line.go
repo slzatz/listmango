@@ -138,6 +138,7 @@ func (o *Organizer) open(pos int) {
 		sess.showOrgMessage("No results were returned")
 		o.mode = NO_ROWS
 	}
+	sess.imagePreview = false
 	o.drawPreview()
 	return
 }
@@ -146,7 +147,6 @@ func (o *Organizer) openContext(pos int) {
 	if pos == -1 {
 		sess.showOrgMessage("You did not provide a context!")
 		o.mode = o.last_mode
-		//o.mode = NORMAL
 		return
 	}
 
@@ -182,7 +182,7 @@ func (o *Organizer) openContext(pos int) {
 		sess.showOrgMessage("No results were returned")
 		o.mode = NO_ROWS
 	}
-	//o.drawPreviewWindow()
+	sess.imagePreview = false
 	o.drawPreview()
 	return
 }
@@ -190,7 +190,6 @@ func (o *Organizer) openContext(pos int) {
 func (o *Organizer) openFolder(pos int) {
 	if pos == -1 {
 		sess.showOrgMessage("You did not provide a folder!")
-		//o.mode = NORMAL
 		o.mode = o.last_mode
 		return
 	}
@@ -225,7 +224,7 @@ func (o *Organizer) openFolder(pos int) {
 		sess.showOrgMessage("No results were returned")
 		o.mode = NO_ROWS
 	}
-	//o.drawPreviewWindow()
+	sess.imagePreview = false
 	o.drawPreview()
 	return
 }
@@ -258,6 +257,7 @@ func (o *Organizer) openKeyword(pos int) {
 		sess.showOrgMessage("No results were returned")
 		o.mode = NO_ROWS
 	}
+	sess.imagePreview = false
 	o.drawPreview()
 	return
 }
@@ -422,9 +422,13 @@ func (o *Organizer) refresh(unused int) {
 				sess.showOrgMessage("No results were returned")
 				o.mode = NO_ROWS
 			}
-			if unused != -1 { //complete kluge has to do with refreshing when syncing
-				o.drawPreview()
-			}
+			/*
+				if unused != -1 { //complete kluge has to do with refreshing when syncing
+					o.drawPreview()
+				}
+			*/
+			sess.imagePreview = false
+			o.drawPreview()
 		} else {
 			o.mode = o.last_mode
 			o.fc, o.fr, o.rowoff = 0, 0, 0
@@ -438,6 +442,7 @@ func (o *Organizer) refresh(unused int) {
 				o.drawPreview()
 			}
 			*/
+			sess.imagePreview = false
 			o.drawPreview()
 		}
 		//sess.showOrgMessage("Entries will be refreshed")
@@ -458,7 +463,6 @@ func (o *Organizer) find(pos int) {
 
 	if pos == -1 {
 		sess.showOrgMessage("You did not enter something to find!")
-		//o.mode = NORMAL
 		o.mode = o.last_mode
 		return
 	}
@@ -466,7 +470,7 @@ func (o *Organizer) find(pos int) {
 	searchTerms := strings.ToLower(o.command_line[pos+1:])
 	sess.fts_search_terms = searchTerms
 	if len(searchTerms) < 3 {
-		sess.showOrgMessage("You  need to provide at least 3 characters to search on")
+		sess.showOrgMessage("You need to provide at least 3 characters to search on")
 		return
 	}
 
@@ -481,6 +485,7 @@ func (o *Organizer) find(pos int) {
 		sess.showOrgMessage("No results were returned")
 		o.mode = NO_ROWS
 	}
+	sess.imagePreview = false
 	o.drawPreview()
 }
 
@@ -667,7 +672,7 @@ func (o *Organizer) recent(unused int) {
 		sess.showOrgMessage("No results were returned")
 		o.mode = NO_ROWS
 	}
-	//o.drawPreviewWindow()
+	sess.imagePreview = false
 	o.drawPreview()
 }
 

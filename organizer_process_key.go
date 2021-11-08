@@ -87,7 +87,7 @@ func organizerProcessKey(c int) {
 
 		if c == '\x1b' {
 			if org.view == TASK {
-				//org.drawPreviewWindow()
+				sess.imagePreview = false
 				org.drawPreview()
 			}
 			sess.showOrgMessage("")
