@@ -7,6 +7,8 @@ replace github.com/neovim/go-client v1.1.7 => /home/slzatz/go-client
 
 replace go.lsp.dev/protocol v0.11.2 => /home/slzatz/protocol
 
+replace go.lsp.dev/pkg v0.0.0-20210323044036-f7deec69b52e => /home/slzatz/pkg
+
 //replace go.lsp.dev/jsonrpc2 v0.9.0 => /home/slzatz/jsonrpc2
 
 go 1.17
